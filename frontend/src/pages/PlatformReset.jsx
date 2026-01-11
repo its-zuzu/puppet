@@ -57,10 +57,16 @@ function PlatformReset() {
       setSuccess(response.data.message || 'Reset completed successfully!');
       setSecurityCode('');
       
-      // Optionally reload after a delay
-      setTimeout(() => {
-        window.location.reload();
-      }, 3000);
+      // Clear any cached data and reload the entire application
+      if (typeof window !== 'undefined') {
+        // Clear session storage to force data refresh
+        sessionStorage.clear();
+        
+        // Reload after a brief delay to show success message
+        setTimeout(() => {
+          window.location.href = '/admin';
+        }, 2000);
+      }
     } catch (err) {
       setError(err.response?.data?.message || 'Reset operation failed');
     } finally {

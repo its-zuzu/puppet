@@ -17,13 +17,16 @@ const Event = require('../models/Event');
 const EventParticipation = require('../models/EventParticipation');
 const EventState = require('../models/EventState');
 
-// Secret code for reset operations
-const RESET_SECRET_CODE = 'prasanth@2007';
+// Secret code for reset operations (from environment variable)
+const RESET_SECRET_CODE = process.env.RESET_SECRET_CODE || 'prasanth@2007';
 
 /**
  * Validates the security code for reset operations
  */
 const validateSecurityCode = (providedCode) => {
+  if (!RESET_SECRET_CODE) {
+    throw new Error('RESET_SECRET_CODE not configured in environment');
+  }
   return providedCode === RESET_SECRET_CODE;
 };
 
@@ -194,6 +197,8 @@ const competitionProgressReset = async (adminId, securityCode) => {
         $set: {
           points: 0,
           solvedChallenges: [],
+          personallySolvedChallenges: [],
+          unlockedHints: [],
           lastSolveTime: null
         }
       },
