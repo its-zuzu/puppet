@@ -52,19 +52,37 @@ function ScoreGraph({ type = 'teams', limit = 10 }) {
 
     // Build timeline data for each account
     const timelineData = accounts.map(account => {
-      let cumulativeScore = 0;
-      const points = account.solves.map(solve => {
-        cumulativeScore += solve.value;
+      // Filter out invalid solves and sort by date
+      const validSolves = (account.solves || [])
+        .filter(solve => solve.date && solve.value)
+        .sort((a, b) => new Date(a.date) - new Date(b.date));
+
+      if (validSolves.length === 0) {
         return {
-          time: new Date(solve.date),
-          score: cumulativeScore
+          id: account.id,
+          name: account.name,
+          color: getColorForIndex(accounts.indexOf(account)),
+          points: [{ time: new Date(), score: 0 }]
         };
+      }
+
+      let cumulativeScore = 0;
+      const points = [];
+      
+      // Add starting point at first solve time with 0 score
+      points.push({
+        time: new Date(validSolves[0].date),
+        score: 0
       });
 
-      // Add starting point
-      if (points.length > 0) {
-        points.unshift({ time: points[0].time, score: 0 });
-      }
+      // Build cumulative score timeline
+      validSolves.forEach(solve => {
+        cumulativeScore += solve.value;
+        points.push({
+          time: new Date(solve.date),
+          score: cumulativeScore
+        });
+      });
 
       return {
         id: account.id,
@@ -72,7 +90,7 @@ function ScoreGraph({ type = 'teams', limit = 10 }) {
         color: getColorForIndex(accounts.indexOf(account)),
         points: points
       };
-    });
+    }).filter(account => account.points.length > 1);
 
     setGraphData(timelineData);
   };
@@ -93,11 +111,17 @@ function ScoreGraph({ type = 'teams', limit = 10 }) {
     return colors[index % colors.length];
   };
 
-  const formatTime = (date) => {
-    const hours = Math.floor(date / 3600000);
-    const minutes = Math.floor((date % 3600000) / 60000);
+  const formatTime = (milliseconds) => {
+    if (!milliseconds || isNaN(milliseconds) || milliseconds < 0) {
+      return '0m';
+    }
+    
+    const totalMinutes = Math.floor(milliseconds / 60000);
+    const hours = Math.floor(totalMinutes / 60);
+    const minutes = totalMinutes % 60;
+    
     if (hours > 0) {
-      return `${hours}h ${minutes}m`;
+      return `${hours}h${minutes > 0 ? ` ${minutes}m` : ''}`;
     }
     return `${minutes}m`;
   };
@@ -111,15 +135,18 @@ function ScoreGraph({ type = 'teams', limit = 10 }) {
   }
 
   // Calculate graph dimensions
-  const maxScore = Math.max(...graphData.flatMap(d => d.points.map(p => p.score))) || 100;
-  const minTime = Math.min(...graphData.flatMap(d => d.points.map(p => p.time.getTime())));
-  const maxTime = Math.max(...graphData.flatMap(d => d.points.map(p => p.time.getTime())));
-  const timeRange = maxTime - minTime || 1;
+  const allScores = graphData.flatMap(d => d.points.map(p => p.score)).filter(s => !isNaN(s));
+  const allTimes = graphData.flatMap(d => d.points.map(p => p.time.getTime())).filter(t => !isNaN(t));
+  
+  const maxScore = allScores.length > 0 ? Math.max(...allScores) : 100;
+  const minTime = allTimes.length > 0 ? Math.min(...allTimes) : Date.now();
+  const maxTime = allTimes.length > 0 ? Math.max(...allTimes) : Date.now() + 3600000;
+  const timeRange = maxTime - minTime || 3600000; // Default to 1 hour if no range
 
-  // SVG dimensions
-  const width = 1000;
-  const height = 400;
-  const padding = { top: 40, right: 20, bottom: 60, left: 60 };
+  // SVG dimensions - smaller and more compact
+  const width = 900;
+  const height = 280;
+  const padding = { top: 25, right: 20, bottom: 45, left: 50 };
   const graphWidth = width - padding.left - padding.right;
   const graphHeight = height - padding.top - padding.bottom;
 
