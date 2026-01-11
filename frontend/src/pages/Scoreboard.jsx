@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useContext } from 'react';
 import axios from 'axios';
 import AuthContext from '../context/AuthContext';
+import ScoreGraph from '../components/ScoreGraph';
 import './Scoreboard.css';
 
 /**
@@ -106,6 +107,9 @@ function Scoreboard() {
           Users
         </button>
       </div>
+
+      {/* Score Progression Graph */}
+      <ScoreGraph type={viewType} limit={10} />
 
       {/* Scoreboard Table */}
       <div className="scoreboard-table-container">

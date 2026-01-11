@@ -126,11 +126,12 @@ router.get('/top/:count', protect, async (req, res) => {
   try {
     const { count = 10 } = req.params;
     const limit = Math.max(1, Math.min(parseInt(count), 50)); // 1-50 range
+    const type = req.query.type || 'teams'; // 'teams' or 'users'
     
     const isAdmin = req.user.role === 'admin' || req.user.role === 'superadmin';
     const freezeTime = null; // TODO: Get from config
 
-    const cacheKey = `ctfd:scoreboard:top:${limit}:${isAdmin}`;
+    const cacheKey = `ctfd:scoreboard:top:${limit}:${type}:${isAdmin}`;
     const CACHE_TTL = 60;
 
     // Try cache
@@ -146,8 +147,21 @@ router.get('/top/:count', protect, async (req, res) => {
       console.warn('[Scoreboard] Cache read error:', cacheErr.message);
     }
 
-    // Get top N standings
-    const standings = await getTeamStandings({
+    // Get top N standings based on type
+    let standings;
+    if (type === 'users') {
+      standings = await getUserStandings({
+        count: limit,
+        includeHidden: isAdmin,
+        freezeTime
+      });
+    } else {
+      standings = await getTeamStandings({
+        count: limit,
+        includeHidden: isAdmin,
+        freezeTime
+      });
+    }
       count: limit,
       includeHidden: isAdmin,
       freezeTime
