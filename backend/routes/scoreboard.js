@@ -162,10 +162,6 @@ router.get('/top/:count', protect, async (req, res) => {
         freezeTime
       });
     }
-      count: limit,
-      includeHidden: isAdmin,
-      freezeTime
-    });
 
     if (standings.length === 0) {
       return res.json({
