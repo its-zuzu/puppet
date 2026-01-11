@@ -28,6 +28,19 @@ const TEAM_COLORS = [
 ];
 
 /**
+ * Cumulative sum utility
+ */
+const cumulativeSum = (arr) => {
+  const result = [];
+  let sum = 0;
+  for (let i = 0; i < arr.length; i++) {
+    sum += arr[i];
+    result.push(sum);
+  }
+  return result;
+};
+
+/**
  * Format elapsed milliseconds to human-readable duration
  * @param {number} ms - Milliseconds elapsed
  * @returns {string} - Formatted string like "1h 30m" or "45m" or "2h"
@@ -43,6 +56,14 @@ const formatElapsedTime = (ms) => {
     return minutes > 0 ? `${hours}h ${minutes}m` : `${hours}h`;
   }
   return `${minutes}m`;
+};
+
+/**
+ * Format timestamp to time display
+ */
+const formatTimestamp = (timestamp) => {
+  const date = new Date(timestamp);
+  return date.toLocaleTimeString();
 };
 
 /**
@@ -91,10 +112,16 @@ function CTFdScoreboardGraph() {
         }
       };
 
-      const response = await axios.get('/api/scoreboard/graph?limit=10', config);
+      // CTFd-style endpoint: /api/scoreboard/top/{count}
+      const response = await axios.get('/api/scoreboard/top/10', config);
       
       if (response.data.success) {
-        setGraphData(response.data.data);
+        // CTFd format: { "1": {id, name, score, solves: []}, "2": {...} }
+        const ctfdData = response.data.data;
+        
+        // Transform CTFd data to chart format
+        const transformedData = transformCTFdData(ctfdData);
+        setGraphData(transformedData);
         setError(null);
       }
       
@@ -106,49 +133,42 @@ function CTFdScoreboardGraph() {
     }
   };
 
-  useEffect(() => {
-    fetchGraphData();
+  /**
+   * Transform CTFd-style data to Recharts format
+   */
+  const transformCTFdData = (ctfdData) => {
+    const teams = Object.keys(ctfdData);
+    if (teams.length === 0) return null;
 
-    // Auto-refresh every 30 seconds
-    const interval = setInterval(fetchGraphData, 30000);
-    return () => clearInterval(interval);
-  }, [token]);
+    // Build chart data - all timestamps with team scores
+    const allTimestamps = new Set();
+    const teamScores = {};
 
-  if (loading) {
-    return (
-      <div className="ctfd-graph-container">
-        <div className="ctfd-graph-loading">Loading graph...</div>
-      </div>
-    );
-  }
+    teams.forEach(rank => {
+      const team = ctfdData[rank];
+      teamScores[team.name] = [];
 
-  if (error) {
-    return (
-      <div className="ctfd-graph-container">
-        <div className="ctfd-graph-error">{error}</div>
-      </div>
-    );
-  }
+      // Get solve values and timestamps
+      const solveValues = team.solves.map(s => s.value);
+      const solveTimes = team.solves.map(s => new Date(s.date).getTime());
+      
+      // Calculate cumulative scores
+      const cumulativeScores = cumulativeSum(solveValues);
 
-  if (!graphData || !graphData.chartData || graphData.chartData.length === 0) {
-    return (
-      <div className="ctfd-graph-container">
-        <div className="ctfd-graph-empty">
-          No solve data available yet. Start solving challenges!
-        </div>
-      </div>
-    );
-  }
-
-  const { competition, teams, chartData } = graphData;
+      // Store data points
+      solveTimes.forEach((time, idx) => {
+        allTimestamps.add(time);
+        teamScores[team.name].push({
+          timestamp: time,
+          score: cumulativeScores[idx]
+        })teams, chartData } = graphData;
 
   return (
     <div className="ctfd-graph-container">
       <div className="ctfd-graph-header">
         <h2 className="ctfd-graph-title">Score Progression</h2>
         <div className="ctfd-graph-subtitle">
-          Competition: {competition.name} • 
-          Started: {new Date(competition.startTime).toLocaleString()}
+          Top {teams.length} Teams
         </div>
       </div>
 
@@ -157,6 +177,85 @@ function CTFdScoreboardGraph() {
           <LineChart
             data={chartData}
             margin={{ top: 20, right: 30, left: 20, bottom: 60 }}
+          >
+            <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.1)" />
+            
+            {/* X-Axis: Time */}
+            <XAxis
+              dataKey="timestamp"
+              type="number"
+              domain={['dataMin', 'dataMax']}
+              tickFormatter={formatTimestamp}
+              stroke="rgba(255,255,255,0.7)"
+              label={{
+                value: 'Time',
+                position: 'insideBottom',
+                offset: -10,
+                style: { fill: 'rgba(255,255,255,0.7)' }
+              }}
+              angle={-45}
+              textAnchor="end"
+              height={80}
+            />
+            
+            {/* Y-Axis: Score with dynamic scaling + padding */}
+            <YAxis
+              domain={[0, (dataMax) => (Math.ceil(dataMax * 1.15))]}
+              stroke="rgba(255,255,255,0.7)"
+              label={{
+                value: 'Score',
+                angle: -90,
+                position: 'insideLeft',
+                style: { fill: 'rgba(255,255,255,0.7)' }
+              }}
+            />
+            
+            <Tooltip content={<CustomTooltip />} />
+            
+            <Legend
+              wrapperStyle={{ paddingTop: '20px' }}
+              iconType="line"
+              formatter={(value, entry) => {
+                const team = teams.find(t => t.teamName === value);
+                return team ? 
+                  `${team.rank}. ${value} (${team.finalScore} pts)` : 
+                  value;
+              }}
+            />
+
+            {/* Render a Line for each team */}
+            {teams.map((team, index) => (
+              <Line
+                key={team.teamId}
+                type="linear"
+                dataKey={team.teamName}
+                stroke={TEAM_COLORS[index % TEAM_COLORS.length]}
+                strokeWidth={2.5}
+                dot={true}
+                activeDot={{ r: 6 }}
+                connectNulls={false}
+                isAnimationActive={true}
+                animationDuration={1000}
+              />
+            ))}
+          </LineChart>
+        </ResponsiveContainer>
+      </div>
+
+      {/* Team Rankings Summary */}
+      <div className="ctfd-graph-rankings">
+        <h3>Top Teams</h3>
+        <div className="ctfd-rankings-list">
+          {teams.map((team, index) => (
+            <div key={team.teamId} className="ctfd-ranking-item">
+              <div className="ranking-position">#{team.rank}</div>
+              <div 
+                className="ranking-color" 
+                style={{ backgroundColor: TEAM_COLORS[index % TEAM_COLORS.length] }}
+              />
+              <div className="ranking-team">{team.teamName}</div>
+              <div className="ranking-score">{team.finalScore} pts</div>
+              <div className="ranking-solves">{team.solveCount} solvesrgin={{ top: 20, right: 30, left: 20, bottom: 60 }}
           >
             <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.1)" />
             
