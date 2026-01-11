@@ -269,27 +269,9 @@ const competitionProgressReset = async (adminId, securityCode) => {
   }
 };
 
-/**
- * Clear Redis cache after reset operations
- */
-const clearRedisCache = async (redisClient) => {
-  try {
-    // Use waitForRedis to ensure client is ready
-    const { waitForRedis } = require('../utils/redis');
-    await waitForRedis();
-    
-    await redisClient.flushdb();
-    console.log('Redis cache cleared successfully');
-  } catch (error) {
-    console.error('Failed to clear Redis cache:', error);
-    // Don't throw - cache clear failure shouldn't fail the reset
-  }
-};
-
 module.exports = {
   fullPlatformReset,
   competitionProgressReset,
-  clearRedisCache,
   validateSecurityCode,
   RESET_SECRET_CODE
 };

@@ -3,17 +3,9 @@ const router = express.Router();
 const { protect, authorize } = require('../middleware/auth');
 const {
   fullPlatformReset,
-  competitionProgressReset,
-  clearRedisCache
+  competitionProgressReset
 } = require('../services/resetService');
-
-// Redis client (if available)
-let redisClient;
-try {
-  redisClient = require('../config/redis');
-} catch (error) {
-  console.warn('Redis not available for cache clearing');
-}
+const { clearRedisCache } = require('../utils/redis');
 
 /**
  * @route   POST /api/admin/reset/full-platform
@@ -35,10 +27,8 @@ router.post('/full-platform', protect, authorize('admin', 'superadmin'), async (
     // Perform full platform reset
     const stats = await fullPlatformReset(req.user._id, securityCode);
 
-    // Clear Redis cache
-    if (redisClient) {
-      await clearRedisCache(redisClient);
-    }
+    // Clear Redis cache (PM2-safe, worker 0 only)
+    await clearRedisCache();
 
     res.json({
       success: true,
@@ -98,10 +88,8 @@ router.post('/competition-progress', protect, authorize('admin', 'superadmin'), 
     // Perform competition progress reset
     const stats = await competitionProgressReset(req.user._id, securityCode);
 
-    // Clear Redis cache
-    if (redisClient) {
-      await clearRedisCache(redisClient);
-    }
+    // Clear Redis cache (PM2-safe, worker 0 only)
+    await clearRedisCache();
 
     res.json({
       success: true,
