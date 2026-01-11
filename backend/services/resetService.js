@@ -274,7 +274,11 @@ const competitionProgressReset = async (adminId, securityCode) => {
  */
 const clearRedisCache = async (redisClient) => {
   try {
-    await redisClient.flushall();
+    // Use waitForRedis to ensure client is ready
+    const { waitForRedis } = require('../utils/redis');
+    await waitForRedis();
+    
+    await redisClient.flushdb();
     console.log('Redis cache cleared successfully');
   } catch (error) {
     console.error('Failed to clear Redis cache:', error);

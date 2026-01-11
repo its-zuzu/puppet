@@ -4,6 +4,8 @@ const Redis = require('ioredis');
 // Critical for 500+ concurrent users - only ONE connection pool
 let redisClient = null;
 let redisSubscriber = null;
+let isRedisReady = false;
+let redisReadyPromise = null;
 
 /**
  * Get or create the main Redis client (for caching, rate limiting, sessions)
@@ -18,8 +20,28 @@ function getRedisClient() {
       enableReadyCheck: true,
       lazyConnect: false,
       // Connection pool settings for high load
-      maxPoolSize: 50, // Limit connections per client
-      minPoolSize: 10
+      maxPoolSize: 50,
+      minPoolSize: 10,
+      retryStrategy(times) {
+        const delay = Math.min(times * 50, 2000);
+        return delay;
+      }
+    });
+
+    // Create promise that resolves when Redis is ready
+    redisReadyPromise = new Promise((resolve, reject) => {
+      redisClient.once('ready', () => {
+        isRedisReady = true;
+        console.log('✓ Redis Client Ready');
+        resolve();
+      });
+
+      redisClient.once('error', (err) => {
+        if (!isRedisReady) {
+          console.error('Redis Client Connection Failed:', err);
+          reject(err);
+        }
+      });
     });
 
     redisClient.on('error', (err) => {
@@ -28,10 +50,6 @@ function getRedisClient() {
 
     redisClient.on('connect', () => {
       console.log('✓ Redis Client Connected');
-    });
-
-    redisClient.on('ready', () => {
-      console.log('✓ Redis Client Ready');
     });
   }
 
@@ -65,6 +83,46 @@ function getRedisSubscriber() {
 }
 
 /**
+ * Wait for Redis to be ready before performing operations
+ */
+async function waitForRedis() {
+  if (isRedisReady) return;
+  if (!redisReadyPromise) {
+    throw new Error('Redis client not initialized');
+  }
+  await redisReadyPromise;
+}
+
+/**
+ * Clear Redis cache - Only runs ONCE per cluster (PM2 worker 0)
+ * Must be called AFTER Redis is ready
+ */
+async function clearRedisCache() {
+  try {
+    // Only worker 0 clears cache to avoid race conditions
+    const workerId = process.env.pm_id || process.env.NODE_APP_INSTANCE || '0';
+    if (workerId !== '0') {
+      console.log(`[Worker ${workerId}] Skipping Redis cache clear (not primary worker)`);
+      return;
+    }
+
+    await waitForRedis();
+    
+    // Don't clear from subscriber client
+    if (!redisClient || redisClient === redisSubscriber) {
+      console.warn('Redis client not available for cache clearing');
+      return;
+    }
+
+    await redisClient.flushdb();
+    console.log('✓ Redis cache cleared (worker 0)');
+  } catch (error) {
+    console.error('Redis cache clear failed (non-fatal):', error.message);
+    // Don't throw - cache clear failure shouldn't crash server
+  }
+}
+
+/**
  * Graceful shutdown - close all connections
  */
 async function closeRedis() {
@@ -80,6 +138,9 @@ async function closeRedis() {
     redisSubscriber = null;
   }
 
+  isRedisReady = false;
+  redisReadyPromise = null;
+
   await Promise.all(promises);
   console.log('✓ Redis connections closed');
 }
@@ -87,5 +148,7 @@ async function closeRedis() {
 module.exports = {
   getRedisClient,
   getRedisSubscriber,
+  waitForRedis,
+  clearRedisCache,
   closeRedis
 };
