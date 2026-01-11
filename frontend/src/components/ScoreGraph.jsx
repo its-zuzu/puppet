@@ -54,15 +54,20 @@ function ScoreGraph({ type = 'teams', limit = 10 }) {
     const timelineData = accounts.map(account => {
       // Filter out invalid solves and sort by date
       const validSolves = (account.solves || [])
-        .filter(solve => solve.date && solve.value)
+        .filter(solve => solve.date && solve.value != null)
         .sort((a, b) => new Date(a.date) - new Date(b.date));
 
+      // If no solves, create a flat line at 0
       if (validSolves.length === 0) {
+        const now = new Date();
         return {
           id: account.id,
           name: account.name,
           color: getColorForIndex(accounts.indexOf(account)),
-          points: [{ time: new Date(), score: 0 }]
+          points: [
+            { time: new Date(now.getTime() - 3600000), score: 0 },
+            { time: now, score: 0 }
+          ]
         };
       }
 
@@ -90,8 +95,9 @@ function ScoreGraph({ type = 'teams', limit = 10 }) {
         color: getColorForIndex(accounts.indexOf(account)),
         points: points
       };
-    }).filter(account => account.points.length > 1);
+    });
 
+    // Show all accounts, even those with no solves
     setGraphData(timelineData);
   };
 
@@ -130,7 +136,11 @@ function ScoreGraph({ type = 'teams', limit = 10 }) {
     return <div className="score-graph-loading">Loading graph...</div>;
   }
 
-  if (error || graphData.length === 0) {
+  if (error) {
+    return null; // Don't show graph on error
+  }
+
+  if (graphData.length === 0) {
     return null; // Don't show graph if no data
   }
 
