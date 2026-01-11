@@ -153,6 +153,10 @@ function ScoreGraph({ type = 'teams', limit = 10 }) {
   const maxTime = allTimes.length > 0 ? Math.max(...allTimes) : Date.now() + 3600000;
   const timeRange = maxTime - minTime || 3600000; // Default to 1 hour if no range
 
+  // Use a minimum scale for better visualization when scores are low
+  const displayMaxScore = maxScore > 0 ? maxScore : 500;
+  const scoreStep = displayMaxScore >= 5 ? Math.ceil(displayMaxScore / 4) : 100;
+
   // SVG dimensions - smaller and more compact
   const width = 900;
   const height = 280;
@@ -162,7 +166,7 @@ function ScoreGraph({ type = 'teams', limit = 10 }) {
 
   // Scale functions
   const xScale = (time) => padding.left + ((time - minTime) / timeRange) * graphWidth;
-  const yScale = (score) => padding.top + (1 - score / maxScore) * graphHeight;
+  const yScale = (score) => padding.top + (1 - score / displayMaxScore) * graphHeight;
 
   // Generate path for each account
   const generatePath = (points) => {
@@ -184,14 +188,15 @@ function ScoreGraph({ type = 'teams', limit = 10 }) {
     };
   });
 
-  // Y-axis labels (score)
-  const yAxisLabels = [0, 0.25, 0.5, 0.75, 1].map(ratio => {
-    const score = Math.floor(maxScore * ratio);
-    return {
-      y: padding.top + graphHeight * (1 - ratio),
+  // Y-axis labels (score) - Use proper step values to avoid overlapping zeros
+  const yAxisLabels = [];
+  for (let i = 0; i <= 4; i++) {
+    const score = Math.round((displayMaxScore / 4) * i);
+    yAxisLabels.push({
+      y: padding.top + graphHeight * (1 - (i / 4)),
       label: score
-    };
-  });
+    });
+  }
 
   return (
     <div className="score-graph-container">
