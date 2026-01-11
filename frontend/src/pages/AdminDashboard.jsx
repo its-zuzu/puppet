@@ -38,8 +38,6 @@ function AdminDashboard() {
     title: '',
     description: ''
   });
-  const [isResettingPoints, setIsResettingPoints] = useState(false);
-  const [isResettingChallenges, setIsResettingChallenges] = useState(false);
   const itemsPerPage = 10;
 
   useEffect(() => {
@@ -50,63 +48,7 @@ function AdminDashboard() {
     }
   }, [isAuthenticated, user, navigate]);
 
-  const handleResetPoints = async () => {
-    if (!window.confirm('Are you sure you want to RESET ALL POINTS?\n\nThis will:\n• Reset all user points to 0\n• Reset all team points to 0\n• Clear all solved challenges\n• Delete all submissions\n\nThis action cannot be undone!')) {
-      return;
-    }
-
-    const secretCode = prompt('Enter secret code to confirm (97086):');
-    if (secretCode !== '97086') {
-      alert('Invalid secret code');
-      return;
-    }
-
-    setIsResettingPoints(true);
-    try {
-      const config = {
-        headers: {
-          Authorization: `Bearer ${token}`
-        }
-      };
-
-      const response = await axios.post('/api/auth/admin/reset-points', {}, config);
-      alert(response.data.message || 'Points reset successfully!');
-      window.location.reload();
-    } catch (err) {
-      alert(err.response?.data?.message || 'Failed to reset points');
-    } finally {
-      setIsResettingPoints(false);
-    }
-  };
-
-  const handleResetChallenges = async () => {
-    if (!window.confirm('Are you sure you want to RESET CHALLENGE STATUS?\n\nThis will:\n• Clear all solved challenges\n• Delete all submissions\n• Keep user points unchanged\n\nThis action cannot be undone!')) {
-      return;
-    }
-
-    const secretCode = prompt('Enter secret code to confirm (97086):');
-    if (secretCode !== '97086') {
-      alert('Invalid secret code');
-      return;
-    }
-
-    setIsResettingChallenges(true);
-    try {
-      const config = {
-        headers: {
-          Authorization: `Bearer ${token}`
-        }
-      };
-
-      const response = await axios.post('/api/auth/admin/reset-challenges', {}, config);
-      alert(response.data.message || 'Challenge status reset successfully!');
-      window.location.reload();
-    } catch (err) {
-      alert(err.response?.data?.message || 'Failed to reset challenges');
-    } finally {
-      setIsResettingChallenges(false);
-    }
-  };
+  // Reset handlers removed - use Platform Reset page instead
 
   // Debounce search term
   useEffect(() => {
@@ -536,20 +478,6 @@ function AdminDashboard() {
           onClick={() => setActiveTab('notices')}
         >
           Notices ({noticeTotal})
-        </button>
-        <button
-          className="tab-button warning"
-          onClick={handleResetPoints}
-          disabled={isResettingPoints}
-        >
-          {isResettingPoints ? 'Resetting...' : '🔄 Reset Points'}
-        </button>
-        <button
-          className="tab-button warning"
-          onClick={handleResetChallenges}
-          disabled={isResettingChallenges}
-        >
-          {isResettingChallenges ? 'Resetting...' : '🎯 Reset Challenges'}
         </button>
         <button
           className="tab-button danger"

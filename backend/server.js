@@ -45,6 +45,7 @@ const noticeRoutes = require('./routes/notice');
 const analyticsRoutes = require('./routes/analytics');
 const realtimeRoutes = require('./routes/realtime');
 const scoreboardRoutes = require('./routes/scoreboard');
+const adminResetRoutes = require('./routes/adminReset');
 
 // Initialize express app
 const app = express();
@@ -221,6 +222,7 @@ app.use('/api/r-submission', realtimeRoutes);
 app.use('/api/timer', require('./routes/timer'));
 app.use('/api/event-control', require('./routes/eventControl'));
 app.use('/api/scoreboard', scoreboardRoutes);
+app.use('/api/admin/reset', adminResetRoutes);
 
 // Enhanced security headers middleware
 // Enhanced security headers middleware - Relaxed for UX

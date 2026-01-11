@@ -1,0 +1,286 @@
+const mongoose = require('mongoose');
+const User = require('../models/User');
+const Team = require('../models/Team');
+const Challenge = require('../models/Challenge');
+const Submission = require('../models/Submission');
+const Hint = require('../models/Challenge'); // Hints are part of Challenge schema
+const Notice = require('../models/Notice');
+const LoginLog = require('../models/LoginLog');
+const Newsletter = require('../models/Newsletter');
+const Competition = require('../models/Competition');
+const CompetitionTimer = require('../models/CompetitionTimer');
+const Blog = require('../models/Blog');
+const Tutorial = require('../models/Tutorial');
+const Contact = require('../models/Contact');
+const RegistrationStatus = require('../models/RegistrationStatus');
+const Event = require('../models/Event');
+const EventParticipation = require('../models/EventParticipation');
+const EventState = require('../models/EventState');
+
+// Secret code for reset operations
+const RESET_SECRET_CODE = 'prasanth@2007';
+
+/**
+ * Validates the security code for reset operations
+ */
+const validateSecurityCode = (providedCode) => {
+  return providedCode === RESET_SECRET_CODE;
+};
+
+/**
+ * Full Platform Reset - Deletes ALL data except admin accounts
+ * This resets the platform to a fresh install state
+ * 
+ * Preserves:
+ * - Admin and superadmin accounts
+ * 
+ * Deletes:
+ * - All regular users
+ * - All teams
+ * - All challenges
+ * - All submissions
+ * - All notices
+ * - All blogs
+ * - All tutorials
+ * - All contacts
+ * - All newsletters
+ * - All login logs
+ * - All competitions
+ * - All events
+ * - All registration status records
+ */
+const fullPlatformReset = async (adminId, securityCode) => {
+  // Validate security code
+  if (!validateSecurityCode(securityCode)) {
+    throw new Error('Invalid security code');
+  }
+
+  const session = await mongoose.startSession();
+  
+  try {
+    await session.startTransaction();
+
+    // Delete all regular users (preserve admins and superadmins)
+    const userDeleteResult = await User.deleteMany(
+      { role: { $nin: ['admin', 'superadmin'] } },
+      { session }
+    );
+
+    // Delete all teams
+    const teamDeleteResult = await Team.deleteMany({}, { session });
+
+    // Delete all challenges
+    const challengeDeleteResult = await Challenge.deleteMany({}, { session });
+
+    // Delete all submissions
+    const submissionDeleteResult = await Submission.deleteMany({}, { session });
+
+    // Delete all notices
+    const noticeDeleteResult = await Notice.deleteMany({}, { session });
+
+    // Delete all blogs
+    const blogDeleteResult = await Blog.deleteMany({}, { session });
+
+    // Delete all tutorials
+    const tutorialDeleteResult = await Tutorial.deleteMany({}, { session });
+
+    // Delete all contacts
+    const contactDeleteResult = await Contact.deleteMany({}, { session });
+
+    // Delete all newsletter subscriptions
+    const newsletterDeleteResult = await Newsletter.deleteMany({}, { session });
+
+    // Delete all login logs
+    const loginLogDeleteResult = await LoginLog.deleteMany({}, { session });
+
+    // Delete all competitions
+    const competitionDeleteResult = await Competition.deleteMany({}, { session });
+
+    // Delete all competition timers
+    const timerDeleteResult = await CompetitionTimer.deleteMany({}, { session });
+
+    // Delete all events
+    const eventDeleteResult = await Event.deleteMany({}, { session });
+
+    // Delete all event participations
+    const eventParticipationDeleteResult = await EventParticipation.deleteMany({}, { session });
+
+    // Delete all event states
+    const eventStateDeleteResult = await EventState.deleteMany({}, { session });
+
+    // Delete all registration status records
+    const registrationDeleteResult = await RegistrationStatus.deleteMany({}, { session });
+
+    // Reset admin accounts' solved challenges and points (keep the accounts)
+    await User.updateMany(
+      { role: { $in: ['admin', 'superadmin'] } },
+      {
+        $set: {
+          points: 0,
+          solvedChallenges: [],
+          lastSolveTime: null
+        }
+      },
+      { session }
+    );
+
+    await session.commitTransaction();
+
+    const stats = {
+      usersDeleted: userDeleteResult.deletedCount,
+      teamsDeleted: teamDeleteResult.deletedCount,
+      challengesDeleted: challengeDeleteResult.deletedCount,
+      submissionsDeleted: submissionDeleteResult.deletedCount,
+      noticesDeleted: noticeDeleteResult.deletedCount,
+      blogsDeleted: blogDeleteResult.deletedCount,
+      tutorialsDeleted: tutorialDeleteResult.deletedCount,
+      contactsDeleted: contactDeleteResult.deletedCount,
+      newslettersDeleted: newsletterDeleteResult.deletedCount,
+      loginLogsDeleted: loginLogDeleteResult.deletedCount,
+      competitionsDeleted: competitionDeleteResult.deletedCount,
+      timersDeleted: timerDeleteResult.deletedCount,
+      eventsDeleted: eventDeleteResult.deletedCount,
+      eventParticipationsDeleted: eventParticipationDeleteResult.deletedCount,
+      eventStatesDeleted: eventStateDeleteResult.deletedCount,
+      registrationsDeleted: registrationDeleteResult.deletedCount,
+      adminId: adminId,
+      timestamp: new Date()
+    };
+
+    console.log('Full platform reset completed:', stats);
+    return stats;
+
+  } catch (error) {
+    await session.abortTransaction();
+    console.error('Full platform reset failed:', error);
+    throw error;
+  } finally {
+    session.endSession();
+  }
+};
+
+/**
+ * Competition Progress Reset - Resets competition progress only
+ * 
+ * Preserves:
+ * - All users (including regular users and admins)
+ * - All teams (but resets their scores)
+ * - All challenges (but clears solved status)
+ * - All notices, blogs, tutorials, etc.
+ * 
+ * Resets/Deletes:
+ * - User points and solved challenges
+ * - Team points and solved challenges
+ * - All submissions
+ * - Challenge solved status
+ * - Competition timers
+ * - Unlocked hints (challenges reset to locked state)
+ */
+const competitionProgressReset = async (adminId, securityCode) => {
+  // Validate security code
+  if (!validateSecurityCode(securityCode)) {
+    throw new Error('Invalid security code');
+  }
+
+  const session = await mongoose.startSession();
+  
+  try {
+    await session.startTransaction();
+
+    // Reset all user points and solved challenges
+    const userUpdateResult = await User.updateMany(
+      {},
+      {
+        $set: {
+          points: 0,
+          solvedChallenges: [],
+          lastSolveTime: null
+        }
+      },
+      { session }
+    );
+
+    // Reset all team points and solved challenges
+    const teamUpdateResult = await Team.updateMany(
+      {},
+      {
+        $set: {
+          points: 0,
+          solvedChallenges: []
+        }
+      },
+      { session }
+    );
+
+    // Clear solvedBy arrays from all challenges and reset hints to locked
+    const challengeUpdateResult = await Challenge.updateMany(
+      {},
+      {
+        $set: {
+          solvedBy: [],
+          'hints.$[].unlockedBy': [] // Reset all hints to locked state
+        }
+      },
+      { session }
+    );
+
+    // Delete all submissions
+    const submissionDeleteResult = await Submission.deleteMany({}, { session });
+
+    // Reset all competition timers
+    const timerUpdateResult = await CompetitionTimer.updateMany(
+      {},
+      {
+        $set: {
+          startTime: null,
+          endTime: null,
+          isActive: false
+        }
+      },
+      { session }
+    );
+
+    await session.commitTransaction();
+
+    const stats = {
+      usersReset: userUpdateResult.modifiedCount,
+      teamsReset: teamUpdateResult.modifiedCount,
+      challengesReset: challengeUpdateResult.modifiedCount,
+      submissionsDeleted: submissionDeleteResult.deletedCount,
+      timersReset: timerUpdateResult.modifiedCount,
+      adminId: adminId,
+      timestamp: new Date()
+    };
+
+    console.log('Competition progress reset completed:', stats);
+    return stats;
+
+  } catch (error) {
+    await session.abortTransaction();
+    console.error('Competition progress reset failed:', error);
+    throw error;
+  } finally {
+    session.endSession();
+  }
+};
+
+/**
+ * Clear Redis cache after reset operations
+ */
+const clearRedisCache = async (redisClient) => {
+  try {
+    await redisClient.flushall();
+    console.log('Redis cache cleared successfully');
+  } catch (error) {
+    console.error('Failed to clear Redis cache:', error);
+    // Don't throw - cache clear failure shouldn't fail the reset
+  }
+};
+
+module.exports = {
+  fullPlatformReset,
+  competitionProgressReset,
+  clearRedisCache,
+  validateSecurityCode,
+  RESET_SECRET_CODE
+};
