@@ -161,7 +161,89 @@ function CTFdScoreboardGraph() {
         teamScores[team.name].push({
           timestamp: time,
           score: cumulativeScores[idx]
-        })teams, chartData } = graphData;
+        });
+      });
+    });
+
+    // Convert to sorted array of timestamps
+    const sortedTimestamps = Array.from(allTimestamps).sort((a, b) => a - b);
+    
+    // Build chart data array
+    const chartData = sortedTimestamps.map(timestamp => {
+      const dataPoint = { timestamp };
+      
+      teams.forEach(rank => {
+        const team = ctfdData[rank];
+        const teamData = teamScores[team.name];
+        
+        // Find the score at this timestamp
+        const pointAtTime = teamData.find(p => p.timestamp === timestamp);
+        if (pointAtTime) {
+          dataPoint[team.name] = pointAtTime.score;
+        } else {
+          // Find last known score before this timestamp
+          const previousPoints = teamData.filter(p => p.timestamp < timestamp);
+          if (previousPoints.length > 0) {
+            dataPoint[team.name] = previousPoints[previousPoints.length - 1].score;
+          } else {
+            dataPoint[team.name] = 0;
+          }
+        }
+      });
+      
+      return dataPoint;
+    });
+
+    // Build teams array with metadata
+    const teamsArray = teams.map((rank, index) => {
+      const team = ctfdData[rank];
+      const teamData = teamScores[team.name];
+      const lastSolve = teamData.length > 0 ? teamData[teamData.length - 1] : null;
+      
+      return {
+        teamId: team.id,
+        teamName: team.name,
+        rank: parseInt(rank),
+        finalScore: team.score,
+        solveCount: team.solves.length,
+        lastSolveTime: lastSolve ? lastSolve.timestamp : 0
+      };
+    });
+
+    return { teams: teamsArray, chartData };
+  };
+
+  useEffect(() => {
+    fetchGraphData();
+    const interval = setInterval(fetchGraphData, 30000); // Refresh every 30s
+    return () => clearInterval(interval);
+  }, [token]);
+
+  if (loading) {
+    return (
+      <div className="ctfd-graph-container">
+        <div className="ctfd-graph-loading">Loading graph...</div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="ctfd-graph-container">
+        <div className="ctfd-graph-error">{error}</div>
+      </div>
+    );
+  }
+
+  if (!graphData || graphData.teams.length === 0) {
+    return (
+      <div className="ctfd-graph-container">
+        <div className="ctfd-graph-empty">No team data available</div>
+      </div>
+    );
+  }
+
+  const { teams, chartData } = graphData;
 
   return (
     <div className="ctfd-graph-container">
@@ -255,90 +337,7 @@ function CTFdScoreboardGraph() {
               />
               <div className="ranking-team">{team.teamName}</div>
               <div className="ranking-score">{team.finalScore} pts</div>
-              <div className="ranking-solves">{team.solveCount} solvesrgin={{ top: 20, right: 30, left: 20, bottom: 60 }}
-          >
-            <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.1)" />
-            
-            {/* X-Axis: Elapsed Time from 00:00 */}
-            <XAxis
-              dataKey="elapsedTime"
-              type="number"
-              domain={[0, 'dataMax']}
-              tickFormatter={formatElapsedTime}
-              stroke="rgba(255,255,255,0.7)"
-              label={{
-                value: 'Elapsed Time',
-                position: 'insideBottom',
-                offset: -10,
-                style: { fill: 'rgba(255,255,255,0.7)' }
-              }}
-              angle={-45}
-              textAnchor="end"
-              height={80}
-            />
-            
-            {/* Y-Axis: Score with dynamic scaling + padding */}
-            <YAxis
-              domain={[0, (dataMax) => (Math.ceil(dataMax * 1.15))]}
-              stroke="rgba(255,255,255,0.7)"
-              label={{
-                value: 'Score',
-                angle: -90,
-                position: 'insideLeft',
-                style: { fill: 'rgba(255,255,255,0.7)' }
-              }}
-            />
-            
-            <Tooltip content={<CustomTooltip />} />
-            
-            <Legend
-              wrapperStyle={{ paddingTop: '20px' }}
-              iconType="line"
-              formatter={(value, entry) => {
-                const team = teams.find(t => t.teamName === value);
-                return team ? 
-                  `${team.rank}. ${value} (${team.finalScore} pts)` : 
-                  value;
-              }}
-            />
-
-            {/* Render a Step Line for each team */}
-            {teams.map((team, index) => (
-              <Line
-                key={team.teamId}
-                type="stepAfter"
-                dataKey={team.teamName}
-                stroke={TEAM_COLORS[index % TEAM_COLORS.length]}
-                strokeWidth={2.5}
-                dot={false}
-                activeDot={{ r: 6 }}
-                connectNulls={false}
-                isAnimationActive={true}
-                animationDuration={1000}
-                animationBegin={0}
-              />
-            ))}
-          </LineChart>
-        </ResponsiveContainer>
-      </div>
-
-      {/* Team Rankings Summary */}
-      <div className="ctfd-graph-rankings">
-        <h3>Top Teams</h3>
-        <div className="ctfd-rankings-list">
-          {teams.map((team, index) => (
-            <div key={team.teamId} className="ctfd-ranking-item">
-              <div className="ranking-position">#{team.rank}</div>
-              <div 
-                className="ranking-color" 
-                style={{ backgroundColor: TEAM_COLORS[index % TEAM_COLORS.length] }}
-              />
-              <div className="ranking-team">{team.teamName}</div>
-              <div className="ranking-score">{team.finalScore} pts</div>
               <div className="ranking-solves">{team.solveCount} solves</div>
-              <div className="ranking-time">
-                Last: {formatElapsedTime(team.lastSolveTime)}
-              </div>
             </div>
           ))}
         </div>
