@@ -172,9 +172,10 @@ router.get('/graph', protect, async (req, res) => {
       };
     });
 
-    // Transform data for Recharts format
-    // Create a unified timeline with all unique timestamps
-    const allTimestamps = new Set([0]); // Start with 0
+    // Transform data for Recharts format (CTFd-style)
+    // Each data point should have: { timestamp, team1Score, team2Score, ... }
+    const allTimestamps = new Set();
+    
     graphData.forEach(team => {
       team.data.forEach(point => {
         allTimestamps.add(point.elapsedTime);
@@ -183,12 +184,12 @@ router.get('/graph', protect, async (req, res) => {
 
     const sortedTimestamps = Array.from(allTimestamps).sort((a, b) => a - b);
 
-    // Build Recharts-compatible data structure
+    // Build chart data where each timestamp shows current score for all teams
     const chartData = sortedTimestamps.map(timestamp => {
       const dataPoint = { elapsedTime: timestamp };
 
       graphData.forEach(team => {
-        // Find the most recent score at or before this timestamp
+        // Find cumulative score at this timestamp (last score <= timestamp)
         let score = 0;
         for (const point of team.data) {
           if (point.elapsedTime <= timestamp) {

@@ -178,9 +178,9 @@ function CTFdScoreboardGraph() {
               height={80}
             />
             
-            {/* Y-Axis: Score */}
+            {/* Y-Axis: Score with dynamic scaling + padding */}
             <YAxis
-              domain={[0, (dataMax) => (Math.ceil(dataMax * 1.2 / 10) * 10)]}
+              domain={[0, (dataMax) => (Math.ceil(dataMax * 1.15))]}
               stroke="rgba(255,255,255,0.7)"
               label={{
                 value: 'Score',
