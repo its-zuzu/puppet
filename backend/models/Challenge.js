@@ -25,24 +25,28 @@ const ChallengeSchema = new mongoose.Schema({
     type: Number,
     required: [true, 'Points are required']
   },
-  // CTFd-style dynamic scoring
-  dynamicScoring: {
-    enabled: {
-      type: Boolean,
-      default: false
-    },
-    initial: {
-      type: Number, // Initial/maximum points
-      default: function() { return this.points; }
-    },
-    minimum: {
-      type: Number, // Minimum points (floor)
-      default: function() { return Math.floor(this.points * 0.25); } // 25% of initial
-    },
-    decay: {
-      type: Number, // Number of solves to reach minimum
-      default: 50 // After 50 solves, reaches minimum value
-    }
+  // CTFd-exact dynamic scoring fields
+  initial: {
+    type: Number, // Initial/maximum points (for dynamic challenges)
+    default: null
+  },
+  minimum: {
+    type: Number, // Minimum points (floor for dynamic challenges)
+    default: null
+  },
+  decay: {
+    type: Number, // Decay factor (meaning depends on function type)
+    default: null
+  },
+  function: {
+    type: String, // 'static', 'linear', 'logarithmic'
+    enum: ['static', 'linear', 'logarithmic'],
+    default: 'static'
+  },
+  state: {
+    type: String, // 'visible', 'hidden', 'locked'
+    enum: ['visible', 'hidden', 'locked'],
+    default: 'visible'
   },
   flag: {
     type: String,
@@ -59,7 +63,11 @@ const ChallengeSchema = new mongoose.Schema({
   }],
   isVisible: {
     type: Boolean,
-    default: true
+    default: true,
+    // This is kept for backward compatibility but should use 'state' field
+    get: function() {
+      return this.state === 'visible';
+    }
   },
   submissionsAllowed: {
     type: Boolean,
@@ -76,35 +84,42 @@ ChallengeSchema.virtual('solveCount').get(function() {
   return this.solvedBy ? this.solvedBy.length : 0;
 });
 
-// Method to calculate current dynamic value based on solves
+// Method to calculate current dynamic value based on solves (CTFd-exact formulas)
 ChallengeSchema.methods.getCurrentValue = function() {
-  // If dynamic scoring is not enabled, return static points
-  if (!this.dynamicScoring?.enabled) {
+  // Static challenges always return their base points
+  if (this.function === 'static' || !this.function) {
     return this.points;
   }
 
+  // For dynamic challenges, we need initial, minimum, and decay
+  const initial = this.initial || this.points;
+  const minimum = this.minimum || this.points;
+  const decay = this.decay || 0;
   const solveCount = this.solvedBy?.length || 0;
-  const initial = this.dynamicScoring.initial || this.points;
-  const minimum = this.dynamicScoring.minimum || Math.floor(this.points * 0.25);
-  const decay = this.dynamicScoring.decay || 50;
 
-  // CTFd-style logarithmic decay formula
-  // value = ((minimum - initial) / (decay ** 2)) * (solves ** 2) + initial
-  if (solveCount === 0) {
-    return initial;
+  // CRITICAL: Use (solveCount - 1) so first solver gets FULL initial value
+  const adjustedSolveCount = Math.max(0, solveCount - 1);
+
+  let value;
+
+  if (this.function === 'linear') {
+    // CTFd Linear Formula: value = initial - (decay * (solve_count - 1))
+    value = initial - (decay * adjustedSolveCount);
+  } else if (this.function === 'logarithmic') {
+    // CTFd Logarithmic Formula: value = (((minimum - initial) / (decay^2)) * ((solve_count-1)^2)) + initial
+    if (decay === 0) {
+      value = initial; // Avoid division by zero
+    } else {
+      value = (((minimum - initial) / Math.pow(decay, 2)) * Math.pow(adjustedSolveCount, 2)) + initial;
+    }
+  } else {
+    value = this.points; // Fallback
   }
 
-  if (solveCount >= decay) {
-    return minimum;
-  }
+  // Ensure value doesn't go below minimum
+  value = Math.max(minimum, value);
 
-  // Calculate the decay curve
-  const value = Math.floor(
-    ((minimum - initial) / Math.pow(decay, 2)) * Math.pow(solveCount, 2) + initial
-  );
-
-  // Ensure value is between minimum and initial
-  return Math.max(minimum, Math.min(initial, value));
+  return Math.floor(value); // Return integer points
 };
 
 // Set toJSON option to include virtuals

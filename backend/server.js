@@ -222,6 +222,8 @@ app.use('/api/r-submission', realtimeRoutes);
 app.use('/api/timer', require('./routes/timer'));
 app.use('/api/event-control', require('./routes/eventControl'));
 app.use('/api/scoreboard', scoreboardRoutes);
+app.use('/api/v1/scoreboard', require('./routes/scoreboardV1'));
+app.use('/api/awards', require('./routes/awards'));
 app.use('/api/admin/reset', adminResetRoutes);
 
 // Enhanced security headers middleware

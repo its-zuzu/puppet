@@ -17,7 +17,12 @@ function EditChallenge() {
     category: 'web',
     difficulty: 'Easy',
     points: 100,
-    flag: ''
+    flag: '',
+    // CTFd scoring fields
+    function: 'static',
+    initial: 500,
+    minimum: 100,
+    decay: 20
   });
 
   const [formError, setFormError] = useState('');
@@ -43,7 +48,11 @@ function EditChallenge() {
           category: challenge.category,
           difficulty: challenge.difficulty,
           points: challenge.points,
-          flag: ''
+          flag: '',
+          function: challenge.function || 'static',
+          initial: challenge.initial || 500,
+          minimum: challenge.minimum || 100,
+          decay: challenge.decay || 20
         });
       } else if (id && token) {
         try {
@@ -60,7 +69,11 @@ function EditChallenge() {
             category: challengeData.category,
             difficulty: challengeData.difficulty,
             points: challengeData.points,
-            flag: ''
+            flag: '',
+            function: challengeData.function || 'static',
+            initial: challengeData.initial || 500,
+            minimum: challengeData.minimum || 100,
+            decay: challengeData.decay || 20
           });
         } catch (err) {
           setFormError('Failed to load challenge data');
@@ -75,7 +88,9 @@ function EditChallenge() {
     const { name, value } = e.target;
     setFormData({
       ...formData,
-      [name]: name === 'points' ? parseInt(value, 10) || '' : value
+      [name]: name === 'points' || name === 'initial' || name === 'minimum' || name === 'decay' 
+        ? parseInt(value, 10) || '' 
+        : value
     });
     setFormError('');
   };
@@ -212,6 +227,115 @@ function EditChallenge() {
               step="50"
               required
             />
+            <small className="form-hint">
+              {formData.function === 'static' 
+                ? 'Fixed points - all solvers get this amount'
+                : 'Current value (will change as users solve)'}
+            </small>
+          </div>
+
+          {/* CTFd Scoring Type Section */}
+          <div className="scoring-section">
+            <h3>Scoring Type</h3>
+            <div className="form-group">
+              <label htmlFor="function">Scoring Function</label>
+              <select
+                id="function"
+                name="function"
+                value={formData.function}
+                onChange={onChange}
+                required
+              >
+                <option value="static">Static (Fixed Points)</option>
+                <option value="linear">Linear Decay (Arithmetic)</option>
+                <option value="logarithmic">Logarithmic Decay (Exponential Curve)</option>
+              </select>
+              <small className="form-hint">
+                {formData.function === 'static' && 'All solvers get the same points'}
+                {formData.function === 'linear' && 'Points decrease by a fixed amount per solve'}
+                {formData.function === 'logarithmic' && 'Points decrease slowly at first, then rapidly'}
+              </small>
+            </div>
+
+            {/* Dynamic Scoring Fields - Only show for linear/logarithmic */}
+            {formData.function !== 'static' && (
+              <div className="dynamic-fields">
+                <div className="form-row">
+                  <div className="form-group">
+                    <label htmlFor="initial">Initial Points</label>
+                    <input
+                      type="number"
+                      id="initial"
+                      name="initial"
+                      value={formData.initial}
+                      onChange={onChange}
+                      min="100"
+                      max="2000"
+                      step="50"
+                      required
+                    />
+                    <small className="form-hint">Maximum points (first solver)</small>
+                  </div>
+
+                  <div className="form-group">
+                    <label htmlFor="minimum">Minimum Points</label>
+                    <input
+                      type="number"
+                      id="minimum"
+                      name="minimum"
+                      value={formData.minimum}
+                      onChange={onChange}
+                      min="50"
+                      max="1000"
+                      step="50"
+                      required
+                    />
+                    <small className="form-hint">Points floor (won't go below)</small>
+                  </div>
+                </div>
+
+                <div className="form-group">
+                  <label htmlFor="decay">Decay Factor</label>
+                  <input
+                    type="number"
+                    id="decay"
+                    name="decay"
+                    value={formData.decay}
+                    onChange={onChange}
+                    min="1"
+                    max="100"
+                    step="1"
+                    required
+                  />
+                  <small className="form-hint">
+                    {formData.function === 'linear' 
+                      ? `Points decrease by ${formData.decay} per solve`
+                      : `Reaches minimum at ~${formData.decay} solves`}
+                  </small>
+                </div>
+
+                {/* Scoring Preview */}
+                <div className="scoring-preview">
+                  <strong>Preview:</strong>
+                  <ul>
+                    <li>1st solver: {formData.initial} points</li>
+                    {formData.function === 'linear' && (
+                      <>
+                        <li>2nd solver: {Math.max(formData.minimum, formData.initial - formData.decay)} points</li>
+                        <li>3rd solver: {Math.max(formData.minimum, formData.initial - (2 * formData.decay))} points</li>
+                      </>
+                    )}
+                    {formData.function === 'logarithmic' && (
+                      <>
+                        <li>5th solver: ~{Math.max(formData.minimum, Math.floor((((formData.minimum - formData.initial) / (formData.decay ** 2)) * (4 ** 2)) + formData.initial))} points</li>
+                        <li>{formData.decay}th solver: ~{Math.max(formData.minimum, Math.floor((((formData.minimum - formData.initial) / (formData.decay ** 2)) * ((formData.decay - 1) ** 2)) + formData.initial))} points</li>
+                      </>
+                    )}
+                    <li>After many solves: {formData.minimum} points (minimum)</li>
+                  </ul>
+                </div>
+              </div>
+            )}
           </div>
 
           <div className="form-group">

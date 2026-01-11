@@ -123,6 +123,32 @@ async function clearRedisCache() {
 }
 
 /**
+ * Clear scoreboard-related caches (called after score changes)
+ * CTFd calls this "clear_standings()"
+ */
+async function clearScoreboardCache() {
+  try {
+    await waitForRedis();
+    
+    if (!redisClient || redisClient === redisSubscriber) {
+      console.warn('Redis client not available for scoreboard cache clearing');
+      return;
+    }
+
+    // Clear all scoreboard-related cache keys
+    const keys = await redisClient.keys('scoreboard:*');
+    
+    if (keys.length > 0) {
+      await redisClient.del(...keys);
+      console.log(`✓ Cleared ${keys.length} scoreboard cache keys`);
+    }
+  } catch (error) {
+    console.error('Scoreboard cache clear failed (non-fatal):', error.message);
+  }
+}
+
+
+/**
  * Graceful shutdown - close all connections
  */
 async function closeRedis() {
@@ -150,5 +176,6 @@ module.exports = {
   getRedisSubscriber,
   waitForRedis,
   clearRedisCache,
+  clearScoreboardCache,
   closeRedis
 };

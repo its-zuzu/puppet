@@ -13,6 +13,7 @@ const crypto = require('crypto');
 const { checkEventNotEnded, isEventEnded } = require('../middleware/eventState');
 
 const { getRedisClient } = require('../utils/redis');
+const { clearScoreboardCache } = require('../utils/redis');
 // Use centralized Redis for Challenge Rate Limiting
 const redisClient = getRedisClient();
 
@@ -660,6 +661,16 @@ router.post('/:id/submit', protect, sanitizeInput, checkEventNotEnded, async (re
           { $addToSet: { solvedBy: req.user._id } },
           { session }
         );
+
+        // Recalculate dynamic challenge value AFTER adding solver (CTFd behavior)
+        // This ensures the NEXT solver gets lower points
+        if (challenge.function === 'linear' || challenge.function === 'logarithmic') {
+          const scoringService = require('../services/scoringService');
+          await scoringService.recalculateChallengeValue(challenge._id);
+        }
+
+        // Clear scoreboard cache (CTFd's clear_standings())
+        await clearScoreboardCache();
 
         // If user has a team, update team AND all team members
         if (user.team) {

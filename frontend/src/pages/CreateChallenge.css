@@ -256,3 +256,69 @@
 .checkbox-label span {
   font-size: 1rem;
 }
+
+/* CTFd Scoring Section */
+.scoring-section {
+  background-color: rgba(15, 25, 35, 0.5);
+  border: 1px solid rgba(0, 255, 170, 0.2);
+  border-radius: 8px;
+  padding: 1.5rem;
+  margin-top: 1rem;
+}
+
+.scoring-section h3 {
+  color: #00ffaa;
+  font-size: 1.2rem;
+  margin-bottom: 1rem;
+  text-shadow: 0 0 10px rgba(0, 255, 170, 0.3);
+}
+
+.dynamic-fields {
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  animation: slideDown 0.3s ease-in-out;
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.scoring-preview {
+  background-color: rgba(0, 255, 170, 0.05);
+  border: 1px solid rgba(0, 255, 170, 0.2);
+  border-radius: 6px;
+  padding: 1rem;
+  margin-top: 1rem;
+}
+
+.scoring-preview strong {
+  color: #00ffaa;
+  display: block;
+  margin-bottom: 0.5rem;
+}
+
+.scoring-preview ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.scoring-preview li {
+  color: #e0e0e0;
+  padding: 0.25rem 0;
+  font-size: 0.9rem;
+}
+
+.scoring-preview li::before {
+  content: '→ ';
+  color: #00ffaa;
+  margin-right: 0.5rem;
+}
