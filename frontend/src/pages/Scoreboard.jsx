@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useContext } from 'react';
 import axios from 'axios';
-import { AuthContext } from '../context/AuthContext';
+import AuthContext from '../context/AuthContext';
 import './Scoreboard.css';
 
 /**
@@ -44,8 +44,8 @@ function Scoreboard() {
 
       // Fetch both teams and users
       const [teamsRes, usersRes] = await Promise.all([
-        axios.get('/api/v1/scoreboard', config),
-        axios.get('/api/v1/scoreboard', config)
+        axios.get('/api/v1/scoreboard?type=teams', config),
+        axios.get('/api/v1/scoreboard?type=users', config)
       ]);
 
       setTeams(teamsRes.data.data || []);
