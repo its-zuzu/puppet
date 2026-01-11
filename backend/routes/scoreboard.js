@@ -3,6 +3,7 @@ const router = express.Router();
 const Competition = require('../models/Competition');
 const Submission = require('../models/Submission');
 const Team = require('../models/Team');
+const Challenge = require('../models/Challenge');
 const { protect } = require('../middleware/auth');
 const { getRedisClient } = require('../utils/redis');
 
@@ -202,6 +203,16 @@ router.get('/graph', protect, async (req, res) => {
       return dataPoint;
     });
 
+    // Calculate total available points from all challenges
+    const challenges = await Challenge.find({}).select('points dynamicScoring').lean();
+    const totalAvailablePoints = challenges.reduce((sum, challenge) => {
+      // Use initial points for dynamic scoring, or regular points
+      const challengePoints = challenge.dynamicScoring?.enabled 
+        ? challenge.dynamicScoring.initial 
+        : challenge.points;
+      return sum + challengePoints;
+    }, 0);
+
     const response = {
       competition: {
         name: competition.name,
@@ -210,7 +221,8 @@ router.get('/graph', protect, async (req, res) => {
       },
       teams: graphData,
       chartData,
-      timestamps: sortedTimestamps
+      timestamps: sortedTimestamps,
+      totalAvailablePoints // Send to frontend for Y-axis scaling
     };
 
     // Cache the response
