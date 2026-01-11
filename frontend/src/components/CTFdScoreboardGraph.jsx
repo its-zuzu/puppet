@@ -140,10 +140,7 @@ function CTFdScoreboardGraph() {
     );
   }
 
-  const { competition, teams, chartData, totalAvailablePoints } = graphData;
-
-  // Calculate Y-axis max: total available points + 10% padding
-  const yAxisMax = totalAvailablePoints ? Math.ceil(totalAvailablePoints * 1.1) : 'auto';
+  const { competition, teams, chartData } = graphData;
 
   return (
     <div className="ctfd-graph-container">
@@ -183,7 +180,7 @@ function CTFdScoreboardGraph() {
             
             {/* Y-Axis: Score */}
             <YAxis
-              domain={[0, yAxisMax]}
+              domain={[0, (dataMax) => (Math.ceil(dataMax * 1.2 / 10) * 10)]}
               stroke="rgba(255,255,255,0.7)"
               label={{
                 value: 'Score',
