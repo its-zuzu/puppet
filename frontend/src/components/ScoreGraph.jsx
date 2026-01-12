@@ -4,9 +4,13 @@ import AuthContext from '../context/AuthContext';
 import './ScoreGraph.css';
 
 /**
- * CTFd-Style Score Progression Graph
+ * CTFd-Exact Score Progression Graph
  * 
- * Displays cumulative score over time for top teams/users
+ * Displays cumulative score over time using the dedicated graph API endpoint.
+ * Matches CTFd's implementation exactly:
+ * - Server-side cumulative score calculation
+ * - Time-series data from /api/v1/scoreboard/graph
+ * - Clean line chart visualization
  */
 function ScoreGraph({ type = 'teams', limit = 10 }) {
   const { token } = useContext(AuthContext);
@@ -28,7 +32,11 @@ function ScoreGraph({ type = 'teams', limit = 10 }) {
         }
       };
 
-      const response = await axios.get(`/api/v1/scoreboard/top/${limit}?type=${type}`, config);
+      // Use the dedicated graph endpoint (CTFd-style)
+      const response = await axios.get(
+        `/api/v1/scoreboard/graph?type=${type}&count=${limit}`, 
+        config
+      );
       
       if (response.data.success) {
         const data = response.data.data;
@@ -43,27 +51,29 @@ function ScoreGraph({ type = 'teams', limit = 10 }) {
   };
 
   const processGraphData = (data) => {
-    // Convert CTFd format to graph data
+    // Data is already in the correct format from the graph API
+    // Format: { "1": { id, name, timeline: [{time, score}] }, ... }
     const accounts = Object.values(data);
     if (accounts.length === 0) {
       setGraphData([]);
       return;
     }
 
-    // Build timeline data for each account
-    const timelineData = accounts.map(account => {
-      // Filter out invalid solves and sort by date
-      const validSolves = (account.solves || [])
-        .filter(solve => solve.date && solve.value != null)
-        .sort((a, b) => new Date(a.date) - new Date(b.date));
+    // Transform to component format
+    const timelineData = accounts.map((account, index) => {
+      // Timeline is already sorted and cumulative from backend
+      const points = (account.timeline || []).map(point => ({
+        time: new Date(point.time),
+        score: point.score
+      }));
 
-      // If no solves, create a flat line at 0
-      if (validSolves.length === 0) {
+      // If no points, create a baseline
+      if (points.length === 0) {
         const now = new Date();
         return {
           id: account.id,
           name: account.name,
-          color: getColorForIndex(accounts.indexOf(account)),
+          color: getColorForIndex(index),
           points: [
             { time: new Date(now.getTime() - 3600000), score: 0 },
             { time: now, score: 0 }
@@ -71,53 +81,45 @@ function ScoreGraph({ type = 'teams', limit = 10 }) {
         };
       }
 
-      let cumulativeScore = 0;
-      const points = [];
-      
-      // Add starting point at first solve time with 0 score
-      points.push({
-        time: new Date(validSolves[0].date),
-        score: 0
-      });
-
-      // Build cumulative score timeline
-      validSolves.forEach(solve => {
-        cumulativeScore += solve.value;
-        points.push({
-          time: new Date(solve.date),
-          score: cumulativeScore
-        });
-      });
-
       return {
         id: account.id,
         name: account.name,
-        color: getColorForIndex(accounts.indexOf(account)),
+        color: getColorForIndex(index),
         points: points
       };
     });
 
-    // Show all accounts, even those with no solves
     setGraphData(timelineData);
   };
 
   const getColorForIndex = (index) => {
+    // CTFd-style color palette
     const colors = [
-      '#00ffaa', // Cyan (primary)
-      '#ff6b6b', // Red
-      '#4ecdc4', // Teal
-      '#ffe66d', // Yellow
-      '#a8dadc', // Light blue
-      '#f1faee', // Off-white
-      '#e63946', // Crimson
-      '#457b9d', // Dark blue
-      '#f77f00', // Orange
-      '#06ffa5'  // Green
+      '#1f77b4', // Blue
+      '#ff7f0e', // Orange
+      '#2ca02c', // Green
+      '#d62728', // Red
+      '#9467bd', // Purple
+      '#8c564b', // Brown
+      '#e377c2', // Pink
+      '#7f7f7f', // Gray
+      '#bcbd22', // Olive
+      '#17becf'  // Cyan
     ];
     return colors[index % colors.length];
   };
 
-  const formatTime = (milliseconds) => {
+  const formatTime = (date) => {
+    if (!date || !(date instanceof Date) || isNaN(date.getTime())) {
+      return '';
+    }
+    
+    const hours = date.getHours().toString().padStart(2, '0');
+    const minutes = date.getMinutes().toString().padStart(2, '0');
+    return `${hours}:${minutes}`;
+  };
+
+  const formatDuration = (milliseconds) => {
     if (!milliseconds || isNaN(milliseconds) || milliseconds < 0) {
       return '0m';
     }
@@ -127,7 +129,7 @@ function ScoreGraph({ type = 'teams', limit = 10 }) {
     const minutes = totalMinutes % 60;
     
     if (hours > 0) {
-      return `${hours}h${minutes > 0 ? ` ${minutes}m` : ''}`;
+      return `${hours}h ${minutes}m`;
     }
     return `${minutes}m`;
   };
@@ -141,72 +143,106 @@ function ScoreGraph({ type = 'teams', limit = 10 }) {
   }
 
   if (graphData.length === 0) {
-    return null; // Don't show graph if no data
+    return (
+      <div className="score-graph-container">
+        <h2 className="graph-title">Score Progression</h2>
+        <div className="no-graph-data">No solve data available yet</div>
+      </div>
+    );
   }
 
-  // Calculate graph dimensions
+  // Calculate graph dimensions and scales
   const allScores = graphData.flatMap(d => d.points.map(p => p.score)).filter(s => !isNaN(s));
   const allTimes = graphData.flatMap(d => d.points.map(p => p.time.getTime())).filter(t => !isNaN(t));
   
-  const maxScore = allScores.length > 0 ? Math.max(...allScores) : 100;
-  const minTime = allTimes.length > 0 ? Math.min(...allTimes) : Date.now();
-  const maxTime = allTimes.length > 0 ? Math.max(...allTimes) : Date.now() + 3600000;
-  const timeRange = maxTime - minTime || 3600000; // Default to 1 hour if no range
+  const maxScore = allScores.length > 0 ? Math.max(...allScores, 100) : 100;
+  const minTime = allTimes.length > 0 ? Math.min(...allTimes) : Date.now() - 3600000;
+  const maxTime = allTimes.length > 0 ? Math.max(...allTimes) : Date.now();
+  const timeRange = maxTime - minTime || 3600000;
 
-  // Use a minimum scale for better visualization when scores are low
-  const displayMaxScore = maxScore > 0 ? maxScore : 500;
-  const scoreStep = displayMaxScore >= 5 ? Math.ceil(displayMaxScore / 4) : 100;
+  // Nice rounded max score for Y-axis
+  const niceMaxScore = Math.ceil(maxScore / 100) * 100 || 100;
 
-  // SVG dimensions - smaller and more compact
-  const width = 900;
-  const height = 280;
-  const padding = { top: 25, right: 20, bottom: 45, left: 50 };
+  // SVG dimensions
+  const width = 1000;
+  const height = 400;
+  const padding = { top: 40, right: 100, bottom: 60, left: 70 };
   const graphWidth = width - padding.left - padding.right;
   const graphHeight = height - padding.top - padding.bottom;
 
   // Scale functions
-  const xScale = (time) => padding.left + ((time - minTime) / timeRange) * graphWidth;
-  const yScale = (score) => padding.top + (1 - score / displayMaxScore) * graphHeight;
+  const xScale = (time) => {
+    const normalized = (time - minTime) / timeRange;
+    return padding.left + normalized * graphWidth;
+  };
+  
+  const yScale = (score) => {
+    const normalized = score / niceMaxScore;
+    return padding.top + (1 - normalized) * graphHeight;
+  };
 
-  // Generate path for each account
+  // Generate SVG path for each account
   const generatePath = (points) => {
     if (points.length === 0) return '';
     
-    let path = `M ${xScale(points[0].time.getTime())} ${yScale(points[0].score)}`;
+    const startX = xScale(points[0].time.getTime());
+    const startY = yScale(points[0].score);
+    let path = `M ${startX} ${startY}`;
+    
     for (let i = 1; i < points.length; i++) {
-      path += ` L ${xScale(points[i].time.getTime())} ${yScale(points[i].score)}`;
+      const x = xScale(points[i].time.getTime());
+      const y = yScale(points[i].score);
+      path += ` L ${x} ${y}`;
     }
+    
     return path;
   };
 
-  // X-axis labels (time)
-  const xAxisLabels = [0, 0.25, 0.5, 0.75, 1].map(ratio => {
-    const time = minTime + timeRange * ratio;
-    return {
-      x: padding.left + graphWidth * ratio,
-      label: formatTime(time - minTime)
-    };
-  });
-
-  // Y-axis labels (score) - Use proper step values to avoid overlapping zeros
+  // Generate Y-axis labels (5 ticks)
   const yAxisLabels = [];
-  for (let i = 0; i <= 4; i++) {
-    const score = Math.round((displayMaxScore / 4) * i);
+  for (let i = 0; i <= 5; i++) {
+    const score = Math.round((niceMaxScore / 5) * i);
     yAxisLabels.push({
-      y: padding.top + graphHeight * (1 - (i / 4)),
+      y: yScale(score),
       label: score
+    });
+  }
+
+  // Generate X-axis labels (time-based)
+  const xAxisLabels = [];
+  const numXLabels = 6;
+  for (let i = 0; i < numXLabels; i++) {
+    const ratio = i / (numXLabels - 1);
+    const time = minTime + timeRange * ratio;
+    xAxisLabels.push({
+      x: xScale(time),
+      label: formatDuration((time - minTime))
     });
   }
 
   return (
     <div className="score-graph-container">
-      <h2 className="graph-title">
-        Top {type === 'teams' ? 'Teams' : 'Users'} Score Progression
-      </h2>
+      <h2 className="graph-title">Score Progression</h2>
       
-      <svg className="score-graph" viewBox={`0 0 ${width} ${height}`}>
-        {/* Grid lines */}
-        <g className="grid-lines">
+      <svg className="score-graph" viewBox={`0 0 ${width} ${height}`} preserveAspectRatio="xMidYMid meet">
+        <defs>
+          {/* Grid pattern */}
+          <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse">
+            <path d="M 40 0 L 0 0 0 40" fill="none" stroke="#e5e7eb" strokeWidth="0.5"/>
+          </pattern>
+        </defs>
+
+        {/* Background grid */}
+        <rect 
+          x={padding.left} 
+          y={padding.top} 
+          width={graphWidth} 
+          height={graphHeight} 
+          fill="url(#grid)" 
+        />
+
+        {/* Horizontal grid lines */}
+        <g className="grid-lines-horizontal">
           {yAxisLabels.map((label, i) => (
             <line
               key={`grid-h-${i}`}
@@ -214,47 +250,57 @@ function ScoreGraph({ type = 'teams', limit = 10 }) {
               y1={label.y}
               x2={width - padding.right}
               y2={label.y}
-              stroke="#2a3f5f"
+              stroke="#d1d5db"
               strokeWidth="1"
-              strokeOpacity="0.3"
-            />
-          ))}
-          {xAxisLabels.map((label, i) => (
-            <line
-              key={`grid-v-${i}`}
-              x1={label.x}
-              y1={padding.top}
-              x2={label.x}
-              y2={height - padding.bottom}
-              stroke="#2a3f5f"
-              strokeWidth="1"
-              strokeOpacity="0.3"
+              strokeDasharray="4 4"
             />
           ))}
         </g>
+
+        {/* Y-axis */}
+        <line
+          x1={padding.left}
+          y1={padding.top}
+          x2={padding.left}
+          y2={height - padding.bottom}
+          stroke="#6b7280"
+          strokeWidth="2"
+        />
+
+        {/* X-axis */}
+        <line
+          x1={padding.left}
+          y1={height - padding.bottom}
+          x2={width - padding.right}
+          y2={height - padding.bottom}
+          stroke="#6b7280"
+          strokeWidth="2"
+        />
 
         {/* Y-axis labels */}
         <g className="y-axis-labels">
           {yAxisLabels.map((label, i) => (
             <text
               key={`y-label-${i}`}
-              x={padding.left - 10}
+              x={padding.left - 15}
               y={label.y + 5}
               textAnchor="end"
-              fill="#94a3b8"
-              fontSize="12"
+              fill="#374151"
+              fontSize="14"
+              fontFamily="system-ui, -apple-system, sans-serif"
             >
               {label.label}
             </text>
           ))}
           <text
-            x={padding.left - 45}
-            y={height / 2}
+            x={padding.left - 50}
+            y={padding.top + graphHeight / 2}
             textAnchor="middle"
-            fill="#cbd5e1"
-            fontSize="14"
-            fontWeight="bold"
-            transform={`rotate(-90, ${padding.left - 45}, ${height / 2})`}
+            fill="#111827"
+            fontSize="16"
+            fontWeight="600"
+            fontFamily="system-ui, -apple-system, sans-serif"
+            transform={`rotate(-90, ${padding.left - 50}, ${padding.top + graphHeight / 2})`}
           >
             Score
           </text>
@@ -268,52 +314,90 @@ function ScoreGraph({ type = 'teams', limit = 10 }) {
               x={label.x}
               y={height - padding.bottom + 25}
               textAnchor="middle"
-              fill="#94a3b8"
-              fontSize="12"
+              fill="#374151"
+              fontSize="14"
+              fontFamily="system-ui, -apple-system, sans-serif"
             >
               {label.label}
             </text>
           ))}
           <text
-            x={width / 2}
-            y={height - 10}
+            x={padding.left + graphWidth / 2}
+            y={height - 15}
             textAnchor="middle"
-            fill="#cbd5e1"
-            fontSize="14"
-            fontWeight="bold"
+            fill="#111827"
+            fontSize="16"
+            fontWeight="600"
+            fontFamily="system-ui, -apple-system, sans-serif"
           >
-            Elapsed Time
+            Time Elapsed
           </text>
         </g>
 
         {/* Score lines */}
         <g className="score-lines">
           {graphData.map((account, index) => (
-            <path
-              key={account.id}
-              d={generatePath(account.points)}
-              stroke={account.color}
-              strokeWidth="2.5"
-              fill="none"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            />
+            <g key={account.id}>
+              <path
+                d={generatePath(account.points)}
+                stroke={account.color}
+                strokeWidth="3"
+                fill="none"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                opacity="0.9"
+              />
+              {/* Draw dots at each point */}
+              {account.points.map((point, pointIndex) => (
+                <circle
+                  key={`${account.id}-${pointIndex}`}
+                  cx={xScale(point.time.getTime())}
+                  cy={yScale(point.score)}
+                  r="4"
+                  fill={account.color}
+                  stroke="#fff"
+                  strokeWidth="2"
+                >
+                  <title>{`${account.name}: ${point.score} pts at ${formatTime(point.time)}`}</title>
+                </circle>
+              ))}
+            </g>
+          ))}
+        </g>
+
+        {/* Legend inside graph */}
+        <g className="legend">
+          {graphData.slice(0, 10).map((account, i) => (
+            <g key={account.id} transform={`translate(${width - padding.right + 10}, ${padding.top + 20 + i * 25})`}>
+              <line
+                x1={0}
+                y1={0}
+                x2={20}
+                y2={0}
+                stroke={account.color}
+                strokeWidth="3"
+              />
+              <circle
+                cx={10}
+                cy={0}
+                r={4}
+                fill={account.color}
+                stroke="#fff"
+                strokeWidth="2"
+              />
+              <text
+                x={25}
+                y={5}
+                fill="#374151"
+                fontSize="12"
+                fontFamily="system-ui, -apple-system, sans-serif"
+              >
+                {account.name.length > 12 ? account.name.substring(0, 12) + '...' : account.name}
+              </text>
+            </g>
           ))}
         </g>
       </svg>
-
-      {/* Legend */}
-      <div className="graph-legend">
-        {graphData.slice(0, 5).map((account) => (
-          <div key={account.id} className="legend-item">
-            <span 
-              className="legend-color" 
-              style={{ backgroundColor: account.color }}
-            />
-            <span className="legend-name">{account.name}</span>
-          </div>
-        ))}
-      </div>
     </div>
   );
 }

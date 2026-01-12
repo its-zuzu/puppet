@@ -1,66 +1,63 @@
+/* CTFd-Style Score Graph */
 .score-graph-container {
-  background: linear-gradient(135deg, #1a2332 0%, #0f1419 100%);
-  border-radius: 10px;
-  padding: 20px;
-  margin: 20px 0;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
-  border: 1px solid rgba(0, 255, 170, 0.15);
+  background: #ffffff;
+  border-radius: 8px;
+  padding: 30px;
+  margin: 30px 0;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  border: 1px solid #e5e7eb;
 }
 
 .graph-title {
-  color: #00ffaa;
-  font-size: 1.3rem;
+  color: #111827;
+  font-size: 1.5rem;
   font-weight: 600;
   text-align: center;
-  margin: 0 0 20px 0;
-  text-shadow: 0 0 15px rgba(0, 255, 170, 0.3);
+  margin: 0 0 25px 0;
+  font-family: system-ui, -apple-system, sans-serif;
 }
 
 .score-graph {
   width: 100%;
   height: auto;
   display: block;
-  margin-bottom: 20px;
+  margin: 0 auto;
 }
 
 .score-graph-loading {
   text-align: center;
-  padding: 60px 20px;
-  color: #94a3b8;
+  padding: 80px 20px;
+  color: #6b7280;
   font-size: 1.1rem;
+  font-family: system-ui, -apple-system, sans-serif;
 }
 
-/* Legend */
-.graph-legend {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 15px;
-  justify-content: center;
-  padding-top: 15px;
-  border-top: 1px solid rgba(255, 255, 255, 0.1);
+.no-graph-data {
+  text-align: center;
+  padding: 60px 20px;
+  color: #9ca3af;
+  font-size: 1rem;
+  font-family: system-ui, -apple-system, sans-serif;
 }
 
-.legend-item {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  font-size: 0.85rem;
-  color: #cbd5e1;
+/* Grid styling */
+.grid-lines-horizontal line {
+  shape-rendering: crispEdges;
 }
 
-.legend-color {
-  width: 18px;
-  height: 3px;
-  border-radius: 2px;
-  display: inline-block;
-  box-shadow: 0 0 5px currentColor;
-}
-
-.legend-name {
-  font-weight: 500;
+/* SVG text styling */
+.score-graph text {
+  user-select: none;
+  -webkit-user-select: none;
 }
 
 /* Responsive design */
+@media (max-width: 1200px) {
+  .score-graph-container {
+    padding: 25px 20px;
+  }
+}
+
 @media (max-width: 768px) {
   .score-graph-container {
     padding: 20px 15px;
@@ -68,16 +65,8 @@
   }
 
   .graph-title {
-    font-size: 1.2rem;
+    font-size: 1.3rem;
     margin-bottom: 20px;
-  }
-
-  .graph-legend {
-    gap: 15px;
-  }
-
-  .legend-item {
-    font-size: 0.85rem;
   }
 }
 
@@ -87,15 +76,7 @@
   }
 
   .graph-title {
-    font-size: 1rem;
-  }
-
-  .legend-item {
-    font-size: 0.8rem;
-  }
-
-  .legend-color {
-    width: 16px;
-    height: 2px;
+    font-size: 1.1rem;
   }
 }
+

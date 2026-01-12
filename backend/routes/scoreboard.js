@@ -104,6 +104,171 @@ router.get('/', protect, async (req, res) => {
 });
 
 /**
+ * @route   GET /api/v1/scoreboard/graph
+ * @desc    Get score progression graph data (CTFd-compatible)
+ * @access  Private
+ * 
+ * Returns time-series data for score progression graph
+ */
+router.get('/graph', protect, async (req, res) => {
+  try {
+    const isAdmin = req.user.role === 'admin' || req.user.role === 'superadmin';
+    const type = req.query.type || 'teams';
+    const limit = parseInt(req.query.count || '10');
+    const count = Math.max(1, Math.min(limit, 50));
+    
+    const freezeTime = null; // TODO: Get from config
+
+    const cacheKey = `ctfd:scoreboard:graph:${count}:${type}:${isAdmin}`;
+    const CACHE_TTL = 60;
+
+    // Try cache
+    try {
+      const cached = await redisClient.get(cacheKey);
+      if (cached) {
+        return res.json({
+          success: true,
+          data: JSON.parse(cached)
+        });
+      }
+    } catch (cacheErr) {
+      console.warn('[Graph] Cache read error:', cacheErr.message);
+    }
+
+    // Get top standings
+    let standings;
+    if (type === 'users') {
+      standings = await getUserStandings({
+        count,
+        includeHidden: isAdmin,
+        freezeTime
+      });
+    } else {
+      standings = await getTeamStandings({
+        count,
+        includeHidden: isAdmin,
+        freezeTime
+      });
+    }
+
+    if (standings.length === 0) {
+      return res.json({
+        success: true,
+        data: {}
+      });
+    }
+
+    // Get account IDs
+    const accountIds = standings.map(s => s.team_id || s.user_id);
+
+    // Get all solves for these accounts, sorted by time
+    let solvesQuery = Submission.find({
+      user: { $in: accountIds },
+      isCorrect: true
+    })
+      .populate('user', '_id team')
+      .sort({ submittedAt: 1 });
+
+    if (freezeTime && !isAdmin) {
+      solvesQuery = solvesQuery.where('submittedAt').lt(new Date(freezeTime));
+    }
+
+    const solves = await solvesQuery.lean();
+
+    // Get all awards for these accounts, sorted by time
+    let awardsQuery = Award.find({
+      $or: [
+        { user: { $in: accountIds } },
+        { team: { $in: accountIds } }
+      ]
+    }).sort({ date: 1 });
+
+    if (freezeTime && !isAdmin) {
+      awardsQuery = awardsQuery.where('date').lt(new Date(freezeTime));
+    }
+
+    const awards = await awardsQuery.lean();
+
+    // Build graph data for each account
+    const graphData = {};
+    
+    standings.forEach((standing, index) => {
+      const accountId = standing.team_id || standing.user_id;
+      const accountIdStr = accountId.toString();
+      
+      // Collect all score events (solves + awards), filtering zero values like CTFd
+      const events = [];
+      
+      // Add solves (skip zero-value)
+      for (const solve of solves) {
+        const solveAccountId = solve.user?.team?.toString() || solve.user?._id.toString();
+        const points = solve.points || 0;
+        
+        if (solveAccountId === accountIdStr && points !== 0) {
+          events.push({
+            time: solve.submittedAt,
+            value: points,
+            challenge_id: solve.challenge
+          });
+        }
+      }
+      
+      // Add awards (skip zero-value)
+      for (const award of awards) {
+        const awardAccountId = award.team?.toString() || award.user?.toString();
+        const value = award.value || 0;
+        
+        if (awardAccountId === accountIdStr && value !== 0) {
+          events.push({
+            time: award.date,
+            value: value,
+            challenge_id: null
+          });
+        }
+      }
+      
+      // Sort events by time
+      events.sort((a, b) => new Date(a.time) - new Date(b.time));
+      
+      // Build cumulative score timeline
+      let cumulativeScore = 0;
+      const timeline = events.map(event => {
+        cumulativeScore += event.value;
+        return {
+          time: new Date(event.time).getTime(),
+          score: cumulativeScore
+        };
+      });
+      
+      graphData[index + 1] = {
+        id: accountIdStr,
+        name: standing.name,
+        timeline: timeline
+      };
+    });
+
+    // Cache result
+    try {
+      await redisClient.setex(cacheKey, CACHE_TTL, JSON.stringify(graphData));
+    } catch (cacheErr) {
+      console.warn('[Graph] Cache write error:', cacheErr.message);
+    }
+
+    res.json({
+      success: true,
+      data: graphData
+    });
+
+  } catch (error) {
+    console.error('[Score Graph] Error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error fetching score graph'
+    });
+  }
+});
+
+/**
  * @route   GET /api/v1/scoreboard/top/:count
  * @desc    Get detailed scoreboard with solve history for top N accounts
  * @access  Private
@@ -206,31 +371,35 @@ router.get('/top/:count', protect, async (req, res) => {
       solvesMapper[id.toString()] = [];
     });
 
-    // Add solves
+    // Add solves (filter zero-value like CTFd)
     for (const solve of solves) {
       const accountId = solve.user?.team?.toString() || solve.user?._id.toString();
-      if (solvesMapper[accountId]) {
+      const points = solve.points || 0;
+      
+      if (solvesMapper[accountId] && points !== 0) {
         solvesMapper[accountId].push({
           challenge_id: solve.challenge?._id?.toString() || null,
           account_id: accountId,
           team_id: solve.user?.team?.toString() || null,
           user_id: solve.user?._id?.toString() || null,
-          value: solve.points || 0,
+          value: points,
           date: solve.submittedAt ? new Date(solve.submittedAt).toISOString() : new Date().toISOString()
         });
       }
     }
 
-    // Add awards
+    // Add awards (filter zero-value like CTFd)
     for (const award of awards) {
       const accountId = award.team?.toString() || award.user?.toString();
-      if (solvesMapper[accountId]) {
+      const value = award.value || 0;
+      
+      if (solvesMapper[accountId] && value !== 0) {
         solvesMapper[accountId].push({
           challenge_id: null,
           account_id: accountId,
           team_id: award.team?.toString() || null,
           user_id: award.user?.toString() || null,
-          value: award.value || 0,
+          value: value,
           date: award.date ? new Date(award.date).toISOString() : new Date().toISOString()
         });
       }
@@ -348,12 +517,15 @@ async function getTeamStandings({ count = null, includeHidden = false, freezeTim
       };
     });
 
-    // Add solve points
+    // Add solve points (filter out zero-value solves like CTFd)
     for (const solve of solves) {
       if (!solve.user?.team) continue;
+      const points = solve.points || 0;
+      if (points === 0) continue; // Skip zero-value solves for tie-breaking accuracy
+      
       const teamId = solve.user.team.toString();
       if (teamScores[teamId]) {
-        teamScores[teamId].score += solve.points || 0;
+        teamScores[teamId].score += points;
         const solveDate = new Date(solve.submittedAt);
         if (!teamScores[teamId].last_solve_date || solveDate > teamScores[teamId].last_solve_date) {
           teamScores[teamId].last_solve_date = solveDate;
@@ -361,11 +533,14 @@ async function getTeamStandings({ count = null, includeHidden = false, freezeTim
       }
     }
 
-    // Add award points
+    // Add award points (filter out zero-value awards like CTFd)
     for (const award of awards) {
+      const value = award.value || 0;
+      if (value === 0) continue; // Skip zero-value awards for tie-breaking accuracy
+      
       const teamId = award.team?.toString();
       if (teamId && teamScores[teamId]) {
-        teamScores[teamId].score += award.value || 0;
+        teamScores[teamId].score += value;
         const awardDate = new Date(award.date);
         if (!teamScores[teamId].last_solve_date || awardDate > teamScores[teamId].last_solve_date) {
           teamScores[teamId].last_solve_date = awardDate;
@@ -445,12 +620,15 @@ async function getUserStandings({ count = null, includeHidden = false, freezeTim
       };
     });
 
-    // Add solve points
+    // Add solve points (filter out zero-value solves like CTFd)
     for (const solve of solves) {
       if (!solve.user) continue;
+      const points = solve.points || 0;
+      if (points === 0) continue; // Skip zero-value solves for tie-breaking accuracy
+      
       const userId = solve.user._id.toString();
       if (userScores[userId]) {
-        userScores[userId].score += solve.points || 0;
+        userScores[userId].score += points;
         const solveDate = new Date(solve.submittedAt);
         if (!userScores[userId].last_solve_date || solveDate > userScores[userId].last_solve_date) {
           userScores[userId].last_solve_date = solveDate;
@@ -458,11 +636,14 @@ async function getUserStandings({ count = null, includeHidden = false, freezeTim
       }
     }
 
-    // Add award points
+    // Add award points (filter out zero-value awards like CTFd)
     for (const award of awards) {
+      const value = award.value || 0;
+      if (value === 0) continue; // Skip zero-value awards for tie-breaking accuracy
+      
       const userId = award.user?.toString();
       if (userId && userScores[userId]) {
-        userScores[userId].score += award.value || 0;
+        userScores[userId].score += value;
         const awardDate = new Date(award.date);
         if (!userScores[userId].last_solve_date || awardDate > userScores[userId].last_solve_date) {
           userScores[userId].last_solve_date = awardDate;
