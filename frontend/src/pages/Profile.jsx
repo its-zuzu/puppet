@@ -2,6 +2,7 @@ import { useContext, useEffect, useState } from 'react';
 import { Navigate } from 'react-router-dom';
 import AuthContext from '../context/AuthContext';
 import axios from 'axios';
+import Loading from '../components/Loading';
 import './Profile.css';
 
 function Profile() {
@@ -43,7 +44,7 @@ function Profile() {
   if (loading || !user) {
     return (
       <div className="profile-container">
-        <div className="loading">Loading profile...</div>
+        <Loading size="medium" text="Loading profile" />
       </div>
     );
   }
@@ -96,7 +97,7 @@ function Profile() {
       <div className="profile-section solved-challenges-section">
         <h2>Solved Challenges Details</h2>
         {loadingChallenges ? (
-          <div className="loading">Loading challenges...</div>
+          <Loading size="small" inline text="Loading challenges" />
         ) : solvedChallenges.length > 0 ? (
           <div className="solved-challenges-list">
             {solvedChallenges.map(challenge => (

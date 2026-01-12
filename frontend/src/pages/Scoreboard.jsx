@@ -2,6 +2,7 @@ import React, { useState, useEffect, useContext } from 'react';
 import axios from 'axios';
 import AuthContext from '../context/AuthContext';
 import ScoreGraph from '../components/ScoreGraph';
+import Loading from '../components/Loading';
 // No CSS file needed if we use inline or global styles for simplicity/consistency,
 // but for cleaner code we use standard layout classes which might exist or inline minimal styles.
 // CTFd style: Simple Bootstrap tables usually.
@@ -93,7 +94,7 @@ function Scoreboard() {
           </thead>
           <tbody>
             {loading ? (
-              <tr><td colSpan="3" style={{ padding: '30px', textAlign: 'center' }}>Loading scoreboard...</td></tr>
+              <tr><td colSpan="3" style={{ padding: '30px', textAlign: 'center' }}><Loading size="small" inline text="Loading" /></td></tr>
             ) : standings.length === 0 ? (
               <tr><td colSpan="3" style={{ padding: '30px', textAlign: 'center' }}>No visible solves yet</td></tr>
             ) : (

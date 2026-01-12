@@ -2,6 +2,7 @@ import { useState, useEffect, useContext } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import AuthContext from '../context/AuthContext';
+import Loading from '../components/Loading';
 import './AdminLoginLogs.css';
 
 function AdminLoginLogs() {
@@ -90,7 +91,7 @@ function AdminLoginLogs() {
       const response = await axios.delete('/api/auth/admin/login-logs', {
         headers: { Authorization: `Bearer ${token}` }
       });
-      
+
       fetchLogs();
       alert(response.data.message || 'All login logs cleared successfully');
     } catch (err) {
@@ -125,7 +126,7 @@ function AdminLoginLogs() {
   if (loading && logs.length === 0) {
     return (
       <div className="admin-login-logs">
-        <div className="loading">Loading login logs...</div>
+        <Loading size="medium" text="Loading logs" />
       </div>
     );
   }
@@ -170,8 +171,8 @@ function AdminLoginLogs() {
           <button onClick={fetchLogs} className="refresh-btn">
             Refresh
           </button>
-          <button 
-            onClick={() => setAutoRefresh(!autoRefresh)} 
+          <button
+            onClick={() => setAutoRefresh(!autoRefresh)}
             className={`auto-refresh-btn ${autoRefresh ? 'active' : ''}`}
           >
             {autoRefresh ? '⏸️ Stop Auto-Refresh' : '▶️ Start Auto-Refresh'}

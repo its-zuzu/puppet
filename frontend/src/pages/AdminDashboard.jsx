@@ -2,6 +2,7 @@ import { useState, useEffect, useContext } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import axios from 'axios';
 import AuthContext from '../context/AuthContext';
+import Loading from '../components/Loading';
 import './AdminDashboard.css';
 
 function AdminDashboard() {
@@ -395,9 +396,7 @@ function AdminDashboard() {
   if (loading) {
     return (
       <div className="admin-dashboard">
-        <div className="loading">
-          <p>Loading...</p>
-        </div>
+        <Loading size="medium" text="Loading dashboard" />
       </div>
     );
   }

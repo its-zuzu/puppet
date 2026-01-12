@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import ReactMarkdown from 'react-markdown';
+import Loading from '../components/Loading';
 import './Blog.css';
 
 function Blog() {
@@ -76,7 +77,7 @@ function Blog() {
   if (loading) {
     return (
       <div className="blog-container">
-        <div className="loading">Loading blog posts...</div>
+        <Loading size="medium" text="Loading posts" />
       </div>
     );
   }

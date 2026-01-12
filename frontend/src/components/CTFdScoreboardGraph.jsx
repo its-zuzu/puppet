@@ -11,6 +11,7 @@ import {
   ResponsiveContainer
 } from 'recharts';
 import AuthContext from '../context/AuthContext';
+import Loading from './Loading';
 import './CTFdScoreboardGraph.css';
 
 // High-contrast colors for team lines
@@ -47,7 +48,7 @@ const cumulativeSum = (arr) => {
  */
 const formatElapsedTime = (ms) => {
   if (ms === 0) return '00:00';
-  
+
   const totalMinutes = Math.floor(ms / 60000);
   const hours = Math.floor(totalMinutes / 60);
   const minutes = totalMinutes % 60;
@@ -81,8 +82,8 @@ const CustomTooltip = ({ active, payload, label }) => {
           .sort((a, b) => b.value - a.value)
           .map((entry, index) => (
             <div key={index} className="tooltip-entry">
-              <span 
-                className="tooltip-color" 
+              <span
+                className="tooltip-color"
                 style={{ backgroundColor: entry.color }}
               />
               <span className="tooltip-team">{entry.name}:</span>
@@ -114,17 +115,17 @@ function CTFdScoreboardGraph() {
 
       // CTFd-style endpoint: /api/scoreboard/top/{count}
       const response = await axios.get('/api/scoreboard/top/10', config);
-      
+
       if (response.data.success) {
         // CTFd format: { "1": {id, name, score, solves: []}, "2": {...} }
         const ctfdData = response.data.data;
-        
+
         // Transform CTFd data to chart format
         const transformedData = transformCTFdData(ctfdData);
         setGraphData(transformedData);
         setError(null);
       }
-      
+
       setLoading(false);
     } catch (err) {
       console.error('Error fetching graph data:', err);
@@ -151,7 +152,7 @@ function CTFdScoreboardGraph() {
       // Get solve values and timestamps
       const solveValues = team.solves.map(s => s.value);
       const solveTimes = team.solves.map(s => new Date(s.date).getTime());
-      
+
       // Calculate cumulative scores
       const cumulativeScores = cumulativeSum(solveValues);
 
@@ -167,15 +168,15 @@ function CTFdScoreboardGraph() {
 
     // Convert to sorted array of timestamps
     const sortedTimestamps = Array.from(allTimestamps).sort((a, b) => a - b);
-    
+
     // Build chart data array
     const chartData = sortedTimestamps.map(timestamp => {
       const dataPoint = { timestamp };
-      
+
       teams.forEach(rank => {
         const team = ctfdData[rank];
         const teamData = teamScores[team.name];
-        
+
         // Find the score at this timestamp
         const pointAtTime = teamData.find(p => p.timestamp === timestamp);
         if (pointAtTime) {
@@ -190,7 +191,7 @@ function CTFdScoreboardGraph() {
           }
         }
       });
-      
+
       return dataPoint;
     });
 
@@ -199,7 +200,7 @@ function CTFdScoreboardGraph() {
       const team = ctfdData[rank];
       const teamData = teamScores[team.name];
       const lastSolve = teamData.length > 0 ? teamData[teamData.length - 1] : null;
-      
+
       return {
         teamId: team.id,
         teamName: team.name,
@@ -222,7 +223,7 @@ function CTFdScoreboardGraph() {
   if (loading) {
     return (
       <div className="ctfd-graph-container">
-        <div className="ctfd-graph-loading">Loading graph...</div>
+        <Loading size="small" inline text="Loading graph" />
       </div>
     );
   }
@@ -261,7 +262,7 @@ function CTFdScoreboardGraph() {
             margin={{ top: 20, right: 30, left: 20, bottom: 60 }}
           >
             <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.1)" />
-            
+
             {/* X-Axis: Time */}
             <XAxis
               dataKey="timestamp"
@@ -279,7 +280,7 @@ function CTFdScoreboardGraph() {
               textAnchor="end"
               height={80}
             />
-            
+
             {/* Y-Axis: Score with dynamic scaling + padding */}
             <YAxis
               domain={[0, (dataMax) => (Math.ceil(dataMax * 1.15))]}
@@ -291,16 +292,16 @@ function CTFdScoreboardGraph() {
                 style: { fill: 'rgba(255,255,255,0.7)' }
               }}
             />
-            
+
             <Tooltip content={<CustomTooltip />} />
-            
+
             <Legend
               wrapperStyle={{ paddingTop: '20px' }}
               iconType="line"
               formatter={(value, entry) => {
                 const team = teams.find(t => t.teamName === value);
-                return team ? 
-                  `${team.rank}. ${value} (${team.finalScore} pts)` : 
+                return team ?
+                  `${team.rank}. ${value} (${team.finalScore} pts)` :
                   value;
               }}
             />
@@ -331,8 +332,8 @@ function CTFdScoreboardGraph() {
           {teams.map((team, index) => (
             <div key={team.teamId} className="ctfd-ranking-item">
               <div className="ranking-position">#{team.rank}</div>
-              <div 
-                className="ranking-color" 
+              <div
+                className="ranking-color"
                 style={{ backgroundColor: TEAM_COLORS[index % TEAM_COLORS.length] }}
               />
               <div className="ranking-team">{team.teamName}</div>

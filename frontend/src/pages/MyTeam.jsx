@@ -2,6 +2,7 @@ import { useEffect, useState, useContext } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import AuthContext from '../context/AuthContext';
+import Loading from '../components/Loading';
 import './MyTeam.css';
 
 function MyTeam() {
@@ -25,7 +26,7 @@ function MyTeam() {
         };
 
         const response = await axios.get('/api/teams/my/team', config);
-        
+
         if (response.data.success && response.data.data) {
           // Redirect to the team details page
           navigate(`/team/${response.data.data._id}`);
@@ -49,7 +50,7 @@ function MyTeam() {
   if (loading) {
     return (
       <div className="my-team-container">
-        <div className="loading">Loading your team...</div>
+        <Loading size="medium" text="Loading team" />
       </div>
     );
   }

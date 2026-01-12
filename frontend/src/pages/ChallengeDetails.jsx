@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom'
 import axios from 'axios'
 import AuthContext from '../context/AuthContext'
 import { useEventState } from '../hooks/useEventState'
+import Loading from '../components/Loading'
 import './ChallengeDetails.css'
 
 const SolvesModal = ({ challenge, onClose }) => {
@@ -39,7 +40,7 @@ const SolvesModal = ({ challenge, onClose }) => {
         </div>
 
         {loading ? (
-          <div className="modal-loading">Loading solves...</div>
+          <Loading size="small" inline text="Loading solves" />
         ) : solves.length === 0 ? (
           <div className="no-solves">No one has solved this challenge yet!</div>
         ) : (
@@ -285,7 +286,7 @@ function ChallengeDetails() {
   if (loading) {
     return (
       <div className="challenge-details-container">
-        <div className="loading">Loading challenge...</div>
+        <Loading size="medium" text="Loading challenge" />
       </div>
     );
   }

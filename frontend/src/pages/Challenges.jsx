@@ -4,6 +4,7 @@ import axios from 'axios'
 import AuthContext from '../context/AuthContext'
 import Logger from '../utils/logger'
 import { useEventState } from '../hooks/useEventState'
+import Loading from '../components/Loading'
 import './Challenges.css'
 
 const SolvesModal = ({ challenge, onClose }) => {
@@ -40,7 +41,7 @@ const SolvesModal = ({ challenge, onClose }) => {
         </div>
 
         {loading ? (
-          <div className="modal-loading">Loading solves...</div>
+          <Loading size="small" inline text="Loading solves" />
         ) : solves.length === 0 ? (
           <div className="no-solves">No one has solved this challenge yet!</div>
         ) : (
@@ -246,7 +247,7 @@ function Challenges() {
   if (loading) {
     return (
       <div className="challenges-container">
-        <div className="loading">Loading challenges...</div>
+        <Loading size="medium" text="Loading challenges" />
       </div>
     )
   }

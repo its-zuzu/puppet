@@ -1,6 +1,7 @@
 import { useContext } from 'react';
 import { Navigate } from 'react-router-dom';
 import AuthContext from '../context/AuthContext';
+import Loading from './Loading';
 
 // Component for routes that require authentication
 const ProtectedRoute = ({ children, adminOnly = false }) => {
@@ -8,7 +9,7 @@ const ProtectedRoute = ({ children, adminOnly = false }) => {
 
   // Show loading state while checking authentication
   if (loading) {
-    return <div className="loading-container">Loading...</div>;
+    return <Loading text="Authenticating" />;
   }
 
   // If not authenticated, redirect to register
