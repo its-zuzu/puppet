@@ -38,7 +38,7 @@ function Scoreboard() {
 
   return (
     <div style={{ padding: '20px', maxWidth: '1200px', margin: '0 auto', color: '#e0e6ed' }}>
-      <h1 style={{ textAlign: 'center', marginBottom: '30px', color: '#00d9ff' }}>Scoreboard</h1>
+      <h1 style={{ textAlign: 'center', marginBottom: '30px', color: '#ffffff', fontWeight: '700', letterSpacing: '2px', textTransform: 'uppercase' }}>Scoreboard</h1>
 
       {/* Tabs */}
       <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '30px' }}>

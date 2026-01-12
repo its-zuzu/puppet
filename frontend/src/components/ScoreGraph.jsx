@@ -37,22 +37,42 @@ const ScoreGraph = ({ type = 'teams', limit = 10, height = '400px' }) => {
 
       const series = [];
       const legendData = [];
+      // Neon/Cyberpunk Palette matching dark theme
       const colors = [
-        '#36A2EB', '#FF6384', '#4BC0C0', '#FF9F40', '#9966FF',
-        '#FFCD56', '#C9CBCF', '#E7E9ED', '#7Fb285', '#F55D3E'
+        '#00F0FF', // Neon Cyan
+        '#FF0055', // Neon Red/Pink
+        '#00FF99', // Neon Green
+        '#BD00FF', // Neon Purple
+        '#FAFF00', // Neon Yellow
+        '#FF8C00', // Neon Orange
+        '#F0F',    // Magenta
+        '#00CCFF', // Sky Blue
+        '#FFE4E1', // Misty Rose
+        '#7FFFD4'  // Aquamarine
       ];
 
-      Object.values(data).forEach((team, index) => {
-        const timeSeries = team.data.map(d => [d.time, d.score]);
+      // Find global min time to start all graphs from same zero point
+      let minTime = new Date().getTime();
+      Object.values(data).forEach(team => {
+        if (team.data.length > 0) {
+          const t = new Date(team.data[0].time).getTime();
+          if (t < minTime) minTime = t;
+        }
+      });
+      // Offset slightly before first solve so 0 point is visible
+      minTime = minTime - 3600000;
 
-        // Add current time point to extend line to right edge if needed
-        // CTFd usually does this to make the graph look "up to date"
+      Object.values(data).forEach((team, index) => {
+        let timeSeries = team.data.map(d => [d.time, d.score]);
+
+        // 1. Force start from (0,0) relative to first event
+        // Add a 0 score point at minTime
+        timeSeries.unshift([minTime, 0]);
+
+        // Add current time point to extend line
         if (timeSeries.length > 0) {
           const lastPoint = timeSeries[timeSeries.length - 1];
           timeSeries.push([new Date().getTime(), lastPoint[1]]);
-        } else {
-          // Handle 0 solves teams? Usually graph only shows people with points.
-          // But if they have points but no events (award?) they need a flat line from start.
         }
 
         series.push({
@@ -60,10 +80,26 @@ const ScoreGraph = ({ type = 'teams', limit = 10, height = '400px' }) => {
           type: 'line',
           data: timeSeries,
           showSymbol: true,
-          symbolSize: 6,
+          symbolSize: 8, // Slightly larger
+          // symbol: 'circle',
           itemStyle: { color: colors[index % colors.length] },
-          lineStyle: { width: 3 },
-          smooth: true, // CTFd uses slight smoothing or straight lines? Usually straight. switching to false if needed. CTFd is straight.
+          lineStyle: {
+            width: 3,
+            shadowColor: colors[index % colors.length], // Glow effect
+            shadowBlur: 10
+          },
+          smooth: 0.3, // Slight curve for modern look
+          areaStyle: {
+            color: {
+              type: 'linear',
+              x: 0, y: 0, x2: 0, y2: 1,
+              colorStops: [{
+                offset: 0, color: colors[index % colors.length] + '33' // 20% opacity
+              }, {
+                offset: 1, color: 'transparent'
+              }]
+            }
+          }
         });
         legendData.push(team.name);
       });
@@ -71,13 +107,21 @@ const ScoreGraph = ({ type = 'teams', limit = 10, height = '400px' }) => {
       const chartOption = {
         tooltip: {
           trigger: 'axis',
-          axisPointer: { type: 'cross' },
+          axisPointer: { type: 'line' }, // Clean line pointer
+          backgroundColor: 'rgba(10, 10, 20, 0.95)',
+          borderColor: '#333',
+          textStyle: { color: '#fff' },
           formatter: (params) => {
-            // Custom tooltip to match nice format
-            let result = `<b>${params[0].axisValueLabel}</b><br/>`;
-            params.sort((a, b) => b.data[1] - a.data[1]); // Sort by score DESC in tooltip
+            const date = new Date(params[0].axisValue);
+            let result = `<div style="font-weight:bold; margin-bottom:5px;">${date.toLocaleTimeString()}</div>`;
+            params.sort((a, b) => b.data[1] - a.data[1]);
             params.forEach(item => {
-              result += `${item.marker} ${item.seriesName}: <b>${item.data[1]}</b><br/>`;
+              const score = item.data[1];
+              // Only show if score > 0 to restrict tooltip size on start
+              result += `<div style="display:flex; justify-content:space-between; width:150px;">
+                <span>${item.marker} ${item.seriesName}</span>
+                <span style="font-weight:bold">${score}</span>
+              </div>`;
             });
             return result;
           }
@@ -85,24 +129,36 @@ const ScoreGraph = ({ type = 'teams', limit = 10, height = '400px' }) => {
         legend: {
           data: legendData,
           type: 'scroll',
-          textStyle: { color: '#b0c4de' }
+          top: 0,
+          textStyle: { color: '#e0e0e0', fontWeight: 'bold' },
+          pageIconColor: '#00F0FF',
+          pageTextStyle: { color: '#fff' }
         },
         grid: {
-          left: '3%',
-          right: '4%',
-          bottom: '3%',
+          left: '20px',
+          right: '30px',
+          bottom: '20px', // Increased space for labels
+          top: '40px',
           containLabel: true
         },
         xAxis: {
           type: 'time',
           boundaryGap: false,
-          axisLabel: { color: '#b0c4de' },
-          splitLine: { show: false }
+          axisLabel: {
+            color: '#a0a0a0',
+            formatter: '{HH}:{mm}', // Cleaner time format
+            rotate: 0 // No rotation needed if interval is handled auto
+          },
+          splitLine: { show: false },
+          axisLine: { lineStyle: { color: '#333' } }
         },
         yAxis: {
           type: 'value',
-          axisLabel: { color: '#b0c4de' },
-          splitLine: { lineStyle: { color: '#2b3e50', type: 'dashed' } }
+          min: 0, // Force start at 0
+          axisLabel: { color: '#a0a0a0' },
+          splitLine: {
+            lineStyle: { color: '#1a1a2e', type: 'dashed' }
+          }
         },
         series: series,
         backgroundColor: 'transparent',

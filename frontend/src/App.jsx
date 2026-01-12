@@ -121,12 +121,24 @@ function App() {
                     <TeamDetails />
                   </ProtectedRoute>
                 } />
+                <Route path="/teams/:id" element={
+                  <ProtectedRoute>
+                    <TeamDetails />
+                  </ProtectedRoute>
+                } />
+
                 <Route path="/my-team" element={
                   <ProtectedRoute>
                     <MyTeam />
                   </ProtectedRoute>
                 } />
+
                 <Route path="/user/:userId" element={
+                  <ProtectedRoute>
+                    <UserProfile />
+                  </ProtectedRoute>
+                } />
+                <Route path="/users/:userId" element={
                   <ProtectedRoute>
                     <UserProfile />
                   </ProtectedRoute>
