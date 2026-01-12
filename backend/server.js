@@ -9,6 +9,17 @@ const compression = require('compression');
 const requestIp = require('request-ip');
 const morgan = require('morgan')
 
+// Load environment variables FIRST - before any other imports that might use them
+dotenv.config({ path: path.join(__dirname, '.env') });
+
+// Critical environment variables validation
+if (!process.env.JWT_SECRET) {
+  console.error('FATAL: JWT_SECRET is not defined in .env file');
+  process.exit(1);
+}
+console.log('[Config] JWT_SECRET loaded:', process.env.JWT_SECRET ? 'Yes (length: ' + process.env.JWT_SECRET.length + ')' : 'No');
+
+// Now import modules that depend on environment variables
 // Centralized Redis client (singleton pattern for 500+ users)
 const { getRedisClient } = require('./utils/redis');
 
@@ -25,16 +36,6 @@ const {
 
 const { concurrencyMiddleware } = require('./middleware/concurrency');
 const { cachingMiddleware, CACHE_CONFIG } = require('./middleware/caching');
-
-// Load environment variables
-dotenv.config({ path: path.join(__dirname, '.env') });
-
-// Critical environment variables validation
-if (!process.env.JWT_SECRET) {
-  console.error('FATAL: JWT_SECRET is not defined in .env file');
-  process.exit(1);
-}
-console.log('[Config] JWT_SECRET loaded:', process.env.JWT_SECRET ? 'Yes (length: ' + process.env.JWT_SECRET.length + ')' : 'No');
 
 // Import routes
 const authRoutes = require('./routes/auth');
