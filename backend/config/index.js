@@ -14,7 +14,7 @@ const parseDuration = (value, defaultMs) => {
   
   const [, num, unit] = match;
   const multipliers = { s: 1000, m: 60000, h: 3600000, d: 86400000 };
-  return parseInt(num) * (multipliers[unit] || 1000);
+  return Number.parseInt(num, 10) * (multipliers[unit] || 1000);
 };
 
 // Helper to parse boolean strings
@@ -25,16 +25,19 @@ const parseBoolean = (value, defaultValue) => {
 };
 
 // Helper to parse integer
-const parseInt = (value, defaultValue) => {
+const parseIntHelper = (value, defaultValue) => {
   const parsed = Number.parseInt(value, 10);
   return isNaN(parsed) ? defaultValue : parsed;
 };
+
+// Debug: Log JWT_SECRET availability
+console.log('[Config Module] JWT_SECRET from env:', process.env.JWT_SECRET ? 'EXISTS (length: ' + process.env.JWT_SECRET.length + ')' : 'MISSING');
 
 module.exports = {
   // Server Configuration
   server: {
     nodeEnv: process.env.NODE_ENV || 'development',
-    port: parseInt(process.env.PORT, 10000),
+    port: parseIntHelper(process.env.PORT, 10000),
     isDevelopment: process.env.NODE_ENV === 'development',
     isProduction: process.env.NODE_ENV === 'production'
   },
@@ -42,8 +45,8 @@ module.exports = {
   // Database Configuration
   database: {
     uri: process.env.MONGODB_URI || 'mongodb://localhost:27017/ctfquest',
-    maxPoolSize: parseInt(process.env.MONGO_MAX_POOL_SIZE, 500),
-    minPoolSize: parseInt(process.env.MONGO_MIN_POOL_SIZE, 50)
+    maxPoolSize: parseIntHelper(process.env.MONGO_MAX_POOL_SIZE, 500),
+    minPoolSize: parseIntHelper(process.env.MONGO_MIN_POOL_SIZE, 50)
   },
 
   // Redis Configuration
@@ -61,7 +64,7 @@ module.exports = {
     secret: process.env.JWT_SECRET,
     expiresIn: process.env.JWT_EXPIRE || '24h',
     // Refresh token when this % of lifetime remains (default 10%)
-    refreshThresholdPercent: parseInt(process.env.JWT_REFRESH_THRESHOLD_PERCENT, 10)
+    refreshThresholdPercent: parseIntHelper(process.env.JWT_REFRESH_THRESHOLD_PERCENT, 10)
   },
 
   // Session Configuration
@@ -72,28 +75,28 @@ module.exports = {
 
   // Security Configuration - Relaxed for CTF UX
   security: {
-    maxLoginAttempts: parseInt(process.env.MAX_LOGIN_ATTEMPTS, 100), // Very high - won't block users
-    loginTimeoutMinutes: parseInt(process.env.LOGIN_TIMEOUT, 1),
-    bcryptRounds: parseInt(process.env.BCRYPT_ROUNDS, 10), // Reduced for faster response
-    hstsMaxAge: parseInt(process.env.HSTS_MAX_AGE_SECONDS, 31536000) // 1 year
+    maxLoginAttempts: parseIntHelper(process.env.MAX_LOGIN_ATTEMPTS, 100), // Very high - won't block users
+    loginTimeoutMinutes: parseIntHelper(process.env.LOGIN_TIMEOUT, 1),
+    bcryptRounds: parseIntHelper(process.env.BCRYPT_ROUNDS, 10), // Reduced for faster response
+    hstsMaxAge: parseIntHelper(process.env.HSTS_MAX_AGE_SECONDS, 31536000) // 1 year
   },
 
   // Rate Limiting Configuration
   rateLimit: {
     login: {
       windowMs: parseDuration(process.env.LOGIN_RATE_WINDOW || '15m', 900000), // 15 minutes
-      max: parseInt(process.env.LOGIN_RATE_MAX, 100) // 100 attempts per window - very generous
+      max: parseIntHelper(process.env.LOGIN_RATE_MAX, 100) // 100 attempts per window - very generous
     },
     flagSubmit: {
-      maxAttempts: parseInt(process.env.FLAG_SUBMIT_MAX_ATTEMPTS, 200),
-      windowSeconds: parseInt(process.env.FLAG_SUBMIT_WINDOW, 60),
-      cooldownSeconds: parseInt(process.env.FLAG_SUBMIT_COOLDOWN, 1), // Reduced to 1 second
+      maxAttempts: parseIntHelper(process.env.FLAG_SUBMIT_MAX_ATTEMPTS, 200),
+      windowSeconds: parseIntHelper(process.env.FLAG_SUBMIT_WINDOW, 60),
+      cooldownSeconds: parseIntHelper(process.env.FLAG_SUBMIT_COOLDOWN, 1), // Reduced to 1 second
       windowMs: parseDuration(process.env.FLAG_SUBMIT_RATE_WINDOW || '1m', 60000), // 1 minute
-      max: parseInt(process.env.FLAG_SUBMIT_RATE_MAX, 50) // 50 submissions per minute
+      max: parseIntHelper(process.env.FLAG_SUBMIT_RATE_MAX, 50) // 50 submissions per minute
     },
     general: {
       windowMs: parseDuration(process.env.GENERAL_RATE_WINDOW || '15m', 900000), // 15 minutes
-      max: parseInt(process.env.GENERAL_RATE_MAX, 500) // 500 requests per window - allows frequent scoreboard refresh
+      max: parseIntHelper(process.env.GENERAL_RATE_MAX, 500) // 500 requests per window - allows frequent scoreboard refresh
     },
     securityAudit: {
       windowMs: parseDuration(process.env.SECURITY_AUDIT_WINDOW || '15m', 900000) // 15 minutes
@@ -115,7 +118,7 @@ module.exports = {
   email: {
     smtp: {
       host: process.env.SMTP_HOST || 'smtp.gmail.com',
-      port: parseInt(process.env.SMTP_PORT, 587),
+      port: parseIntHelper(process.env.SMTP_PORT, 587),
       secure: parseBoolean(process.env.SMTP_SECURE, true),
       user: process.env.SMTP_USER,
       pass: process.env.SMTP_PASS
@@ -125,7 +128,7 @@ module.exports = {
 
   // Analytics Timeframes (configurable)
   analytics: {
-    activeUserDays: parseInt(process.env.ANALYTICS_ACTIVE_USER_DAYS, 30),
-    recentActivityDays: parseInt(process.env.ANALYTICS_RECENT_ACTIVITY_DAYS, 7)
+    activeUserDays: parseIntHelper(process.env.ANALYTICS_ACTIVE_USER_DAYS, 30),
+    recentActivityDays: parseIntHelper(process.env.ANALYTICS_RECENT_ACTIVITY_DAYS, 7)
   }
 };
