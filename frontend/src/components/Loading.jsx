@@ -3,17 +3,18 @@ import './Loading.css';
 
 const Loading = ({
     text = 'Loading',
-    size = 'large', // 'small', 'medium', 'large'
+    size = 'large',
     inline = false
 }) => {
     return (
         <div className={`loading-container ${inline ? 'loading-inline' : ''} loading-${size}`}>
             <div className="loading-content">
-                <div className="cyber-spinner">
-                    <div className="spinner-ring"></div>
-                    <div className="spinner-center"></div>
+                <div className="loading-spinner">
+                    <div className="spinner-bar"></div>
+                    <div className="spinner-bar"></div>
+                    <div className="spinner-bar"></div>
                 </div>
-                <div className="loading-text">{text}</div>
+                {text && <div className="loading-text">{text}</div>}
             </div>
         </div>
     );
