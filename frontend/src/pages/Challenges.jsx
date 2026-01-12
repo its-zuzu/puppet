@@ -1,4 +1,4 @@
-import { useState, useEffect, useContext } from 'react'
+import { useState, useEffect, useContext, useRef } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import axios from 'axios'
 import AuthContext from '../context/AuthContext'
@@ -159,9 +159,18 @@ function Challenges() {
     { id: 'misc', name: 'Miscellaneous' }
   ]
 
+  const isMounted = useRef(false);
+
+  useEffect(() => {
+    isMounted.current = true;
+    return () => {
+      isMounted.current = false;
+    };
+  }, []);
+
   const fetchChallenges = async (showLoadingState = true) => {
     try {
-      if (showLoadingState) {
+      if (showLoadingState && isMounted.current) {
         setLoading(true);
       }
       Logger.info('FETCH_CHALLENGES_START');
@@ -173,6 +182,8 @@ function Challenges() {
       } : {};
 
       const res = await axios.get('/api/challenges?page=1&limit=1000', config);
+
+      if (!isMounted.current) return;
 
       if (!res.data.data || !Array.isArray(res.data.data)) {
         setChallenges([]);
@@ -194,6 +205,8 @@ function Challenges() {
         count: visibleChallenges.length
       });
     } catch (err) {
+      if (!isMounted.current) return;
+
       Logger.error('FETCH_CHALLENGES_ERROR', { error: err.message });
       setError('Failed to fetch challenges. Please try again.');
       if (showLoadingState) {
@@ -207,16 +220,16 @@ function Challenges() {
 
     // Poll for new challenges every 10 seconds (without showing loading state)
     const pollInterval = setInterval(() => {
-      fetchChallenges(false);
+      if (isMounted.current) {
+        fetchChallenges(false);
+      }
     }, 10000);
 
     return () => clearInterval(pollInterval);
   }, [user?.role, token, isAuthenticated]);
 
-  const openModal = (challenge) => {
-    // Always redirect to challenge details page
-    navigate(`/challenges/${challenge._id}`);
-  };
+  // Removed redundant openModal function since handleChallengeClick handles navigation
+  // const openModal = ...
 
 
 

@@ -18,12 +18,23 @@ function Navbar() {
   const previousCountRef = useRef(null);
 
   useEffect(() => {
+    let timeoutId;
+
     const handleScroll = () => {
-      setScrolled(window.scrollY > 50);
+      // Simple debounce/throttle
+      if (timeoutId) return;
+
+      timeoutId = setTimeout(() => {
+        setScrolled(window.scrollY > 50);
+        timeoutId = null;
+      }, 50);
     };
 
-    window.addEventListener('scroll', handleScroll);
-    return () => window.removeEventListener('scroll', handleScroll);
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    return () => {
+      window.removeEventListener('scroll', handleScroll);
+      if (timeoutId) clearTimeout(timeoutId);
+    };
   }, []);
 
   // Fetch unread notice count

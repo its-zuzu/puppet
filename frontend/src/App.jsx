@@ -14,19 +14,9 @@ import ProtectedRoute from './components/ProtectedRoute'
 import ScrollToTop from './components/ScrollToTop'
 import BackToTopButton from './components/BackToTopButton'
 
-// Loading component
-const PageLoader = () => (
-  <div style={{
-    display: 'flex',
-    justifyContent: 'center',
-    alignItems: 'center',
-    minHeight: '60vh',
-    color: '#00ffaa',
-    fontSize: '1.2rem'
-  }}>
-    Loading...
-  </div>
-);
+import Loading from './components/Loading';
+
+const PageLoader = () => <Loading text="INITIALIZING..." />;
 
 // Lazy load pages - only load when needed
 const Home = lazy(() => import('./pages/Home'))
