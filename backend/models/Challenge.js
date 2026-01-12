@@ -65,7 +65,7 @@ const ChallengeSchema = new mongoose.Schema({
     type: Boolean,
     default: true,
     // This is kept for backward compatibility but should use 'state' field
-    get: function() {
+    get: function () {
       return this.state === 'visible';
     }
   },
@@ -80,12 +80,12 @@ const ChallengeSchema = new mongoose.Schema({
 });
 
 // Virtual for number of solves
-ChallengeSchema.virtual('solveCount').get(function() {
+ChallengeSchema.virtual('solveCount').get(function () {
   return this.solvedBy ? this.solvedBy.length : 0;
 });
 
 // Method to calculate current dynamic value based on solves (CTFd-exact formulas)
-ChallengeSchema.methods.getCurrentValue = function() {
+ChallengeSchema.methods.getCurrentValue = function () {
   // Static challenges always return their base points
   if (this.function === 'static' || !this.function) {
     return this.points;
@@ -97,8 +97,10 @@ ChallengeSchema.methods.getCurrentValue = function() {
   const decay = this.decay || 0;
   const solveCount = this.solvedBy?.length || 0;
 
-  // CRITICAL: Use (solveCount - 1) so first solver gets FULL initial value
-  const adjustedSolveCount = Math.max(0, solveCount - 1);
+  // CTFd-exact: Decay starts immediately after the first solve.
+  // If 1 person solved it, the value for the NEXT person should be lower.
+  // So we use the current solve count directly.
+  const adjustedSolveCount = solveCount;
 
   let value;
 

@@ -37,8 +37,10 @@ function calculateChallengeValue(challenge, solveCount = null) {
     solveCount = challenge.solvedBy?.length || 0;
   }
 
-  // CRITICAL: Use (solveCount - 1) so first solver gets FULL initial value
-  const adjustedSolveCount = Math.max(0, solveCount - 1);
+  // CTFd-exact: Decay starts immediately after the first solve.
+  // If 1 person solved it, the value for the NEXT person should be lower.
+  // So we use the current solve count directly.
+  const adjustedSolveCount = solveCount;
 
   let value;
 
