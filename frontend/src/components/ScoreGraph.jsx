@@ -93,18 +93,18 @@ function ScoreGraph({ type = 'teams', limit = 10 }) {
   };
 
   const getColorForIndex = (index) => {
-    // CTFd-style color palette
+    // Dark theme optimized color palette
     const colors = [
-      '#1f77b4', // Blue
-      '#ff7f0e', // Orange
-      '#2ca02c', // Green
-      '#d62728', // Red
-      '#9467bd', // Purple
-      '#8c564b', // Brown
-      '#e377c2', // Pink
-      '#7f7f7f', // Gray
-      '#bcbd22', // Olive
-      '#17becf'  // Cyan
+      '#00d9ff', // Bright Cyan
+      '#ff6b9d', // Pink
+      '#00ff88', // Green
+      '#ffd93d', // Yellow
+      '#bd93f9', // Purple
+      '#ff6b6b', // Red
+      '#4ecdc4', // Teal
+      '#95e1d3', // Mint
+      '#ff9f43', // Orange
+      '#6c5ce7'  // Indigo
     ];
     return colors[index % colors.length];
   };
@@ -228,7 +228,7 @@ function ScoreGraph({ type = 'teams', limit = 10 }) {
         <defs>
           {/* Grid pattern */}
           <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse">
-            <path d="M 40 0 L 0 0 0 40" fill="none" stroke="#e5e7eb" strokeWidth="0.5"/>
+            <path d="M 40 0 L 0 0 0 40" fill="none" stroke="#2a3f5f" strokeWidth="0.5"/>
           </pattern>
         </defs>
 
@@ -250,9 +250,10 @@ function ScoreGraph({ type = 'teams', limit = 10 }) {
               y1={label.y}
               x2={width - padding.right}
               y2={label.y}
-              stroke="#d1d5db"
+              stroke="#3a5a7f"
               strokeWidth="1"
               strokeDasharray="4 4"
+              opacity="0.4"
             />
           ))}
         </g>
@@ -263,7 +264,7 @@ function ScoreGraph({ type = 'teams', limit = 10 }) {
           y1={padding.top}
           x2={padding.left}
           y2={height - padding.bottom}
-          stroke="#6b7280"
+          stroke="#5a7fa0"
           strokeWidth="2"
         />
 
@@ -273,7 +274,7 @@ function ScoreGraph({ type = 'teams', limit = 10 }) {
           y1={height - padding.bottom}
           x2={width - padding.right}
           y2={height - padding.bottom}
-          stroke="#6b7280"
+          stroke="#5a7fa0"
           strokeWidth="2"
         />
 
@@ -285,7 +286,7 @@ function ScoreGraph({ type = 'teams', limit = 10 }) {
               x={padding.left - 15}
               y={label.y + 5}
               textAnchor="end"
-              fill="#374151"
+              fill="#b0c4de"
               fontSize="14"
               fontFamily="system-ui, -apple-system, sans-serif"
             >
@@ -296,7 +297,7 @@ function ScoreGraph({ type = 'teams', limit = 10 }) {
             x={padding.left - 50}
             y={padding.top + graphHeight / 2}
             textAnchor="middle"
-            fill="#111827"
+            fill="#d0e0f0"
             fontSize="16"
             fontWeight="600"
             fontFamily="system-ui, -apple-system, sans-serif"
@@ -314,7 +315,7 @@ function ScoreGraph({ type = 'teams', limit = 10 }) {
               x={label.x}
               y={height - padding.bottom + 25}
               textAnchor="middle"
-              fill="#374151"
+              fill="#b0c4de"
               fontSize="14"
               fontFamily="system-ui, -apple-system, sans-serif"
             >
@@ -325,7 +326,7 @@ function ScoreGraph({ type = 'teams', limit = 10 }) {
             x={padding.left + graphWidth / 2}
             y={height - 15}
             textAnchor="middle"
-            fill="#111827"
+            fill="#d0e0f0"
             fontSize="16"
             fontWeight="600"
             fontFamily="system-ui, -apple-system, sans-serif"
@@ -345,7 +346,7 @@ function ScoreGraph({ type = 'teams', limit = 10 }) {
                 fill="none"
                 strokeLinecap="round"
                 strokeLinejoin="round"
-                opacity="0.9"
+                opacity="0.95"
               />
               {/* Draw dots at each point */}
               {account.points.map((point, pointIndex) => (
@@ -355,7 +356,7 @@ function ScoreGraph({ type = 'teams', limit = 10 }) {
                   cy={yScale(point.score)}
                   r="4"
                   fill={account.color}
-                  stroke="#fff"
+                  stroke="#0f1419"
                   strokeWidth="2"
                 >
                   <title>{`${account.name}: ${point.score} pts at ${formatTime(point.time)}`}</title>
@@ -382,13 +383,13 @@ function ScoreGraph({ type = 'teams', limit = 10 }) {
                 cy={0}
                 r={4}
                 fill={account.color}
-                stroke="#fff"
+                stroke="#0f1419"
                 strokeWidth="2"
               />
               <text
                 x={25}
                 y={5}
-                fill="#374151"
+                fill="#d0e0f0"
                 fontSize="12"
                 fontFamily="system-ui, -apple-system, sans-serif"
               >

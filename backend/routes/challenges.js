@@ -725,9 +725,27 @@ router.post('/:id/submit', protect, sanitizeInput, checkEventNotEnded, async (re
             }
           }
 
-          // Clear legacy scoreboard caches to force refresh on next read
+          // Clear all scoreboard caches to force refresh on next read
           await redisClient.del('scoreboard:teams');
           await redisClient.del('scoreboard:users');
+          
+          // Clear graph cache keys (pattern: ctfd:scoreboard:graph:*)
+          const graphKeys = await redisClient.keys('ctfd:scoreboard:graph:*');
+          if (graphKeys && graphKeys.length > 0) {
+            await redisClient.del(...graphKeys);
+          }
+          
+          // Clear scoreboard full cache (pattern: ctfd:scoreboard:full:*)
+          const scoreboardKeys = await redisClient.keys('ctfd:scoreboard:full:*');
+          if (scoreboardKeys && scoreboardKeys.length > 0) {
+            await redisClient.del(...scoreboardKeys);
+          }
+          
+          // Clear top cache (pattern: ctfd:scoreboard:top:*)
+          const topKeys = await redisClient.keys('ctfd:scoreboard:top:*');
+          if (topKeys && topKeys.length > 0) {
+            await redisClient.del(...topKeys);
+          }
 
         } catch (redisError) {
           console.error('[Scoreboard] Redis ZSET update failed:', redisError.message);

@@ -135,12 +135,23 @@ async function clearScoreboardCache() {
       return;
     }
 
-    // Clear all scoreboard-related cache keys
-    const keys = await redisClient.keys('scoreboard:*');
+    // Clear all scoreboard-related cache keys (including graph caches)
+    const patterns = [
+      'scoreboard:*',
+      'ctfd:scoreboard:*'
+    ];
     
-    if (keys.length > 0) {
-      await redisClient.del(...keys);
-      console.log(`✓ Cleared ${keys.length} scoreboard cache keys`);
+    let totalCleared = 0;
+    for (const pattern of patterns) {
+      const keys = await redisClient.keys(pattern);
+      if (keys.length > 0) {
+        await redisClient.del(...keys);
+        totalCleared += keys.length;
+      }
+    }
+    
+    if (totalCleared > 0) {
+      console.log(`✓ Cleared ${totalCleared} scoreboard cache keys`);
     }
   } catch (error) {
     console.error('Scoreboard cache clear failed (non-fatal):', error.message);
