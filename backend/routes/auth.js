@@ -87,9 +87,17 @@ const createLoginLog = async (user, req, status, failureReason = null) => {
 
 // Generate JWT Token (fully env-driven)
 const generateToken = (id) => {
-  return jwt.sign({ id }, config.jwt.secret, {
-    expiresIn: config.jwt.expiresIn
-  });
+  try {
+    if (!config.jwt.secret) {
+      throw new Error('JWT_SECRET is not defined in environment variables');
+    }
+    return jwt.sign({ id }, config.jwt.secret, {
+      expiresIn: config.jwt.expiresIn
+    });
+  } catch (error) {
+    console.error('[JWT Error]', error.message);
+    throw error;
+  }
 };
 
 // @route   POST /api/auth/register
@@ -418,6 +426,7 @@ router.post('/login', sanitizeInput, async (req, res) => {
       }
     });
   } catch (error) {
+    console.error('[Login Error]', error.message, error.stack);
     res.status(500).json({
       success: false,
       message: process.env.NODE_ENV === 'development' ? error.message : 'Error logging in'

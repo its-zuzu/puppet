@@ -29,6 +29,13 @@ const { cachingMiddleware, CACHE_CONFIG } = require('./middleware/caching');
 // Load environment variables
 dotenv.config({ path: path.join(__dirname, '.env') });
 
+// Critical environment variables validation
+if (!process.env.JWT_SECRET) {
+  console.error('FATAL: JWT_SECRET is not defined in .env file');
+  process.exit(1);
+}
+console.log('[Config] JWT_SECRET loaded:', process.env.JWT_SECRET ? 'Yes (length: ' + process.env.JWT_SECRET.length + ')' : 'No');
+
 // Import routes
 const authRoutes = require('./routes/auth');
 const challengeRoutes = require('./routes/challenges');
