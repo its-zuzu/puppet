@@ -429,7 +429,7 @@ async function aggregateTeamStandings(isAdmin, freezeTime, limit = null) {
     teamQuery.hidden = { $ne: true };
   }
 
-  const teams = await Team.find(teamQuery).select('_id teamName hidden banned').lean();
+  const teams = await Team.find(teamQuery).select('_id name hidden banned').lean();
 
   const results = [];
   for (const team of teams) {
@@ -439,7 +439,7 @@ async function aggregateTeamStandings(isAdmin, freezeTime, limit = null) {
     if (data && data.score > 0) {
       results.push({
         account_id: tid,
-        name: team.teamName,
+        name: team.name, // Fixed: teamName -> name
         score: data.score,
         date: data.lastDate,
         account_url: `/teams/${tid}`

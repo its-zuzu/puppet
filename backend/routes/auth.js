@@ -381,15 +381,29 @@ router.post('/login', sanitizeInput, async (req, res) => {
     await user.save();
 
     // Log successful login and reset attempts
+    console.log('[Debug] Resetting login attempts...');
     await user.resetLoginAttempts();
+    console.log('[Debug] Creating login log...');
     await createLoginLog(user, req, 'success');
 
     // Populate team info
-    await user.populate('team');
+    console.log('[Debug] Populating team...');
+    try {
+      await user.populate('team');
+      console.log('[Debug] Team populated:', user.team ? user.team._id : 'No team');
+    } catch (popErr) {
+      console.error('[Debug] Populate error:', popErr);
+    }
 
     // Generate token with shorter expiry for security
-    const token = generateToken(user._id);
+    console.log('[Debug] Generating token...');
+    // Ensure ID is string
+    const token = generateToken(user._id.toString());
+    console.log('[Debug] Token generated.');
+
     logActivity('LOGIN_SUCCESS', { userId: user._id, username: user.username, ip: req.ip, userAgent: req.get('User-Agent') });
+
+    console.log('[Debug] Sending response...');
 
     res.json({
       success: true,
