@@ -214,6 +214,8 @@ router.get('/graph', protect, async (req, res) => {
       const accountId = standing.team_id || standing.user_id;
       const accountIdStr = accountId.toString();
       
+      console.log(`[Graph] Processing account: ${standing.name} (ID: ${accountIdStr})`);
+      
       // Collect all score events (solves + awards), filtering zero values like CTFd
       const events = [];
       
@@ -222,12 +224,15 @@ router.get('/graph', protect, async (req, res) => {
         const solveAccountId = solve.user?.team?.toString() || solve.user?._id.toString();
         const points = solve.points || 0;
         
+        console.log(`[Graph] Checking solve: user=${solve.user?._id}, team=${solve.user?.team}, points=${points}, matches=${solveAccountId === accountIdStr}`);
+        
         if (solveAccountId === accountIdStr && points !== 0) {
           events.push({
             time: solve.submittedAt,
             value: points,
             challenge_id: solve.challenge
           });
+          console.log(`[Graph] Added solve event: ${points} points at ${solve.submittedAt}`);
         }
       }
       
@@ -249,14 +254,30 @@ router.get('/graph', protect, async (req, res) => {
       events.sort((a, b) => new Date(a.time) - new Date(b.time));
       
       // Build cumulative score timeline
+      const timeline = [];
+      
+      // Start with 0 score at the time of first event (or now if no events)
+      if (events.length > 0) {
+        timeline.push({
+          time: new Date(events[0].time).getTime(),
+          score: 0
+        });
+      }
+      
+      // Build cumulative scores
       let cumulativeScore = 0;
-      const timeline = events.map(event => {
+      events.forEach(event => {
         cumulativeScore += event.value;
-        return {
+        timeline.push({
           time: new Date(event.time).getTime(),
           score: cumulativeScore
-        };
+        });
       });
+      
+      // Debug logging
+      if (events.length > 0) {
+        console.log(`[Graph] ${standing.name}: ${events.length} events, final score: ${cumulativeScore}`);
+      }
       
       graphData[index + 1] = {
         id: accountIdStr,
