@@ -125,6 +125,34 @@ const validateInput = {
 // but auth.js uses 'enhancedValidation' so we export it as that too or alias.
 const enhancedValidation = validateInput;
 
+// 7. Secure File Upload Utility
+const secureFileUpload = {
+  maxFileSize: 5 * 1024 * 1024, // 5MB default
+  validateFile: (file) => {
+    // Validate file type
+    const allowedMimeTypes = [
+      'image/jpeg',
+      'image/png',
+      'image/gif',
+      'application/pdf',
+      'text/plain',
+      'application/zip',
+      'application/x-zip-compressed'
+    ];
+
+    if (!allowedMimeTypes.includes(file.mimetype)) {
+      throw new Error('Invalid file type');
+    }
+
+    // Validate file name (prevent directory traversal)
+    if (file.originalname.includes('..') || file.originalname.includes('/') || file.originalname.includes('\\')) {
+      throw new Error('Invalid file name');
+    }
+
+    return true;
+  }
+};
+
 // 6. Consolidated Export
 module.exports = {
   loginLimiter,
@@ -134,5 +162,6 @@ module.exports = {
   mongoSanitize: mongoSanitize(), // Function call to initialize
   sanitizeInput,
   validateInput,
-  enhancedValidation
+  enhancedValidation,
+  secureFileUpload
 };

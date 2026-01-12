@@ -19,7 +19,8 @@ const {
   submissionLimiter,
   secureHeaders,
   sanitizeInput,
-  mongoSanitize
+  mongoSanitize,
+  secureFileUpload
 } = require('./middleware/security');
 
 const { concurrencyMiddleware } = require('./middleware/concurrency');
