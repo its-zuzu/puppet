@@ -88,6 +88,10 @@ const createLoginLog = async (user, req, status, failureReason = null) => {
 // Generate JWT Token (fully env-driven)
 const generateToken = (id) => {
   try {
+    console.log('[JWT Debug] process.env.JWT_SECRET:', process.env.JWT_SECRET ? 'EXISTS' : 'MISSING');
+    console.log('[JWT Debug] config.jwt.secret:', config.jwt.secret ? 'EXISTS' : 'MISSING');
+    console.log('[JWT Debug] config.jwt:', JSON.stringify(config.jwt));
+    
     if (!config.jwt.secret) {
       throw new Error('JWT_SECRET is not defined in environment variables');
     }
