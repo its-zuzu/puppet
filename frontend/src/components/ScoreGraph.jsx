@@ -15,12 +15,13 @@ import './ScoreGraph.css';
 function ScoreGraph({ type = 'teams', limit = 10 }) {
   const { token } = useContext(AuthContext);
   const [graphData, setGraphData] = useState([]);
+  const [maxScore, setMaxScore] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
   useEffect(() => {
     fetchGraphData();
-    const interval = setInterval(fetchGraphData, 60000); // Refresh every minute
+    const interval = setInterval(fetchGraphData, 10000); // Refresh every 10 seconds for faster updates
     return () => clearInterval(interval);
   }, [type, limit]);
 
@@ -40,6 +41,8 @@ function ScoreGraph({ type = 'teams', limit = 10 }) {
       
       if (response.data.success) {
         const data = response.data.data;
+        const maxScoreValue = response.data.maxScore || 0;
+        setMaxScore(maxScoreValue);
         processGraphData(data);
       }
       setLoading(false);
@@ -152,16 +155,15 @@ function ScoreGraph({ type = 'teams', limit = 10 }) {
   }
 
   // Calculate graph dimensions and scales
-  const allScores = graphData.flatMap(d => d.points.map(p => p.score)).filter(s => !isNaN(s));
   const allTimes = graphData.flatMap(d => d.points.map(p => p.time.getTime())).filter(t => !isNaN(t));
   
-  const maxScore = allScores.length > 0 ? Math.max(...allScores, 100) : 100;
   const minTime = allTimes.length > 0 ? Math.min(...allTimes) : Date.now() - 3600000;
   const maxTime = allTimes.length > 0 ? Math.max(...allTimes) : Date.now();
   const timeRange = maxTime - minTime || 3600000;
 
-  // Nice rounded max score for Y-axis
-  const niceMaxScore = Math.ceil(maxScore / 100) * 100 || 100;
+  // Use dynamic maxScore from API (total of all challenge points)
+  // Round up to nearest 100 for nice Y-axis labels
+  const niceMaxScore = maxScore > 0 ? Math.ceil(maxScore / 100) * 100 : 500;
 
   // SVG dimensions
   const width = 1000;

@@ -120,7 +120,7 @@ router.get('/graph', protect, async (req, res) => {
     const freezeTime = null; // TODO: Get from config
 
     const cacheKey = `ctfd:scoreboard:graph:${count}:${type}:${isAdmin}`;
-    const CACHE_TTL = 60;
+    const CACHE_TTL = 5; // 5 seconds for faster updates
 
     // Try cache
     try {
@@ -154,19 +154,37 @@ router.get('/graph', protect, async (req, res) => {
     if (standings.length === 0) {
       return res.json({
         success: true,
-        data: {}
+        data: {},
+        maxScore: 0
       });
     }
 
     // Get account IDs
     const accountIds = standings.map(s => s.team_id || s.user_id);
 
-    // Get all solves for these accounts, sorted by time
+    // Get total available challenge points for Y-axis scaling
+    const allChallenges = await Challenge.find({ active: true }).select('points').lean();
+    const totalAvailablePoints = allChallenges.reduce((sum, ch) => sum + (ch.points || 0), 0);
+
+    // Get all solves - for teams, we need to find users who are in those teams
+    let userIds = [];
+    if (type === 'teams') {
+      // Find all users in these teams
+      const usersInTeams = await User.find({ 
+        team: { $in: accountIds },
+        role: 'user'
+      }).select('_id team').lean();
+      userIds = usersInTeams.map(u => u._id);
+    } else {
+      userIds = accountIds;
+    }
+
+    // Get all solves for these users, sorted by time
     let solvesQuery = Submission.find({
-      user: { $in: accountIds },
+      user: { $in: userIds },
       isCorrect: true
     })
-      .populate('user', '_id team')
+      .populate('user', '_id team username')
       .sort({ submittedAt: 1 });
 
     if (freezeTime && !isAdmin) {
@@ -178,8 +196,8 @@ router.get('/graph', protect, async (req, res) => {
     // Get all awards for these accounts, sorted by time
     let awardsQuery = Award.find({
       $or: [
-        { user: { $in: accountIds } },
-        { team: { $in: accountIds } }
+        { user: { $in: type === 'users' ? accountIds : userIds } },
+        { team: { $in: type === 'teams' ? accountIds : [] } }
       ]
     }).sort({ date: 1 });
 
@@ -248,15 +266,20 @@ router.get('/graph', protect, async (req, res) => {
     });
 
     // Cache result
+    const responseData = {
+      data: graphData,
+      maxScore: totalAvailablePoints
+    };
+    
     try {
-      await redisClient.setex(cacheKey, CACHE_TTL, JSON.stringify(graphData));
+      await redisClient.setex(cacheKey, CACHE_TTL, JSON.stringify(responseData));
     } catch (cacheErr) {
       console.warn('[Graph] Cache write error:', cacheErr.message);
     }
 
     res.json({
       success: true,
-      data: graphData
+      ...responseData
     });
 
   } catch (error) {
