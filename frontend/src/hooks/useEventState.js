@@ -27,15 +27,16 @@ export function useEventState() {
 
   useEffect(() => {
     fetchEventState();
-    
+
     // Poll every 30 seconds to keep state updated
     const interval = setInterval(fetchEventState, 30000);
-    
+
     return () => clearInterval(interval);
   }, []);
 
   return {
     eventState,
+    customMessage: eventState?.customMessage,
     isStarted: eventState?.status === 'started',
     isEnded: eventState?.status === 'ended',
     isNotStarted: eventState?.status === 'not_started',

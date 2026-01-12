@@ -5,6 +5,8 @@ import AuthContext from '../context/AuthContext'
 import Logger from '../utils/logger'
 import { useEventState } from '../hooks/useEventState'
 import Loading from '../components/Loading'
+import CustomMessageDisplay from '../components/CustomMessageDisplay'
+import CTFEndedDisplay from '../components/CTFEndedDisplay'
 import './Challenges.css'
 
 const SolvesModal = ({ challenge, onClose }) => {
@@ -148,7 +150,7 @@ function Challenges() {
   const [selectedChallengeForSolves, setSelectedChallengeForSolves] = useState(null)
 
   const { user, isAuthenticated, token, updateUserData } = useContext(AuthContext)
-  const { eventState, isEnded } = useEventState()
+  const { eventState, customMessage, isEnded } = useEventState()
 
   const categories = [
     { id: 'all', name: 'All Challenges' },
@@ -243,6 +245,15 @@ function Challenges() {
   const filteredChallenges = activeCategory === 'all'
     ? challenges
     : challenges.filter(challenge => challenge.category === activeCategory)
+
+  // Check for custom message or ended state
+  if (customMessage) {
+    return <CustomMessageDisplay message={customMessage} />
+  }
+
+  if (isEnded) {
+    return <CTFEndedDisplay endedAt={eventState?.endedAt} />
+  }
 
   if (loading) {
     return (

@@ -25,6 +25,11 @@ const EventStateSchema = new mongoose.Schema({
     ref: 'User',
     default: null
   },
+  customMessage: {
+    type: String,
+    default: null,
+    maxlength: 500
+  },
   createdAt: {
     type: Date,
     default: Date.now
@@ -39,9 +44,9 @@ const EventStateSchema = new mongoose.Schema({
 
 // Ensure only one EventState document exists
 // Use a fixed _id to guarantee singleton pattern
-EventStateSchema.statics.getEventState = async function() {
+EventStateSchema.statics.getEventState = async function () {
   const FIXED_ID = '000000000000000000000001'; // Fixed ObjectId for singleton
-  
+
   // Use findByIdAndUpdate with upsert for atomic operation (prevents race conditions)
   // Note: Don't set updatedAt/createdAt here - timestamps: true handles it automatically
   const eventState = await this.findByIdAndUpdate(
@@ -57,11 +62,11 @@ EventStateSchema.statics.getEventState = async function() {
       setDefaultsOnInsert: true
     }
   );
-  
+
   return eventState;
 };
 
-EventStateSchema.statics.updateEventState = async function(status, userId) {
+EventStateSchema.statics.updateEventState = async function (status, userId) {
   const FIXED_ID = '000000000000000000000001';
   const updateData = {
     status,

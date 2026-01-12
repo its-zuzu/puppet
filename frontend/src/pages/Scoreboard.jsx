@@ -3,15 +3,24 @@ import axios from 'axios';
 import AuthContext from '../context/AuthContext';
 import ScoreGraph from '../components/ScoreGraph';
 import Loading from '../components/Loading';
+import CustomMessageDisplay from '../components/CustomMessageDisplay';
+import CTFEndedDisplay from '../components/CTFEndedDisplay';
+import { useEventState } from '../hooks/useEventState';
 // No CSS file needed if we use inline or global styles for simplicity/consistency,
 // but for cleaner code we use standard layout classes which might exist or inline minimal styles.
 // CTFd style: Simple Bootstrap tables usually.
 
 function Scoreboard() {
+  const { eventState: ctfEventState, customMessage, isEnded } = useEventState();
   const { isAuthenticated, token } = useContext(AuthContext);
   const [viewType, setViewType] = useState('teams'); // 'teams' or 'users'
   const [standings, setStandings] = useState([]);
   const [loading, setLoading] = useState(true);
+
+  // Check for custom message
+  if (customMessage) {
+    return <CustomMessageDisplay message={customMessage} />;
+  }
 
   useEffect(() => {
     fetchScoreboard();
