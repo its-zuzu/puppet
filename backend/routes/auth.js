@@ -5,8 +5,13 @@ const config = require('../config');
 const User = require('../models/User');
 const LoginLog = require('../models/LoginLog');
 const { protect, authorize } = require('../middleware/auth');
-const { enhancedValidation } = require('../middleware/advancedSecurity');
-const { loginLimiter, generalLimiter, sanitizeInput, validateInput, securityHeaders } = require('../middleware/security');
+const { protect, authorize } = require('../middleware/auth');
+const {
+  loginLimiter,
+  sanitizeInput,
+  validateInput,
+  enhancedValidation
+} = require('../middleware/security');
 const { sendOTPEmail } = require('../utils/email');
 const requestIp = require('request-ip');
 const UAParser = require('ua-parser-js');

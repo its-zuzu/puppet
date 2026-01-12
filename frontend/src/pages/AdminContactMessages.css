@@ -135,32 +135,6 @@
   color: #fff;
 }
 
-.status-badge {
-  padding: 0.25rem 0.75rem;
-  border-radius: 4px;
-  font-size: 0.8rem;
-  text-transform: uppercase;
-  letter-spacing: 1px;
-  font-weight: 500;
-}
-
-.status-badge.unread {
-  background: rgba(255, 68, 68, 0.1);
-  color: #ff4444;
-  border: 1px solid #ff4444;
-}
-
-.status-badge.read {
-  background: rgba(255, 187, 51, 0.1);
-  color: #ffbb33;
-  border: 1px solid #ffbb33;
-}
-
-.status-badge.replied {
-  background: rgba(0, 200, 81, 0.1);
-  color: #00C851;
-  border: 1px solid #00C851;
-}
 
 .message-preview {
   color: #aaa;
@@ -213,31 +187,6 @@
   margin-bottom: 1rem;
 }
 
-.status-button {
-  padding: 0.5rem 1rem;
-  border: none;
-  border-radius: 4px;
-  background: rgba(0, 0, 0, 0.3);
-  color: #fff;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  border: 1px solid rgba(0, 255, 170, 0.1);
-}
-
-.status-button:hover {
-  background: #ff4444;
-  color: white;
-  border-color: #ff4444;
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(255, 68, 68, 0.3);
-}
-
-.status-button.active {
-  background: #00ffaa;
-  color: #000;
-  border-color: #00ffaa;
-}
-
 .delete-button {
   padding: 0.5rem 1rem;
   border: none;
@@ -271,51 +220,6 @@
   line-height: 1.6;
 }
 
-.reply-section {
-  margin-top: 2rem;
-}
-
-.reply-section h3 {
-  margin-bottom: 1rem;
-  color: #00ffaa;
-}
-
-.reply-section textarea {
-  width: 100%;
-  padding: 1rem;
-  border-radius: 4px;
-  background: rgba(0, 0, 0, 0.3);
-  border: 1px solid rgba(0, 255, 170, 0.1);
-  color: #fff;
-  margin-bottom: 1rem;
-  resize: vertical;
-}
-
-.reply-section textarea:focus {
-  outline: none;
-  border-color: #00ffaa;
-}
-
-.reply-button {
-  padding: 0.75rem 1.5rem;
-  background: linear-gradient(135deg, #1a2e46, #0f1f2b);
-  color: #00ffaa;
-  border: 1px solid #00ffaa;
-  border-radius: 4px;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 1px;
-}
-
-.reply-button:hover {
-  background: #ff4444;
-  color: white;
-  border-color: #ff4444;
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(255, 68, 68, 0.3);
-}
 
 .no-message-selected {
   text-align: center;
@@ -371,4 +275,4 @@
   .message-cards {
     max-height: 40vh;
   }
-} 
+}

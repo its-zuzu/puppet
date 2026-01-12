@@ -12,19 +12,15 @@ const morgan = require('morgan')
 // Centralized Redis client (singleton pattern for 500+ users)
 const { getRedisClient } = require('./utils/redis');
 
-// Security middleware imports
+// Consolidated Security Middleware
 const {
-  strictLoginLimiter,
+  loginLimiter,
   apiLimiter,
-  challengeSubmitLimiter,
-  advancedHelmet,
-  advancedSanitization,
-  enhancedValidation,
-  csrfProtection,
-  secureFileUpload,
-  securityLogger,
+  submissionLimiter,
+  secureHeaders,
+  sanitizeInput,
   mongoSanitize
-} = require('./middleware/advancedSecurity');
+} = require('./middleware/security');
 
 const { concurrencyMiddleware } = require('./middleware/concurrency');
 const { cachingMiddleware, CACHE_CONFIG } = require('./middleware/caching');
@@ -59,15 +55,12 @@ app.set('trust proxy', 1);
 // IP address middleware (must be early in the middleware stack)
 app.use(requestIp.mw());
 
-// Security logging (must be first)
-app.use(securityLogger);
+// Security Headers
+app.use(secureHeaders);
 
-// Advanced security headers
-app.use(advancedHelmet);
-
-// Rate limiting enabled for security
-app.use('/api/auth/login', strictLoginLimiter);
-app.use('/api/challenges/submit', challengeSubmitLimiter);
+// Rate limiting
+app.use('/api/auth/login', loginLimiter);
+app.use('/api/challenges/submit', submissionLimiter); // IP-based backup
 app.use('/api/', apiLimiter);
 
 // CORS with development-friendly configuration
@@ -132,8 +125,8 @@ app.use(express.urlencoded({
 // MongoDB injection protection
 app.use(mongoSanitize);
 
-// Advanced input sanitization
-app.use(advancedSanitization);
+// Input sanitization
+app.use(sanitizeInput);
 
 // CSRF protection for state-changing operations (disabled for development)
 // app.use('/api/', (req, res, next) => {

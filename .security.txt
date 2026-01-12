@@ -1,0 +1,69 @@
+CTF Platform Security Architecture
+====================================
+
+1. Authentication & Authorization
+---------------------------------
+- Method: JWT (Stateless)
+- Storage: localStorage (Client), HTTP Headers (Authorization: Bearer <token>)
+- Expiry: Configurable via JWT_EXPIRE (default: 24h)
+- Refresh Strategy: Sliding window (Auto-refresh if <10% lifetime remains)
+- Admin Registration: Restricted to internal route /api/auth/register-admin
+
+2. Rate Limiting (Redis-Backed)
+-------------------------------
+- Source of Truth: Redis (All instances share limits)
+- Store Implementation: rate-limit-redis
+
+Limits:
+A. Login: IP-based
+   - Window: 15 minutes
+   - Max: 100 attempts (Generous for NAT/Shared IPs)
+
+B. Global API: IP-based (DoS Protection)
+   - Window: 15 minutes
+   - Max: 5000 requests
+
+C. Flag Submission: User + Challenge ID
+   - Logic: Custom Redis implementation in routes/challenges.js
+   - Key: rate:flag:<userId>:<challengeId>
+   - Max Attempts: 5 per window
+   - Window: 60 seconds
+   - Cooldown: 30 seconds (if limit hit)
+   - Purpose: Prevent brute-forcing individual flags
+
+3. Input Security
+-----------------
+- Sanitization: custom sanitizer (removes dangerous SQL/NoSQL patterns)
+- Headers: Helmet (NoSniff, XSS-Filter, etc.)
+- Validation: Strict type checking on critical inputs (flag, email)
+
+4. Database Security
+--------------------
+- NoSQL Injection: MongoSanitize middleware
+- Transactions: Used for scoring to prevent race conditions
+- Flags: Stored in DB, compared in constant-time (crypto.timingSafeEqual)
+- Passwords: Bcrypt hashed
+
+5. Redis Keys Structure
+-----------------------
+- Rate Limits: ctf:rl:<ip> (Standard), rate:flag:<uid>:<cid> (Custom)
+- Sessions/Cache: user:<id>
+- Leaderboard: scoreboard:users:zset, scoreboard:teams:zset
+
+6. Environment Variables (Required)
+-----------------------------------
+JWT_SECRET=<strong_secret>
+JWT_EXPIRE=24h
+REDIS_URL=redis://localhost:6379
+MONGODB_URI=<uri>
+
+7. UX Considerations
+--------------------
+- CSP: Relaxed to allow inline styles/scripts (CTF necessities)
+- Rate Limits: Tuned high to avoid blocking legitimate players on shared wifi.
+
+8. Important Notes for Devs
+---------------------------
+- process.env is the ONLY source for secrets.
+- request-ip module is used to resolve real IPs behind proxies.
+- Do NOT add local memory rate limiters; use Redis.

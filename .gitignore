@@ -44,6 +44,10 @@ Thumbs.db
 
 # Text files and patches
 *.txt
+!.security.txt
+!.env-setting.txt
+!.env-flag-rate.txt
+!.env-login-rate.txt
 *.patch
 
 # Uploads and temporary files

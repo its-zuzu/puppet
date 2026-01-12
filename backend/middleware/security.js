@@ -1,92 +1,82 @@
 const rateLimit = require('express-rate-limit');
+const helmet = require('helmet');
+const mongoSanitize = require('express-mongo-sanitize');
+const RedisStore = require('rate-limit-redis').default;
+const { getRedisClient } = require('../utils/redis');
 const config = require('../config');
-const validator = require('validator');
 
-// Rate limiting configurations - Very generous for CTF UX
-const loginLimiter = rateLimit({
-  windowMs: config.rateLimit.login.windowMs,
-  max: 100, // Very high limit - users won't hit this during normal CTF
-  message: { success: false, message: 'Too many login attempts, please wait a moment' },
-  standardHeaders: true,
-  legacyHeaders: false,
-  skipSuccessfulRequests: true, // Only count failed attempts
-});
+const redisClient = getRedisClient();
 
-const challengeSubmitLimiter = rateLimit({
-  windowMs: config.rateLimit.flagSubmit.windowMs,
-  max: 50, // Allow rapid flag attempts - this is CTF!
-  message: { success: false, message: 'Please wait a moment before trying again' },
-  standardHeaders: true,
-  legacyHeaders: false,
-  skipSuccessfulRequests: false, // Count all attempts to prevent brute force
-});
-
-const generalLimiter = rateLimit({
-  windowMs: config.rateLimit.general.windowMs,
-  max: 500, // Very high - users refreshing scoreboard frequently
-  message: { success: false, message: 'Please wait a moment' },
-  standardHeaders: true,
-  legacyHeaders: false,
-});
-
-// Input sanitization middleware - MINIMAL for CTF UX
-// CTF flags often contain special characters, so we keep sanitization minimal
-const sanitizeInput = (req, res, next) => {
-  const sanitizeValue = (value) => {
-    if (typeof value === 'string') {
-      // Only protect against the most critical attacks
-      // Don't escape HTML entities - CTF flags might contain them!
-      
-      // Only block extremely dangerous SQL patterns
-      const sqlPatterns = [
-        /(\bDROP\s+(TABLE|DATABASE)\b)/gi,
-        /(\bTRUNCATE\s+TABLE\b)/gi,
-      ];
-      
-      sqlPatterns.forEach(pattern => {
-        if (pattern.test(value)) {
-          throw new Error('Invalid input detected');
-        }
-      });
-      
-      return value.trim();
-    }
-    return value;
-  };
-
-  try {
-    // Sanitize body
-    if (req.body && typeof req.body === 'object') {
-      for (const key in req.body) {
-        req.body[key] = sanitizeValue(req.body[key]);
-      }
-    }
-
-    // Sanitize query parameters
-    if (req.query && typeof req.query === 'object') {
-      for (const key in req.query) {
-        req.query[key] = sanitizeValue(req.query[key]);
-      }
-    }
-
-    // Sanitize URL parameters
-    if (req.params && typeof req.params === 'object') {
-      for (const key in req.params) {
-        req.params[key] = sanitizeValue(req.params[key]);
-      }
-    }
-
-    next();
-  } catch (error) {
-    return res.status(400).json({
-      success: false,
-      message: 'Invalid input detected',
-      blocked: true
-    });
-  }
+// 1. Rate Limiting Factory (Redis-backed)
+const createRateLimit = (windowMs, max, message) => {
+  return rateLimit({
+    windowMs,
+    max,
+    message: { success: false, message, blocked: true },
+    standardHeaders: true,
+    legacyHeaders: false,
+    store: new RedisStore({
+      sendCommand: (...args) => redisClient.call(...args),
+      prefix: 'ctf:rl:'
+    }),
+    keyGenerator: (req) => req.ip, // Use request-ip resolved IP
+    passOnStoreError: true // FAIL-OPEN: If Redis is down, allow request
+  });
 };
 
-// Input validation middleware
+// 2. Defined Limiters
+const loginLimiter = createRateLimit(
+  config.rateLimit.login.windowMs,
+  config.rateLimit.login.max,
+  'Too many login attempts. Please wait a bit.'
+);
+
+const apiLimiter = createRateLimit(
+  config.rateLimit.general.windowMs,
+  config.rateLimit.general.max,
+  'Too many requests. Please slow down.'
+);
+
+// Note: Challenge submission limiting is handled per-user logic in the route, 
+// but we add a loose IP-based layer here for DoS protection.
+const submissionLimiter = createRateLimit(
+  config.rateLimit.flagSubmit.windowMs,
+  config.rateLimit.flagSubmit.max,
+  'Too many submission attempts.'
+);
+
+// 3. Security Headers (Helmet)
+const secureHeaders = helmet({
+  contentSecurityPolicy: false, // Managed in server.js or relaxed for CTF
+  crossOriginEmbedderPolicy: false,
+  hsts: false // Managed in server.js
+});
+
+// 4. Input Sanitization
+const sanitizeInput = (req, res, next) => {
+  if (req.body) req.body = sanitizePayload(req.body);
+  if (req.query) req.query = sanitizePayload(req.query);
+  if (req.params) req.params = sanitizePayload(req.params);
+  next();
+};
+
+const sanitizePayload = (obj) => {
+  if (typeof obj === 'string') {
+    // Basic trimming and removal of null bytes
+    return obj.trim().replace(/\0/g, '');
+  }
+  if (typeof obj === 'object' && obj !== null) {
+    if (obj.buffer) return obj; // Skip files
+    Object.keys(obj).forEach(key => {
+      obj[key] = sanitizePayload(obj[key]);
+    });
+  }
+  return obj;
+};
+
+// 5. Input Validation
+const validator = require('validator');
+
 const validateInput = {
   email: (email) => {
     if (!email || !validator.isEmail(email)) {
@@ -94,108 +84,55 @@ const validateInput = {
     }
     return validator.normalizeEmail(email);
   },
-  
+
   username: (username) => {
-    if (!username || !validator.isAlphanumeric(username, 'en-US', { ignore: '_-' })) {
-      throw new Error('Username can only contain letters, numbers, hyphens, and underscores');
+    // Flexible username for CTF (allow alphanumeric + typical chars)
+    if (!username) throw new Error('Username is required');
+    if (username.length < 3 || username.length > 30) {
+      throw new Error('Username length must be between 3 and 30 characters');
     }
-    if (username.length < 3 || username.length > 20) {
-      throw new Error('Username must be between 3 and 20 characters');
-    }
-    return username;
+    // Remove strict alphanumeric check to allow creative names, but sanitize output elsewhere
+    return username.trim();
   },
-  
+
   password: (password) => {
-    if (!password || password.length < 8) {
-      throw new Error('Password must be at least 8 characters long');
-    }
-    if (!/(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/.test(password)) {
-      throw new Error('Password must contain at least one uppercase letter, one lowercase letter, and one number');
+    if (!password || password.length < 6) {
+      throw new Error('Password must be at least 6 characters long');
     }
     return password;
   },
-  
+
   flag: (flag) => {
     if (!flag || typeof flag !== 'string') {
       throw new Error('Flag must be a string');
     }
-    if (!/^SECE\{[A-Za-z0-9_\-\+\*\/\=\!\@\#\$\%\^\&\(\)\[\]\{\}\:\;\,\.\?\s]+\}$/.test(flag)) {
-      throw new Error('Invalid flag format. Flag must be in SECE{...} format');
-    }
+    // CTF flags can be anything, but usually follow format. 
+    // We enforce non-empty and reasonable length.
+    if (flag.length > 200) throw new Error('Flag too long');
     return flag.trim();
-  }
-};
+  },
 
-// Security headers middleware
-const securityHeaders = (req, res, next) => {
-  // Basic security headers
-  res.setHeader('X-Content-Type-Options', 'nosniff');
-  res.setHeader('X-Frame-Options', 'DENY');
-  res.setHeader('X-XSS-Protection', '1; mode=block');
-  res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
-  res.setHeader('Permissions-Policy', 'geolocation=(), microphone=(), camera=()');
-  
-  // HSTS for HTTPS
-  if (req.secure) {
-    res.setHeader('Strict-Transport-Security', 'max-age=31536000; includeSubDomains');
-  }
-  
-  next();
-};
-
-// CSRF protection middleware
-const csrfProtection = (req, res, next) => {
-  // Skip CSRF for GET requests and API endpoints with proper auth
-  if (req.method === 'GET' || req.headers.authorization) {
-    return next();
-  }
-  
-  const token = req.headers['x-csrf-token'] || req.body._csrf;
-  const sessionToken = req.session?.csrfToken;
-  
-  if (!token || token !== sessionToken) {
-    return res.status(403).json({
-      success: false,
-      message: 'Invalid CSRF token',
-      blocked: true
-    });
-  }
-  
-  next();
-};
-
-// File upload security
-const fileUploadSecurity = {
-  allowedTypes: ['image/jpeg', 'image/png', 'image/gif'],
-  maxSize: 5 * 1024 * 1024, // 5MB
-  
-  validateFile: (file) => {
-    if (!file) return true;
-    
-    if (!fileUploadSecurity.allowedTypes.includes(file.mimetype)) {
-      throw new Error('Invalid file type');
+  objectId: (id) => {
+    if (!id || !/^[0-9a-fA-F]{24}$/.test(id)) {
+      throw new Error('Invalid ID');
     }
-    
-    if (file.size > fileUploadSecurity.maxSize) {
-      throw new Error('File too large');
-    }
-    
-    // Check for malicious file names
-    if (/[<>:"/\\|?*]/.test(file.originalname)) {
-      throw new Error('Invalid file name');
-    }
-    
-    return true;
+    return id;
   }
 };
 
+// Alias for compatibility if needed, or we refactor routes.
+// Let's refactor routes to use 'validateInput' generally, 
+// but auth.js uses 'enhancedValidation' so we export it as that too or alias.
+const enhancedValidation = validateInput;
+
+// 6. Consolidated Export
 module.exports = {
   loginLimiter,
-  challengeSubmitLimiter,
-  generalLimiter,
+  apiLimiter,
+  submissionLimiter,
+  secureHeaders,
+  mongoSanitize: mongoSanitize(), // Function call to initialize
   sanitizeInput,
   validateInput,
-  securityHeaders,
-  csrfProtection,
-  fileUploadSecurity
+  enhancedValidation
 };

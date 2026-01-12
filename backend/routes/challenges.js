@@ -6,7 +6,7 @@ const User = require('../models/User');
 const Submission = require('../models/Submission');
 const { protect, authorize } = require('../middleware/auth');
 const jwt = require('jsonwebtoken');
-const { sanitizeInput, validateInput, securityHeaders } = require('../middleware/security');
+const { sanitizeInput, validateInput } = require('../middleware/security');
 const requestIp = require('request-ip');
 const UAParser = require('ua-parser-js');
 const crypto = require('crypto');
@@ -23,44 +23,58 @@ const logActivity = (action, details = {}) => {
   console.log(`[${timestamp}] CHALLENGE: ${action}`, details);
 };
 
+const config = require('../config');
+
+// ... (other imports)
+
 // Redis-based Rate limiting for flag submissions
 const checkFlagSubmissionRate = async (userId, challengeId) => {
-  const key = `rate:flag:${userId}:${challengeId}`;
-  const maxAttempts = parseInt(process.env.FLAG_SUBMIT_MAX_ATTEMPTS) || 5;
-  const windowSeconds = parseInt(process.env.FLAG_SUBMIT_WINDOW) || 60;
-  const cooldownSeconds = parseInt(process.env.FLAG_SUBMIT_COOLDOWN) || 30;
+  try {
+    const key = `rate:flag:${userId}:${challengeId}`;
+    const maxAttempts = config.rateLimit.flagSubmit.maxAttempts;
+    const windowSeconds = config.rateLimit.flagSubmit.windowSeconds;
+    const cooldownSeconds = config.rateLimit.flagSubmit.cooldownSeconds;
 
-  // Get attempts from Redis
-  // We store attempts as a list of timestamps
-  const attempts = await redisClient.lrange(key, 0, -1);
-  const now = Date.now();
+    // Get attempts from Redis
+    const attempts = await redisClient.lrange(key, 0, -1);
+    const now = Date.now();
 
-  // Check if user is in cooldown (blocked)
-  const blockedKey = `rate:blocked:${userId}:${challengeId}`;
-  const isBlocked = await redisClient.get(blockedKey);
+    // Check if user is in cooldown (blocked)
+    const blockedKey = `rate:blocked:${userId}:${challengeId}`;
+    const isBlocked = await redisClient.get(blockedKey);
 
-  if (isBlocked) {
-    const ttl = await redisClient.ttl(blockedKey);
-    return { allowed: false, remainingTime: ttl > 0 ? ttl : cooldownSeconds };
-  }
-
-  // Filter old attempts (older than window)
-  const validAttempts = attempts.filter(time => (now - parseInt(time)) < (windowSeconds * 1000));
-
-  // If we filtered out attempts, update the list asynchronously
-  if (validAttempts.length < attempts.length) {
-    await redisClient.del(key);
-    if (validAttempts.length > 0) {
-      await redisClient.rpush(key, ...validAttempts);
-      await redisClient.expire(key, windowSeconds);
+    if (isBlocked) {
+      const ttl = await redisClient.ttl(blockedKey);
+      return { allowed: false, remainingTime: ttl > 0 ? ttl : cooldownSeconds };
     }
-  }
 
-  // Check limit
-  if (validAttempts.length >= maxAttempts) {
-    // Block user
-    await redisClient.setex(blockedKey, cooldownSeconds, 'blocked');
-    return { allowed: false, remainingTime: cooldownSeconds };
+    // Filter old attempts (older than window)
+    const validAttempts = attempts.filter(time => (now - parseInt(time)) < (windowSeconds * 1000));
+
+    // If we filtered out attempts, update the list asynchronously
+    if (validAttempts.length < attempts.length) {
+      // Use pipeline for atomicity/efficiency
+      const pipeline = redisClient.pipeline();
+      pipeline.del(key);
+      if (validAttempts.length > 0) {
+        pipeline.rpush(key, ...validAttempts);
+        pipeline.expire(key, windowSeconds);
+      }
+      await pipeline.exec();
+    }
+
+    // Check limit
+    if (validAttempts.length >= maxAttempts) {
+      // Block user
+      await redisClient.setex(blockedKey, cooldownSeconds, 'blocked');
+      return { allowed: false, remainingTime: cooldownSeconds };
+    }
+
+    return { allowed: true };
+  } catch (error) {
+    // Fallback if Redis is down: Allow submission but log error
+    console.error('[RateLimit] Redis error, failing open:', error.message);
+    return { allowed: true };
   }
 
   return { allowed: true };
@@ -68,21 +82,29 @@ const checkFlagSubmissionRate = async (userId, challengeId) => {
 
 // Record failed flag submission
 const recordFailedSubmission = async (userId, challengeId) => {
-  const key = `rate:flag:${userId}:${challengeId}`;
-  const now = Date.now();
-  const windowSeconds = parseInt(process.env.FLAG_SUBMIT_WINDOW) || 60;
+  try {
+    const key = `rate:flag:${userId}:${challengeId}`;
+    const now = Date.now();
+    const windowSeconds = config.rateLimit.flagSubmit.windowSeconds;
 
-  await redisClient.rpush(key, now);
-  await redisClient.expire(key, windowSeconds);
+    await redisClient.rpush(key, now);
+    await redisClient.expire(key, windowSeconds);
+  } catch (error) {
+    console.error('[RateLimit] Error recording failure:', error.message);
+  }
 };
 
 // Clear attempts on successful submission
 const clearSubmissionAttempts = async (userId, challengeId) => {
-  const key = `rate:flag:${userId}:${challengeId}`;
-  const blockedKey = `rate:blocked:${userId}:${challengeId}`;
+  try {
+    const key = `rate:flag:${userId}:${challengeId}`;
+    const blockedKey = `rate:blocked:${userId}:${challengeId}`;
 
-  await redisClient.del(key);
-  await redisClient.del(blockedKey);
+    await redisClient.del(key);
+    await redisClient.del(blockedKey);
+  } catch (error) {
+    console.error('[RateLimit] Error clearing attempts:', error.message);
+  }
 };
 
 // @route   GET /api/challenges
@@ -543,7 +565,7 @@ router.post('/:id/submit', protect, sanitizeInput, checkEventNotEnded, async (re
 
     // Calculate dynamic value BEFORE submission (CTFd-style)
     const dynamicPoints = challenge.getCurrentValue();
-    
+
     // Check flag using constant-time comparison to prevent timing attacks
     const expectedFlag = challenge.flag.trim();
     const submittedBuffer = Buffer.from(submittedFlag, 'utf8');
@@ -728,19 +750,19 @@ router.post('/:id/submit', protect, sanitizeInput, checkEventNotEnded, async (re
           // Clear all scoreboard caches to force refresh on next read
           await redisClient.del('scoreboard:teams');
           await redisClient.del('scoreboard:users');
-          
+
           // Clear graph cache keys (pattern: ctfd:scoreboard:graph:*)
           const graphKeys = await redisClient.keys('ctfd:scoreboard:graph:*');
           if (graphKeys && graphKeys.length > 0) {
             await redisClient.del(...graphKeys);
           }
-          
+
           // Clear scoreboard full cache (pattern: ctfd:scoreboard:full:*)
           const scoreboardKeys = await redisClient.keys('ctfd:scoreboard:full:*');
           if (scoreboardKeys && scoreboardKeys.length > 0) {
             await redisClient.del(...scoreboardKeys);
           }
-          
+
           // Clear top cache (pattern: ctfd:scoreboard:top:*)
           const topKeys = await redisClient.keys('ctfd:scoreboard:top:*');
           if (topKeys && topKeys.length > 0) {

@@ -14,7 +14,7 @@ function AdminContactMessages() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [successMessage, setSuccessMessage] = useState('');
-  const [replyContent, setReplyContent] = useState('');
+  // const [replyContent, setReplyContent] = useState(''); // Removed reply state
 
   // Redirect if not authenticated or not admin
   useEffect(() => {
@@ -113,68 +113,7 @@ function AdminContactMessages() {
     }
   };
 
-  const handleStatusUpdate = async (messageId, newStatus) => {
-    try {
-      setError(null);
-      const config = {
-        headers: {
-          Authorization: `Bearer ${token}`
-        }
-      };
-
-      await axios.put(
-        `http://localhost:5000/api/contact/${messageId}/status`,
-        { status: newStatus },
-        config
-      );
-
-      // Update the message status in the local state
-      setMessages(messages.map(msg =>
-        msg._id === messageId ? { ...msg, status: newStatus } : msg
-      ));
-
-      if (selectedMessage && selectedMessage._id === messageId) {
-        setSelectedMessage({ ...selectedMessage, status: newStatus });
-      }
-
-      setSuccessMessage('Status updated successfully!');
-      setTimeout(() => setSuccessMessage(''), 3000);
-    } catch (err) {
-      console.error('Error updating status:', err);
-      setError('Failed to update status. Please try again.');
-    }
-  };
-
-  const handleReply = async (messageId) => {
-    if (!replyContent.trim()) {
-      setError('Please enter a reply message.');
-      return;
-    }
-
-    try {
-      setError(null);
-      const config = {
-        headers: {
-          Authorization: `Bearer ${token}`
-        }
-      };
-
-      await axios.post(
-        `/api/contact/${messageId}/reply`,
-        { content: replyContent },
-        config
-      );
-
-      // Update the message status to 'replied'
-      handleStatusUpdate(messageId, 'replied');
-      setReplyContent('');
-      setSuccessMessage('Reply sent successfully!');
-      setTimeout(() => setSuccessMessage(''), 3000);
-    } catch (err) {
-      console.error('Error sending reply:', err);
-      setError('Failed to send reply. Please try again.');
-    }
-  };
+  // Removed handleStatusUpdate and handleReply functions
 
   const handleDeleteMessage = async (messageId) => {
     if (!window.confirm('Are you sure you want to delete this message? This action cannot be undone.')) {
@@ -192,7 +131,7 @@ function AdminContactMessages() {
       await axios.delete(`/api/contact/${messageId}`, config);
 
       setMessages(messages.filter(msg => msg._id !== messageId));
-      
+
       if (selectedMessage && selectedMessage._id === messageId) {
         setSelectedMessage(null);
       }
@@ -217,7 +156,7 @@ function AdminContactMessages() {
     <div className="admin-messages">
       <div className="messages-header">
         <h1>Contact <span className="highlight">Messages</span></h1>
-        <p>Manage and respond to contact form submissions</p>
+        <p>Manage contact form submissions</p>
         <button className="back-button" onClick={() => navigate('/admin')}>
           Back to Dashboard
         </button>
@@ -242,9 +181,6 @@ function AdminContactMessages() {
                 >
                   <div className="message-header">
                     <h3>{message.subject || 'No Subject'}</h3>
-                    <span className={`status-badge ${message.status || 'unread'}`}>
-                      {message.status || 'unread'}
-                    </span>
                   </div>
                   <p className="message-preview">
                     {message.message ? message.message.substring(0, 100) + '...' : 'No message content'}
@@ -286,24 +222,6 @@ function AdminContactMessages() {
                 <h2>{selectedMessage.subject}</h2>
                 <div className="message-actions">
                   <button
-                    className={`status-button ${selectedMessage.status === 'unread' ? 'active' : ''}`}
-                    onClick={() => handleStatusUpdate(selectedMessage._id, 'unread')}
-                  >
-                    Mark Unread
-                  </button>
-                  <button
-                    className={`status-button ${selectedMessage.status === 'read' ? 'active' : ''}`}
-                    onClick={() => handleStatusUpdate(selectedMessage._id, 'read')}
-                  >
-                    Mark Read
-                  </button>
-                  <button
-                    className={`status-button ${selectedMessage.status === 'replied' ? 'active' : ''}`}
-                    onClick={() => handleStatusUpdate(selectedMessage._id, 'replied')}
-                  >
-                    Mark Replied
-                  </button>
-                  <button
                     className="delete-button"
                     onClick={() => handleDeleteMessage(selectedMessage._id)}
                   >
@@ -320,27 +238,11 @@ function AdminContactMessages() {
               <div className="message-content">
                 <p>{selectedMessage.message}</p>
               </div>
-
-              <div className="reply-section">
-                <h3>Reply to Message</h3>
-                <textarea
-                  value={replyContent}
-                  onChange={(e) => setReplyContent(e.target.value)}
-                  placeholder="Type your reply here..."
-                  rows="5"
-                />
-                <button
-                  className="reply-button"
-                  onClick={() => handleReply(selectedMessage._id)}
-                >
-                  Send Reply
-                </button>
-              </div>
             </>
           ) : (
             <div className="no-message-selected">
               <h2>Select a message to view details</h2>
-              <p>Click on any message from the list to view its contents and reply.</p>
+              <p>Click on any message from the list to view its contents.</p>
             </div>
           )}
         </div>
