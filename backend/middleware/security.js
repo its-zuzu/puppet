@@ -8,7 +8,7 @@ const config = require('../config');
 const redisClient = getRedisClient();
 
 // 1. Rate Limiting Factory (Redis-backed)
-const createRateLimit = (windowMs, max, message) => {
+const createRateLimit = (windowMs, max, message, prefix) => {
   return rateLimit({
     windowMs,
     max,
@@ -17,7 +17,7 @@ const createRateLimit = (windowMs, max, message) => {
     legacyHeaders: false,
     store: new RedisStore({
       sendCommand: (...args) => redisClient.call(...args),
-      prefix: 'ctf:rl:'
+      prefix: `ctf:rl:${prefix}:` // Unique prefix per limiter
     }),
     keyGenerator: (req) => req.ip, // Use request-ip resolved IP
     passOnStoreError: true // FAIL-OPEN: If Redis is down, allow request
@@ -28,13 +28,15 @@ const createRateLimit = (windowMs, max, message) => {
 const loginLimiter = createRateLimit(
   config.rateLimit.login.windowMs,
   config.rateLimit.login.max,
-  'Too many login attempts. Please wait a bit.'
+  'Too many login attempts. Please wait a bit.',
+  'login'
 );
 
 const apiLimiter = createRateLimit(
   config.rateLimit.general.windowMs,
   config.rateLimit.general.max,
-  'Too many requests. Please slow down.'
+  'Too many requests. Please slow down.',
+  'common'
 );
 
 // Note: Challenge submission limiting is handled per-user logic in the route, 
@@ -42,7 +44,8 @@ const apiLimiter = createRateLimit(
 const submissionLimiter = createRateLimit(
   config.rateLimit.flagSubmit.windowMs,
   config.rateLimit.flagSubmit.max,
-  'Too many submission attempts.'
+  'Too many submission attempts.',
+  'submit'
 );
 
 // 3. Security Headers (Helmet)
