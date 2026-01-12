@@ -1,24 +1,8 @@
-/**
- * CTFd-Exact Scoreboard API
- * 
- * Implements CTFd's scoreboard endpoints with exact behavior:
- * - GET /api/v1/scoreboard - Full scoreboard list
- * - GET /api/v1/scoreboard/top/:count - Detailed scoreboard with solve history
- * 
- * Key CTFd Features:
- * - Score = Sum of solves + awards
- * - Tie-breaking by last solve date (earlier is better)
- * - Excludes hidden/banned users
- * - Respects freeze time
- * - 60-second cache
- */
-
 const express = require('express');
 const router = express.Router();
+const mongoose = require('mongoose');
 const { protect } = require('../middleware/auth');
 const { getRedisClient } = require('../utils/redis');
-const scoringService = require('../services/scoringService');
-
 const User = require('../models/User');
 const Team = require('../models/Team');
 const Submission = require('../models/Submission');
@@ -27,628 +11,515 @@ const Challenge = require('../models/Challenge');
 
 const redisClient = getRedisClient();
 
+// Cache TTL in seconds (CTFd uses 60s for scoreboard)
+const CACHE_TTL = 60;
+const GRAPH_CACHE_TTL = 300; // 5 minutes for graph
+
+/**
+ * Helper: Get current freeze time if any
+ * In a real implementation, this would come from a config/settings model
+ */
+const getFreezeTime = async () => {
+  // TODO: Fetch from EventState or Config model
+  return null;
+};
+
 /**
  * @route   GET /api/v1/scoreboard
- * @desc    Get full scoreboard (CTFd-compatible)
- * @access  Private
+ * @desc    Get full scoreboard (summary)
+ * @access  Public (or Private based on settings)
  */
-router.get('/', protect, async (req, res) => {
+router.get('/', async (req, res) => {
   try {
-    const isAdmin = req.user.role === 'admin' || req.user.role === 'superadmin';
-    const type = req.query.type || 'teams'; // 'teams' or 'users'
-    
-    // TODO: Get freeze time from config
-    const freezeTime = null;
-    
-    const cacheKey = `ctfd:scoreboard:full:${type}:${isAdmin}`;
-    const CACHE_TTL = 60;
+    const type = req.query.type === 'users' ? 'users' : 'teams';
+    const isAdmin = req.user && (req.user.role === 'admin' || req.user.role === 'superadmin');
 
-    // Try cache
-    try {
-      const cached = await redisClient.get(cacheKey);
-      if (cached) {
-        return res.json({
-          success: true,
-          data: JSON.parse(cached)
-        });
-      }
-    } catch (cacheErr) {
-      console.warn('[Scoreboard] Cache read error:', cacheErr.message);
+    // Cache Key
+    const cacheKey = `scoreboard:${type}:${isAdmin ? 'admin' : 'public'}`;
+
+    // Try Cache
+    const cached = await redisClient.get(cacheKey);
+    if (cached && !isAdmin) { // Admins always get fresh data or short cache? keeping consistent
+      return res.json(JSON.parse(cached));
     }
 
-    // Get standings based on type
-    let standings;
-    if (type === 'users') {
-      standings = await getUserStandings({
-        includeHidden: isAdmin,
-        freezeTime
-      });
+    const freezeTime = await getFreezeTime();
+
+    // Aggregation Pipeline
+    let standings = [];
+    if (type === 'teams') {
+      standings = await aggregateTeamStandings(isAdmin, freezeTime);
     } else {
-      standings = await getTeamStandings({
-        includeHidden: isAdmin,
-        freezeTime
-      });
+      standings = await aggregateUserStandings(isAdmin, freezeTime);
     }
 
-    // Format for CTFd compatibility
-    const formattedStandings = standings.map((standing, index) => ({
-      pos: index + 1,
-      account_id: standing.team_id || standing.user_id,
-      account_url: type === 'teams' ? `/teams/${standing.team_id || standing.user_id}` : `/users/${standing.user_id}`,
-      account_type: type === 'teams' ? 'team' : 'user',
-      name: standing.name,
-      score: Math.floor(standing.score),
-      bracket_id: standing.bracket_id || null,
-      bracket_name: standing.bracket_name || null
-    }));
+    const response = {
+      success: true,
+      data: standings
+    };
 
     // Cache result
-    try {
-      await redisClient.setex(cacheKey, CACHE_TTL, JSON.stringify(formattedStandings));
-    } catch (cacheErr) {
-      console.warn('[Scoreboard] Cache write error:', cacheErr.message);
-    }
-
-    res.json({
-      success: true,
-      data: formattedStandings
-    });
-
-  } catch (error) {
-    console.error('[Scoreboard] Error:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Error fetching scoreboard'
-    });
-  }
-});
-
-/**
- * @route   GET /api/v1/scoreboard/graph
- * @desc    Get score progression graph data (CTFd-exact rebuild)
- * @access  Private
- */
-router.get('/graph', protect, async (req, res) => {
-  try {
-    const isAdmin = req.user.role === 'admin' || req.user.role === 'superadmin';
-    const type = req.query.type || 'teams';
-    const limit = parseInt(req.query.count || '10');
-    const count = Math.max(1, Math.min(limit, 50));
-    
-    const freezeTime = null;
-
-    const cacheKey = `ctfd:scoreboard:graph:${count}:${type}:${isAdmin}`;
-    const CACHE_TTL = 5;
-
-    // Try cache
-    try {
-      const cached = await redisClient.get(cacheKey);
-      if (cached) {
-        return res.json(JSON.parse(cached));
-      }
-    } catch (cacheErr) {
-      console.warn('[Graph] Cache read error:', cacheErr.message);
-    }
-
-    // Get top standings
-    let standings;
-    if (type === 'users') {
-      standings = await getUserStandings({ count, includeHidden: isAdmin, freezeTime });
-    } else {
-      standings = await getTeamStandings({ count, includeHidden: isAdmin, freezeTime });
-    }
-
-    // Get total challenge points for Y-axis
-    const challenges = await Challenge.find({ active: true }).select('points').lean();
-    const maxScore = challenges.reduce((sum, ch) => sum + (ch.points || 0), 0);
-
-    if (standings.length === 0) {
-      return res.json({ success: true, data: {}, maxScore });
-    }
-
-    // Build graph data
-    const graphData = {};
-    
-    for (let i = 0; i < standings.length; i++) {
-      const standing = standings[i];
-      const accountId = standing.team_id || standing.user_id;
-      
-      // Get all score events for this account
-      let events = [];
-      
-      if (type === 'teams') {
-        // Find users in this team
-        const teamUsers = await User.find({ team: accountId, role: 'user' }).select('_id').lean();
-        const userIds = teamUsers.map(u => u._id);
-        
-        // Get their submissions
-        const submissions = await Submission.find({
-          user: { $in: userIds },
-          isCorrect: true
-        }).select('points submittedAt').sort({ submittedAt: 1 }).lean();
-        
-        submissions.forEach(sub => {
-          if (sub.points && sub.points > 0) {
-            events.push({ date: sub.submittedAt, value: sub.points });
-          }
-        });
-        
-        // Get team awards
-        const awards = await Award.find({ team: accountId }).select('value date').sort({ date: 1 }).lean();
-        awards.forEach(award => {
-          if (award.value && award.value > 0) {
-            events.push({ date: award.date, value: award.value });
-          }
-        });
-      } else {
-        // User mode
-        const submissions = await Submission.find({
-          user: accountId,
-          isCorrect: true
-        }).select('points submittedAt').sort({ submittedAt: 1 }).lean();
-        
-        submissions.forEach(sub => {
-          if (sub.points && sub.points > 0) {
-            events.push({ date: sub.submittedAt, value: sub.points });
-          }
-        });
-        
-        // Get user awards
-        const awards = await Award.find({ user: accountId }).select('value date').sort({ date: 1 }).lean();
-        awards.forEach(award => {
-          if (award.value && award.value > 0) {
-            events.push({ date: award.date, value: award.value });
-          }
-        });
-      }
-      
-      // Sort events chronologically
-      events.sort((a, b) => new Date(a.date) - new Date(b.date));
-      
-      // Build cumulative timeline
-      const timeline = [];
-      let cumulative = 0;
-      
-      for (const event of events) {
-        cumulative += event.value;
-        timeline.push({
-          time: new Date(event.date).getTime(),
-          score: cumulative
-        });
-      }
-      
-      graphData[i + 1] = {
-        id: accountId.toString(),
-        name: standing.name,
-        data: timeline
-      };
-    }
-
-    const response = { success: true, data: graphData, maxScore };
-    
-    try {
-      await redisClient.setex(cacheKey, CACHE_TTL, JSON.stringify(response));
-    } catch (cacheErr) {
-      console.warn('[Graph] Cache write error:', cacheErr.message);
-    }
+    await redisClient.setex(cacheKey, CACHE_TTL, JSON.stringify(response));
 
     res.json(response);
-
   } catch (error) {
-    console.error('[Score Graph] Error:', error);
-    res.status(500).json({ success: false, message: 'Error fetching score graph' });
+    console.error('Scoreboard Error:', error);
+    res.status(500).json({ success: false, message: 'Server Error' });
   }
 });
 
 /**
  * @route   GET /api/v1/scoreboard/top/:count
- * @desc    Get detailed scoreboard with solve history for top N accounts
- * @access  Private
- * 
- * Returns CTFd format:
- * {
- *   "1": {
- *     "id": "team_id",
- *     "name": "Team Name",
- *     "score": 1000,
- *     "solves": [
- *       { "challenge_id": "xxx", "value": 100, "date": "2025-01-12T..." },
- *       { "challenge_id": null, "value": 50, "date": "2025-01-12T..." } // award
- *     ]
- *   },
- *   ...
- * }
+ * @desc    Get detailed scoreboard for top N teams/users (includes detailed solve history)
  */
-router.get('/top/:count', protect, async (req, res) => {
+router.get('/top/:count', async (req, res) => {
   try {
-    const { count = 10 } = req.params;
-    const limit = Math.max(1, Math.min(parseInt(count), 50)); // 1-50 range
-    const type = req.query.type || 'teams'; // 'teams' or 'users'
-    
-    const isAdmin = req.user.role === 'admin' || req.user.role === 'superadmin';
-    const freezeTime = null; // TODO: Get from config
+    const count = parseInt(req.params.count) || 10;
+    const type = req.query.type === 'users' ? 'users' : 'teams';
+    const isAdmin = req.user && (req.user.role === 'admin' || req.user.role === 'superadmin');
 
-    const cacheKey = `ctfd:scoreboard:top:${limit}:${type}:${isAdmin}`;
-    const CACHE_TTL = 60;
+    // Use a different cache key for detailed view if needed, or just partial?
+    // CTFd returns a dict: { "1": { id, name, score, solves: [...] }, "2": ... }
 
-    // Try cache
-    try {
-      const cached = await redisClient.get(cacheKey);
-      if (cached) {
-        return res.json({
-          success: true,
-          data: JSON.parse(cached)
-        });
-      }
-    } catch (cacheErr) {
-      console.warn('[Scoreboard] Cache read error:', cacheErr.message);
+    const cacheKey = `scoreboard:top:${count}:${type}:${isAdmin ? 'admin' : 'public'}`;
+    const cached = await redisClient.get(cacheKey);
+    if (cached && !isAdmin) {
+      return res.json(JSON.parse(cached));
     }
 
-    // Get top N standings based on type
-    let standings;
-    if (type === 'users') {
-      standings = await getUserStandings({
-        count: limit,
-        includeHidden: isAdmin,
-        freezeTime
-      });
+    const freezeTime = await getFreezeTime();
+
+    // 1. Get Top N Standings First
+    let topStandings = [];
+    if (type === 'teams') {
+      topStandings = await aggregateTeamStandings(isAdmin, freezeTime, count);
     } else {
-      standings = await getTeamStandings({
-        count: limit,
-        includeHidden: isAdmin,
-        freezeTime
-      });
+      topStandings = await aggregateUserStandings(isAdmin, freezeTime, count);
     }
 
-    if (standings.length === 0) {
-      return res.json({
-        success: true,
-        data: {}
-      });
-    }
+    // 2. For each top entry, fetch detailed solve history
+    // This is N+1 but N is small (10-50). aggregated lookup is complex.
+    const responseData = {};
 
-    // Get account IDs
-    const accountIds = standings.map(s => s.team_id || s.user_id);
+    for (let i = 0; i < topStandings.length; i++) {
+      const entry = topStandings[i];
+      const rank = i + 1;
 
-    // Get all solves for these accounts
-    let solves = await Submission.find({
-      user: { $in: accountIds }, // Assuming Submission has user field
-      isCorrect: true
-    })
-      .populate('user', '_id team')
-      .populate('challenge', '_id title category')
-      .sort({ submittedAt: 1 })
-      .lean();
+      // Fetch Solves
+      const history = await getSolveHistory(entry.account_id, type === 'teams', freezeTime);
 
-    // Get all awards for these accounts
-    let awards = await Award.find({
-      $or: [
-        { user: { $in: accountIds } },
-        { team: { $in: accountIds } }
-      ]
-    })
-      .sort({ date: 1 })
-      .lean();
-
-    // Apply freeze time filter
-    if (freezeTime && !isAdmin) {
-      const freezeDate = new Date(freezeTime);
-      solves = solves.filter(s => new Date(s.submittedAt) < freezeDate);
-      awards = awards.filter(a => new Date(a.date) < freezeDate);
-    }
-
-    // Build solves mapper (account_id => array of solves+awards)
-    const solvesMapper = {};
-    accountIds.forEach(id => {
-      solvesMapper[id.toString()] = [];
-    });
-
-    // Add solves (filter zero-value like CTFd)
-    for (const solve of solves) {
-      const accountId = solve.user?.team?.toString() || solve.user?._id.toString();
-      const points = solve.points || 0;
-      
-      if (solvesMapper[accountId] && points !== 0) {
-        solvesMapper[accountId].push({
-          challenge_id: solve.challenge?._id?.toString() || null,
-          account_id: accountId,
-          team_id: solve.user?.team?.toString() || null,
-          user_id: solve.user?._id?.toString() || null,
-          value: points,
-          date: solve.submittedAt ? new Date(solve.submittedAt).toISOString() : new Date().toISOString()
-        });
-      }
-    }
-
-    // Add awards (filter zero-value like CTFd)
-    for (const award of awards) {
-      const accountId = award.team?.toString() || award.user?.toString();
-      const value = award.value || 0;
-      
-      if (solvesMapper[accountId] && value !== 0) {
-        solvesMapper[accountId].push({
-          challenge_id: null,
-          account_id: accountId,
-          team_id: award.team?.toString() || null,
-          user_id: award.user?.toString() || null,
-          value: value,
-          date: award.date ? new Date(award.date).toISOString() : new Date().toISOString()
-        });
-      }
-    }
-
-    // Sort all solves by date
-    for (const accountId in solvesMapper) {
-      solvesMapper[accountId].sort((a, b) => 
-        new Date(a.date).getTime() - new Date(b.date).getTime()
-      );
-    }
-
-    // Build CTFd response format
-    const response = {};
-    standings.forEach((standing, index) => {
-      const accountId = standing.team_id || standing.user_id;
-      response[index + 1] = {
-        id: accountId.toString(),
-        account_url: `/teams/${accountId}`,
-        name: standing.name,
-        score: Math.floor(standing.score),
-        bracket_id: standing.bracket_id || null,
-        bracket_name: standing.bracket_name || null,
-        solves: solvesMapper[accountId.toString()] || []
+      responseData[rank] = {
+        id: entry.account_id,
+        name: entry.name,
+        score: entry.score,
+        solves: history
       };
-    });
-
-    // Cache result
-    try {
-      await redisClient.setex(cacheKey, CACHE_TTL, JSON.stringify(response));
-    } catch (cacheErr) {
-      console.warn('[Scoreboard] Cache write error:', cacheErr.message);
     }
 
-    res.json({
+    const response = {
       success: true,
-      data: response
-    });
+      data: responseData
+    };
+
+    await redisClient.setex(cacheKey, CACHE_TTL, JSON.stringify(response));
+    res.json(response);
 
   } catch (error) {
-    console.error('[Scoreboard Top] Error:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Error fetching detailed scoreboard'
-    });
+    console.error('Scoreboard Top Error:', error);
+    res.status(500).json({ success: false, message: 'Server Error' });
   }
 });
 
 /**
- * Get team standings (CTFd algorithm)
- * 
- * Scoring logic:
- * 1. Sum all solve points + award points
- * 2. Sort by score DESC
- * 3. Tie-break by last solve date ASC (earlier is better)
- * 4. Exclude hidden/banned unless admin
+ * @route   GET /api/v1/scoreboard/graph
+ * @desc    Get score graph data
  */
-async function getTeamStandings({ count = null, includeHidden = false, freezeTime = null }) {
+router.get('/graph', async (req, res) => {
   try {
-    // Get all teams
-    let teamQuery = Team.find({});
-    if (!includeHidden) {
-      teamQuery = teamQuery.where('hidden').ne(true).where('banned').ne(true);
-    }
-    const teams = await teamQuery.lean();
+    const type = req.query.type === 'users' ? 'users' : 'teams';
+    const isAdmin = req.user && (req.user.role === 'admin' || req.user.role === 'superadmin');
 
-    // Get all users with their team membership
-    let userQuery = User.find({ role: 'user' });
-    if (!includeHidden) {
-      userQuery = userQuery.where('hidden').ne(true).where('banned').ne(true);
+    const cacheKey = `scoreboard:graph:${type}:${isAdmin ? 'admin' : 'public'}`;
+    const cached = await redisClient.get(cacheKey);
+    if (cached && !isAdmin) {
+      return res.json(JSON.parse(cached));
     }
-    const users = await userQuery.select('_id team lastSolveTime').lean();
 
-    // Build team member map
-    const teamMembers = {};
-    teams.forEach(team => {
-      teamMembers[team._id.toString()] = [];
-    });
-    users.forEach(user => {
-      if (user.team) {
-        const teamId = user.team.toString();
-        if (teamMembers[teamId]) {
-          teamMembers[teamId].push(user._id);
-        }
+    const freezeTime = await getFreezeTime();
+
+    // 1. Get Top 10 Standings (Graph usually shows top 10)
+    let topStandings = [];
+    if (type === 'teams') {
+      topStandings = await aggregateTeamStandings(isAdmin, freezeTime, 10);
+    } else {
+      topStandings = await aggregateUserStandings(isAdmin, freezeTime, 10);
+    }
+
+    // 2. Generate Time Series for each
+    const graphData = {}; // keyed by rank? CTFd returns object with key as rank string
+
+    for (let i = 0; i < topStandings.length; i++) {
+      const entry = topStandings[i];
+      const rank = i + 1;
+
+      const history = await getSolveHistory(entry.account_id, type === 'teams', freezeTime);
+
+      // Sort history by date ASC
+      history.sort((a, b) => new Date(a.date) - new Date(b.date));
+
+      const series = [];
+      let cumulativeScore = 0;
+
+      // Add start point
+      // series.push({ time: eventStart, score: 0 }); // Optional, CTFd might not do this
+
+      for (const item of history) {
+        cumulativeScore += item.value;
+        series.push({
+          time: new Date(item.date).getTime(),
+          score: cumulativeScore
+        });
       }
-    });
 
-    // Get all solves
-    let solvesQuery = Submission.find({ isCorrect: true });
-    if (freezeTime) {
-      solvesQuery = solvesQuery.where('submittedAt').lt(new Date(freezeTime));
-    }
-    const solves = await solvesQuery
-      .populate('user', '_id team lastSolveTime')
-      .lean();
-
-    // Get all awards
-    let awardsQuery = Award.find({});
-    if (freezeTime) {
-      awardsQuery = awardsQuery.where('date').lt(new Date(freezeTime));
-    }
-    const awards = await awardsQuery.lean();
-
-    // Calculate team scores
-    const teamScores = {};
-    teams.forEach(team => {
-      const teamId = team._id.toString();
-      teamScores[teamId] = {
-        team_id: team._id,
-        name: team.name,
-        score: 0,
-        last_solve_date: null,
-        bracket_id: team.bracket_id || null,
-        bracket_name: team.bracket_name || null
+      graphData[rank] = {
+        id: entry.account_id,
+        name: entry.name,
+        color: '', // Frontend handles color
+        data: series
       };
-    });
-
-    // Add solve points (filter out zero-value solves like CTFd)
-    for (const solve of solves) {
-      if (!solve.user?.team) continue;
-      const points = solve.points || 0;
-      if (points === 0) continue; // Skip zero-value solves for tie-breaking accuracy
-      
-      const teamId = solve.user.team.toString();
-      if (teamScores[teamId]) {
-        teamScores[teamId].score += points;
-        const solveDate = new Date(solve.submittedAt);
-        if (!teamScores[teamId].last_solve_date || solveDate > teamScores[teamId].last_solve_date) {
-          teamScores[teamId].last_solve_date = solveDate;
-        }
-      }
     }
 
-    // Add award points (filter out zero-value awards like CTFd)
-    for (const award of awards) {
-      const value = award.value || 0;
-      if (value === 0) continue; // Skip zero-value awards for tie-breaking accuracy
-      
-      const teamId = award.team?.toString();
-      if (teamId && teamScores[teamId]) {
-        teamScores[teamId].score += value;
-        const awardDate = new Date(award.date);
-        if (!teamScores[teamId].last_solve_date || awardDate > teamScores[teamId].last_solve_date) {
-          teamScores[teamId].last_solve_date = awardDate;
-        }
-      }
-    }
+    const response = {
+      success: true,
+      data: graphData
+    };
 
-    // Convert to array and sort (CTFd tie-breaking)
-    const standings = Object.values(teamScores)
-      .sort((a, b) => {
-        // 1. Higher score wins
-        if (b.score !== a.score) {
-          return b.score - a.score;
-        }
-        // 2. Earlier last solve wins (tie-breaker)
-        if (a.last_solve_date && b.last_solve_date) {
-          return a.last_solve_date.getTime() - b.last_solve_date.getTime();
-        }
-        if (a.last_solve_date) return -1;
-        if (b.last_solve_date) return 1;
-        return 0;
-      });
-
-    // Return limited count if specified
-    if (count) {
-      return standings.slice(0, count);
-    }
-    return standings;
+    await redisClient.setex(cacheKey, GRAPH_CACHE_TTL, JSON.stringify(response));
+    res.json(response);
 
   } catch (error) {
-    console.error('[getTeamStandings] Error:', error);
-    throw error;
+    console.error('Scoreboard Graph Error:', error);
+    res.status(500).json({ success: false, message: 'Server Error' });
   }
+});
+
+/**
+ * Helper: Aggregate User Standings
+ * Returns: [{ account_id, name, score, date, rank }, ...]
+ */
+async function aggregateUserStandings(isAdmin, freezeTime, limit = null) {
+  const matchStage = {
+    isCorrect: true,
+    points: { $gt: 0 } // exclude 0 point solves from summing? CTFd generally sums all. 
+    // Actually 0 points solves are fine, but usually challenges have points.
+  };
+
+  if (freezeTime) {
+    matchStage.submittedAt = { $lt: new Date(freezeTime) };
+  }
+
+  // 1. Aggregate Submissions
+  const submissionAgg = await Submission.aggregate([
+    { $match: matchStage },
+    {
+      $group: {
+        _id: "$user",
+        score: { $sum: "$points" },
+        lastSolve: { $max: "$submittedAt" }
+      }
+    }
+  ]);
+
+  // 2. Aggregate Awards
+  const awardMatch = { value: { $ne: 0 } };
+  if (freezeTime) {
+    awardMatch.date = { $lt: new Date(freezeTime) };
+  }
+
+  // Awards can be given to user directly
+  const awardAgg = await Award.aggregate([
+    { $match: { ...awardMatch, user: { $exists: true, $ne: null } } },
+    {
+      $group: {
+        _id: "$user",
+        score: { $sum: "$value" },
+        lastAward: { $max: "$date" }
+      }
+    }
+  ]);
+
+  // 3. Merge and Fetch User Details
+  const userMap = new Map();
+
+  // Process Submissions
+  for (const sub of submissionAgg) {
+    userMap.set(sub._id.toString(), {
+      score: sub.score,
+      lastDate: new Date(sub.lastSolve)
+    });
+  }
+
+  // Process Awards
+  for (const aw of awardAgg) {
+    const uid = aw._id.toString();
+    const current = userMap.get(uid) || { score: 0, lastDate: new Date(0) };
+
+    current.score += aw.score;
+    if (new Date(aw.lastAward) > current.lastDate) {
+      current.lastDate = new Date(aw.lastAward);
+    }
+    userMap.set(uid, current);
+  }
+
+  // Filter Users (Hidden/Banned/Admin)
+  const userQuery = { role: 'user' }; // Standard users only usually
+  if (!isAdmin) {
+    userQuery.hidden = { $ne: true };
+    userQuery.banned = { $ne: true };
+  }
+
+  const users = await User.find(userQuery).select('_id username hidden banned').lean();
+
+  const results = [];
+  for (const user of users) {
+    const uid = user._id.toString();
+    const data = userMap.get(uid);
+
+    if (data && data.score > 0) {
+      results.push({
+        account_id: uid,
+        name: user.username,
+        score: data.score,
+        date: data.lastDate,
+        account_url: `/users/${uid}`
+      });
+    }
+  }
+
+  // 4. Sort
+  results.sort((a, b) => {
+    // Score DESC
+    if (b.score !== a.score) return b.score - a.score;
+    // Date ASC (Earlier is better)
+    if (a.date.getTime() !== b.date.getTime()) return a.date - b.date;
+    // ID ASC (Tie breaker)
+    return a.account_id.localeCompare(b.account_id);
+  });
+
+  if (limit) {
+    return results.slice(0, limit);
+  }
+
+  // Add Rank
+  return results.map((r, i) => ({ ...r, pos: i + 1 }));
 }
 
 /**
- * Get user standings (CTFd algorithm)
- * 
- * Same as team standings but for individual users
+ * Helper: Aggregate Team Standings
  */
-async function getUserStandings({ count = null, includeHidden = false, freezeTime = null }) {
-  try {
-    // Get all users
-    let userQuery = User.find({ role: 'user' });
-    if (!includeHidden) {
-      userQuery = userQuery.where('hidden').ne(true).where('banned').ne(true);
-    }
-    const users = await userQuery.select('_id username email lastSolveTime').lean();
+async function aggregateTeamStandings(isAdmin, freezeTime, limit = null) {
+  // 1. Get all teams and their members first (Reverse mapping needed?)
+  // Or we can aggregate from Submissions and lookup Team?
+  // Submission -> User -> Team. 
+  // Faster to Aggregate Submission -> Lookup User -> Group by User.Team
 
-    // Get all solves
-    let solvesQuery = Submission.find({ isCorrect: true });
-    if (freezeTime) {
-      solvesQuery = solvesQuery.where('submittedAt').lt(new Date(freezeTime));
-    }
-    const solves = await solvesQuery
-      .populate('user', '_id username')
-      .lean();
-
-    // Get all awards
-    let awardsQuery = Award.find({});
-    if (freezeTime) {
-      awardsQuery = awardsQuery.where('date').lt(new Date(freezeTime));
-    }
-    const awards = await awardsQuery.lean();
-
-    // Calculate user scores
-    const userScores = {};
-    users.forEach(user => {
-      const userId = user._id.toString();
-      userScores[userId] = {
-        user_id: user._id,
-        name: user.username || user.email,
-        score: 0,
-        last_solve_date: null,
-        bracket_id: user.bracket_id || null,
-        bracket_name: user.bracket_name || null
-      };
-    });
-
-    // Add solve points (filter out zero-value solves like CTFd)
-    for (const solve of solves) {
-      if (!solve.user) continue;
-      const points = solve.points || 0;
-      if (points === 0) continue; // Skip zero-value solves for tie-breaking accuracy
-      
-      const userId = solve.user._id.toString();
-      if (userScores[userId]) {
-        userScores[userId].score += points;
-        const solveDate = new Date(solve.submittedAt);
-        if (!userScores[userId].last_solve_date || solveDate > userScores[userId].last_solve_date) {
-          userScores[userId].last_solve_date = solveDate;
-        }
-      }
-    }
-
-    // Add award points (filter out zero-value awards like CTFd)
-    for (const award of awards) {
-      const value = award.value || 0;
-      if (value === 0) continue; // Skip zero-value awards for tie-breaking accuracy
-      
-      const userId = award.user?.toString();
-      if (userId && userScores[userId]) {
-        userScores[userId].score += value;
-        const awardDate = new Date(award.date);
-        if (!userScores[userId].last_solve_date || awardDate > userScores[userId].last_solve_date) {
-          userScores[userId].last_solve_date = awardDate;
-        }
-      }
-    }
-
-    // Convert to array and sort (CTFd tie-breaking)
-    const standings = Object.values(userScores)
-      .sort((a, b) => {
-        // 1. Higher score wins
-        if (b.score !== a.score) {
-          return b.score - a.score;
-        }
-        // 2. Earlier last solve wins (tie-breaker)
-        if (a.last_solve_date && b.last_solve_date) {
-          return a.last_solve_date.getTime() - b.last_solve_date.getTime();
-        }
-        if (a.last_solve_date) return -1;
-        if (b.last_solve_date) return 1;
-        return 0;
-      });
-
-    // Return limited count if specified
-    if (count) {
-      return standings.slice(0, count);
-    }
-    return standings;
-
-  } catch (error) {
-    console.error('[getUserStandings] Error:', error);
-    throw error;
+  const matchStage = {
+    isCorrect: true,
+    points: { $gt: 0 }
+  };
+  if (freezeTime) {
+    matchStage.submittedAt = { $lt: new Date(freezeTime) };
   }
+
+  // Aggregate Solves grouped by Team
+  // This requires a lookup which can be expensive on large datasets, 
+  // but standard for Mongo.
+  const teamSolves = await Submission.aggregate([
+    { $match: matchStage },
+    {
+      $lookup: {
+        from: 'users',
+        localField: 'user',
+        foreignField: '_id',
+        as: 'userInfo'
+      }
+    },
+    { $unwind: '$userInfo' },
+    {
+      $match: {
+        'userInfo.team': { $exists: true, $ne: null },
+        // Filter banned/hidden users if strict, but usually team status matters
+      }
+    },
+    {
+      $group: {
+        _id: '$userInfo.team',
+        score: { $sum: '$points' },
+        lastSolve: { $max: '$submittedAt' }
+      }
+    }
+  ]);
+
+  // Aggregate Awards (Team Awards + User Awards in Team?)
+  // CTFd: Awards given to USER count for TEAM? Yes usually.
+  // Awards given to TEAM count for TEAM.
+
+  // Team Specific Awards
+  const teamAwardMatch = { value: { $ne: 0 }, team: { $exists: true, $ne: null } };
+  if (freezeTime) teamAwardMatch.date = { $lt: new Date(freezeTime) };
+
+  const teamDirectAwards = await Award.aggregate([
+    { $match: teamAwardMatch },
+    {
+      $group: {
+        _id: '$team',
+        score: { $sum: '$value' },
+        lastAward: { $max: '$date' }
+      }
+    }
+  ]);
+
+  // User Awards (mapped to team)
+  // NOTE: This might double count if logic isn't careful, but Award model enforces either user OR team.
+  // So we just need awards where user -> team.
+  const userAwardMatch = { value: { $ne: 0 }, user: { $exists: true, $ne: null } };
+  if (freezeTime) userAwardMatch.date = { $lt: new Date(freezeTime) };
+
+  const userAwardsInTeams = await Award.aggregate([
+    { $match: userAwardMatch },
+    {
+      $lookup: {
+        from: 'users',
+        localField: 'user',
+        foreignField: '_id',
+        as: 'userInfo'
+      }
+    },
+    { $unwind: '$userInfo' },
+    { $match: { 'userInfo.team': { $exists: true, $ne: null } } },
+    {
+      $group: {
+        _id: '$userInfo.team',
+        score: { $sum: '$value' },
+        lastAward: { $max: '$date' }
+      }
+    }
+  ]);
+
+  // Merge Everything
+  const teamMap = new Map();
+
+  const merge = (id, score, date) => {
+    const sid = id.toString();
+    const current = teamMap.get(sid) || { score: 0, lastDate: new Date(0) };
+    current.score += score;
+    if (new Date(date) > current.lastDate) {
+      current.lastDate = new Date(date);
+    }
+    teamMap.set(sid, current);
+  };
+
+  teamSolves.forEach(t => merge(t._id, t.score, t.lastSolve));
+  teamDirectAwards.forEach(t => merge(t._id, t.score, t.lastAward));
+  userAwardsInTeams.forEach(t => merge(t._id, t.score, t.lastAward));
+
+  // Fetch Team Metadata & Filter
+  const teamQuery = { banned: false }; // Base filter
+  if (!isAdmin) {
+    teamQuery.hidden = { $ne: true };
+  }
+
+  const teams = await Team.find(teamQuery).select('_id teamName hidden banned').lean();
+
+  const results = [];
+  for (const team of teams) {
+    const tid = team._id.toString();
+    const data = teamMap.get(tid);
+
+    if (data && data.score > 0) {
+      results.push({
+        account_id: tid,
+        name: team.teamName,
+        score: data.score,
+        date: data.lastDate,
+        account_url: `/teams/${tid}`
+      });
+    }
+  }
+
+  // Sort
+  results.sort((a, b) => {
+    if (b.score !== a.score) return b.score - a.score;
+    if (a.date.getTime() !== b.date.getTime()) return a.date - b.date;
+    return a.account_id.localeCompare(b.account_id);
+  });
+
+  if (limit) return results.slice(0, limit);
+  return results.map((r, i) => ({ ...r, pos: i + 1 }));
+}
+
+/**
+ * Helper: Get detailed solve history for graph/top view
+ */
+async function getSolveHistory(accountId, isTeam, freezeTime) {
+  const history = [];
+  const ids = [];
+
+  if (isTeam) {
+    // Get team members first
+    const users = await User.find({ team: accountId }).select('_id');
+    ids.push(...users.map(u => u._id));
+  } else {
+    ids.push(accountId);
+  }
+
+  // Solves
+  const solveQuery = {
+    user: { $in: ids },
+    isCorrect: true,
+    points: { $gt: 0 }
+  };
+  if (freezeTime) solveQuery.submittedAt = { $lt: new Date(freezeTime) };
+
+  const solves = await Submission.find(solveQuery)
+    .populate('challenge', 'title') // simplified
+    .select('points submittedAt challenge')
+    .lean();
+
+  solves.forEach(s => {
+    history.push({
+      challenge_id: s.challenge?._id,
+      challenge_name: s.challenge?.title || 'Unknown',
+      value: s.points,
+      date: s.submittedAt
+    });
+  });
+
+  // Awards
+  const awardQuery = { value: { $ne: 0 } };
+  if (isTeam) {
+    // Awards for team directly OR users in team
+    awardQuery.$or = [
+      { team: accountId },
+      { user: { $in: ids } }
+    ];
+  } else {
+    awardQuery.user = accountId;
+  }
+  if (freezeTime) awardQuery.date = { $lt: new Date(freezeTime) };
+
+  const awards = await Award.find(awardQuery).select('value date name').lean();
+
+  awards.forEach(a => {
+    history.push({
+      challenge_id: null,
+      challenge_name: a.name || 'Award',
+      value: a.value,
+      date: a.date
+    });
+  });
+
+  return history;
 }
 
 module.exports = router;

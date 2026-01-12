@@ -2,153 +2,125 @@ import React, { useState, useEffect, useContext } from 'react';
 import axios from 'axios';
 import AuthContext from '../context/AuthContext';
 import ScoreGraph from '../components/ScoreGraph';
-import './Scoreboard.css';
+// No CSS file needed if we use inline or global styles for simplicity/consistency,
+// but for cleaner code we use standard layout classes which might exist or inline minimal styles.
+// CTFd style: Simple Bootstrap tables usually.
 
-/**
- * CTFd-Style Scoreboard Component
- * 
- * Displays team/user rankings with:
- * - Real-time updates
- * - Tie-breaking by solve time
- * - Clean table layout
- */
 function Scoreboard() {
   const { isAuthenticated, token } = useContext(AuthContext);
-  const [teams, setTeams] = useState([]);
-  const [users, setUsers] = useState([]);
-  const [viewType, setViewType] = useState('teams');
+  const [viewType, setViewType] = useState('teams'); // 'teams' or 'users'
+  const [standings, setStandings] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
 
   useEffect(() => {
-    if (isAuthenticated) {
-      fetchScoreboard();
-      // Auto-refresh every 30 seconds
-      const interval = setInterval(fetchScoreboard, 30000);
-      return () => clearInterval(interval);
-    }
-  }, [isAuthenticated, viewType]);
+    fetchScoreboard();
+    const interval = setInterval(fetchScoreboard, 30000); // 30s auto-refresh
+    return () => clearInterval(interval);
+  }, [viewType, isAuthenticated]);
 
   const fetchScoreboard = async () => {
     try {
-      if (!isAuthenticated) {
-        setError('Please login to view the scoreboard');
-        setLoading(false);
-        return;
+      const config = {};
+      if (isAuthenticated) {
+        config.headers = { Authorization: `Bearer ${token}` };
       }
 
-      const config = {
-        headers: {
-          Authorization: `Bearer ${token}`
-        }
-      };
-
-      // Fetch both teams and users
-      const [teamsRes, usersRes] = await Promise.all([
-        axios.get('/api/v1/scoreboard?type=teams', config),
-        axios.get('/api/v1/scoreboard?type=users', config)
-      ]);
-
-      setTeams(teamsRes.data.data || []);
-      setUsers(usersRes.data.data || []);
+      const res = await axios.get(`/api/v1/scoreboard?type=${viewType}`, config);
+      if (res.data.success) {
+        setStandings(res.data.data);
+      }
       setLoading(false);
-      setError(null);
     } catch (err) {
-      console.error('Scoreboard fetch error:', err);
-      setError('Failed to load scoreboard');
+      console.error('Scoreboard load error:', err);
       setLoading(false);
     }
   };
 
-  if (!isAuthenticated) {
-    return (
-      <div className="scoreboard-container">
-        <div className="error">Please login to view the scoreboard</div>
-      </div>
-    );
-  }
-
-  if (loading) {
-    return (
-      <div className="scoreboard-container">
-        <div className="loading">Loading scoreboard...</div>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="scoreboard-container">
-        <div className="error">{error}</div>
-      </div>
-    );
-  }
-
-  const currentData = viewType === 'teams' ? teams : users;
-
   return (
-    <div className="scoreboard-container">
-      <div className="scoreboard-header">
-        <h1>Scoreboard</h1>
-      </div>
+    <div style={{ padding: '20px', maxWidth: '1200px', margin: '0 auto', color: '#e0e6ed' }}>
+      <h1 style={{ textAlign: 'center', marginBottom: '30px', color: '#00d9ff' }}>Scoreboard</h1>
 
-      {/* View Toggle */}
-      <div className="scoreboard-tabs">
+      {/* Tabs */}
+      <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '30px' }}>
         <button
-          className={viewType === 'teams' ? 'tab-active' : 'tab'}
           onClick={() => setViewType('teams')}
+          style={{
+            padding: '10px 20px',
+            background: viewType === 'teams' ? '#00d9ff' : 'transparent',
+            color: viewType === 'teams' ? '#000' : '#00d9ff',
+            border: '2px solid #00d9ff',
+            borderRadius: '5px 0 0 5px',
+            cursor: 'pointer',
+            fontWeight: 'bold',
+            transition: 'all 0.3s'
+          }}
         >
           Teams
         </button>
         <button
-          className={viewType === 'users' ? 'tab-active' : 'tab'}
           onClick={() => setViewType('users')}
+          style={{
+            padding: '10px 20px',
+            background: viewType === 'users' ? '#00d9ff' : 'transparent',
+            color: viewType === 'users' ? '#000' : '#00d9ff',
+            border: '2px solid #00d9ff',
+            borderLeft: 'none',
+            borderRadius: '0 5px 5px 0',
+            cursor: 'pointer',
+            fontWeight: 'bold',
+            transition: 'all 0.3s'
+          }}
         >
           Users
         </button>
       </div>
 
-      {/* Score Progression Graph */}
-      <ScoreGraph type={viewType} limit={10} />
+      {/* Graph */}
+      <div style={{ marginBottom: '40px', background: '#1a2634', padding: '20px', borderRadius: '10px', boxShadow: '0 4px 6px rgba(0,0,0,0.3)' }}>
+        <h3 style={{ textAlign: 'center', marginBottom: '15px' }}>Top 10 Trend</h3>
+        <ScoreGraph type={viewType} limit={10} />
+      </div>
 
-      {/* Scoreboard Table */}
-      <div className="scoreboard-table-container">
-        <table className="scoreboard-table">
+      {/* Table */}
+      <div style={{ background: '#1a2634', borderRadius: '10px', overflow: 'hidden', boxShadow: '0 4px 6px rgba(0,0,0,0.3)' }}>
+        <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
           <thead>
-            <tr>
-              <th style={{ width: '80px' }}>Rank</th>
-              <th>{viewType === 'teams' ? 'Team' : 'User'}</th>
-              <th style={{ width: '120px' }}>Score</th>
+            <tr style={{ background: '#243447', color: '#b0c4de' }}>
+              <th style={{ padding: '15px', width: '80px', textAlign: 'center' }}>#</th>
+              <th style={{ padding: '15px' }}>{viewType === 'teams' ? 'Team' : 'User'}</th>
+              <th style={{ padding: '15px', width: '120px', textAlign: 'center' }}>Score</th>
             </tr>
           </thead>
           <tbody>
-            {currentData.length === 0 ? (
-              <tr>
-                <td colSpan="3" style={{ textAlign: 'center', padding: '40px' }}>
-                  No entries yet
-                </td>
-              </tr>
+            {loading ? (
+              <tr><td colSpan="3" style={{ padding: '30px', textAlign: 'center' }}>Loading scoreboard...</td></tr>
+            ) : standings.length === 0 ? (
+              <tr><td colSpan="3" style={{ padding: '30px', textAlign: 'center' }}>No visible solves yet</td></tr>
             ) : (
-              currentData.map((entry, index) => (
-                <tr key={entry.account_id || index}>
-                  <td className="rank-cell">{index + 1}</td>
-                  <td className="name-cell">
-                    {entry.name}
-                    {entry.bracket_name && (
-                      <span className="bracket-badge">{entry.bracket_name}</span>
-                    )}
+              standings.map((entry, idx) => (
+                <tr
+                  key={entry.account_id}
+                  style={{
+                    borderBottom: '1px solid #2b3e50',
+                    background: idx < 3 ? 'rgba(0, 217, 255, 0.05)' : 'transparent'
+                  }}
+                >
+                  <td style={{ padding: '15px', textAlign: 'center', fontWeight: 'bold', fontSize: '1.1em', color: idx < 3 ? '#ffeb3b' : 'inherit' }}>
+                    {entry.pos}
                   </td>
-                  <td className="score-cell">{entry.score}</td>
+                  <td style={{ padding: '15px' }}>
+                    <a href={entry.account_url} style={{ color: '#00d9ff', textDecoration: 'none', fontWeight: '500' }}>
+                      {entry.name}
+                    </a>
+                  </td>
+                  <td style={{ padding: '15px', textAlign: 'center', fontWeight: 'bold', fontSize: '1.2em' }}>
+                    {entry.score}
+                  </td>
                 </tr>
               ))
             )}
           </tbody>
         </table>
-      </div>
-
-      {/* Auto-refresh indicator */}
-      <div className="refresh-notice">
-        Updates automatically every 30 seconds
       </div>
     </div>
   );
