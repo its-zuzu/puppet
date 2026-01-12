@@ -105,10 +105,8 @@ router.get('/', protect, async (req, res) => {
 
 /**
  * @route   GET /api/v1/scoreboard/graph
- * @desc    Get score progression graph data (CTFd-compatible)
+ * @desc    Get score progression graph data (CTFd-exact rebuild)
  * @access  Private
- * 
- * Returns time-series data for score progression graph
  */
 router.get('/graph', protect, async (req, res) => {
   try {
@@ -117,19 +115,16 @@ router.get('/graph', protect, async (req, res) => {
     const limit = parseInt(req.query.count || '10');
     const count = Math.max(1, Math.min(limit, 50));
     
-    const freezeTime = null; // TODO: Get from config
+    const freezeTime = null;
 
     const cacheKey = `ctfd:scoreboard:graph:${count}:${type}:${isAdmin}`;
-    const CACHE_TTL = 5; // 5 seconds for faster updates
+    const CACHE_TTL = 5;
 
     // Try cache
     try {
       const cached = await redisClient.get(cacheKey);
       if (cached) {
-        return res.json({
-          success: true,
-          data: JSON.parse(cached)
-        });
+        return res.json(JSON.parse(cached));
       }
     } catch (cacheErr) {
       console.warn('[Graph] Cache read error:', cacheErr.message);
@@ -138,177 +133,110 @@ router.get('/graph', protect, async (req, res) => {
     // Get top standings
     let standings;
     if (type === 'users') {
-      standings = await getUserStandings({
-        count,
-        includeHidden: isAdmin,
-        freezeTime
-      });
+      standings = await getUserStandings({ count, includeHidden: isAdmin, freezeTime });
     } else {
-      standings = await getTeamStandings({
-        count,
-        includeHidden: isAdmin,
-        freezeTime
-      });
+      standings = await getTeamStandings({ count, includeHidden: isAdmin, freezeTime });
     }
+
+    // Get total challenge points for Y-axis
+    const challenges = await Challenge.find({ active: true }).select('points').lean();
+    const maxScore = challenges.reduce((sum, ch) => sum + (ch.points || 0), 0);
 
     if (standings.length === 0) {
-      return res.json({
-        success: true,
-        data: {},
-        maxScore: 0
-      });
+      return res.json({ success: true, data: {}, maxScore });
     }
 
-    // Get account IDs
-    const accountIds = standings.map(s => s.team_id || s.user_id);
-
-    // Get total available challenge points for Y-axis scaling
-    const allChallenges = await Challenge.find({ active: true }).select('points').lean();
-    const totalAvailablePoints = allChallenges.reduce((sum, ch) => sum + (ch.points || 0), 0);
-
-    // Get all solves - for teams, we need to find users who are in those teams
-    let userIds = [];
-    if (type === 'teams') {
-      // Find all users in these teams
-      const usersInTeams = await User.find({ 
-        team: { $in: accountIds },
-        role: 'user'
-      }).select('_id team').lean();
-      userIds = usersInTeams.map(u => u._id);
-    } else {
-      userIds = accountIds;
-    }
-
-    // Get all solves for these users, sorted by time
-    let solvesQuery = Submission.find({
-      user: { $in: userIds },
-      isCorrect: true
-    })
-      .populate('user', '_id team username')
-      .sort({ submittedAt: 1 });
-
-    if (freezeTime && !isAdmin) {
-      solvesQuery = solvesQuery.where('submittedAt').lt(new Date(freezeTime));
-    }
-
-    const solves = await solvesQuery.lean();
-
-    // Get all awards for these accounts, sorted by time
-    let awardsQuery = Award.find({
-      $or: [
-        { user: { $in: type === 'users' ? accountIds : userIds } },
-        { team: { $in: type === 'teams' ? accountIds : [] } }
-      ]
-    }).sort({ date: 1 });
-
-    if (freezeTime && !isAdmin) {
-      awardsQuery = awardsQuery.where('date').lt(new Date(freezeTime));
-    }
-
-    const awards = await awardsQuery.lean();
-
-    // Build graph data for each account
+    // Build graph data
     const graphData = {};
     
-    standings.forEach((standing, index) => {
+    for (let i = 0; i < standings.length; i++) {
+      const standing = standings[i];
       const accountId = standing.team_id || standing.user_id;
-      const accountIdStr = accountId.toString();
       
-      console.log(`[Graph] Processing account: ${standing.name} (ID: ${accountIdStr})`);
+      // Get all score events for this account
+      let events = [];
       
-      // Collect all score events (solves + awards), filtering zero values like CTFd
-      const events = [];
-      
-      // Add solves (skip zero-value)
-      for (const solve of solves) {
-        const solveAccountId = solve.user?.team?.toString() || solve.user?._id.toString();
-        const points = solve.points || 0;
+      if (type === 'teams') {
+        // Find users in this team
+        const teamUsers = await User.find({ team: accountId, role: 'user' }).select('_id').lean();
+        const userIds = teamUsers.map(u => u._id);
         
-        console.log(`[Graph] Checking solve: user=${solve.user?._id}, team=${solve.user?.team}, points=${points}, matches=${solveAccountId === accountIdStr}`);
+        // Get their submissions
+        const submissions = await Submission.find({
+          user: { $in: userIds },
+          isCorrect: true
+        }).select('points submittedAt').sort({ submittedAt: 1 }).lean();
         
-        if (solveAccountId === accountIdStr && points !== 0) {
-          events.push({
-            time: solve.submittedAt,
-            value: points,
-            challenge_id: solve.challenge
-          });
-          console.log(`[Graph] Added solve event: ${points} points at ${solve.submittedAt}`);
-        }
+        submissions.forEach(sub => {
+          if (sub.points && sub.points > 0) {
+            events.push({ date: sub.submittedAt, value: sub.points });
+          }
+        });
+        
+        // Get team awards
+        const awards = await Award.find({ team: accountId }).select('value date').sort({ date: 1 }).lean();
+        awards.forEach(award => {
+          if (award.value && award.value > 0) {
+            events.push({ date: award.date, value: award.value });
+          }
+        });
+      } else {
+        // User mode
+        const submissions = await Submission.find({
+          user: accountId,
+          isCorrect: true
+        }).select('points submittedAt').sort({ submittedAt: 1 }).lean();
+        
+        submissions.forEach(sub => {
+          if (sub.points && sub.points > 0) {
+            events.push({ date: sub.submittedAt, value: sub.points });
+          }
+        });
+        
+        // Get user awards
+        const awards = await Award.find({ user: accountId }).select('value date').sort({ date: 1 }).lean();
+        awards.forEach(award => {
+          if (award.value && award.value > 0) {
+            events.push({ date: award.date, value: award.value });
+          }
+        });
       }
       
-      // Add awards (skip zero-value)
-      for (const award of awards) {
-        const awardAccountId = award.team?.toString() || award.user?.toString();
-        const value = award.value || 0;
-        
-        if (awardAccountId === accountIdStr && value !== 0) {
-          events.push({
-            time: award.date,
-            value: value,
-            challenge_id: null
-          });
-        }
-      }
+      // Sort events chronologically
+      events.sort((a, b) => new Date(a.date) - new Date(b.date));
       
-      // Sort events by time
-      events.sort((a, b) => new Date(a.time) - new Date(b.time));
-      
-      // Build cumulative score timeline
+      // Build cumulative timeline
       const timeline = [];
+      let cumulative = 0;
       
-      // Start with 0 score at the time of first event (or now if no events)
-      if (events.length > 0) {
+      for (const event of events) {
+        cumulative += event.value;
         timeline.push({
-          time: new Date(events[0].time).getTime(),
-          score: 0
+          time: new Date(event.date).getTime(),
+          score: cumulative
         });
       }
       
-      // Build cumulative scores
-      let cumulativeScore = 0;
-      events.forEach(event => {
-        cumulativeScore += event.value;
-        timeline.push({
-          time: new Date(event.time).getTime(),
-          score: cumulativeScore
-        });
-      });
-      
-      // Debug logging
-      if (events.length > 0) {
-        console.log(`[Graph] ${standing.name}: ${events.length} events, final score: ${cumulativeScore}`);
-      }
-      
-      graphData[index + 1] = {
-        id: accountIdStr,
+      graphData[i + 1] = {
+        id: accountId.toString(),
         name: standing.name,
-        timeline: timeline
+        data: timeline
       };
-    });
+    }
 
-    // Cache result
-    const responseData = {
-      data: graphData,
-      maxScore: totalAvailablePoints
-    };
+    const response = { success: true, data: graphData, maxScore };
     
     try {
-      await redisClient.setex(cacheKey, CACHE_TTL, JSON.stringify(responseData));
+      await redisClient.setex(cacheKey, CACHE_TTL, JSON.stringify(response));
     } catch (cacheErr) {
       console.warn('[Graph] Cache write error:', cacheErr.message);
     }
 
-    res.json({
-      success: true,
-      ...responseData
-    });
+    res.json(response);
 
   } catch (error) {
     console.error('[Score Graph] Error:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Error fetching score graph'
-    });
+    res.status(500).json({ success: false, message: 'Error fetching score graph' });
   }
 });
 
