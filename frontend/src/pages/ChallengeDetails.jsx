@@ -332,9 +332,6 @@ function ChallengeDetails() {
       <div className="challenges-main">
         <div className="challenge-details-content">
           <div className="challenge-meta">
-            <span className={`difficulty-badge ${challenge.difficulty.toLowerCase()}`}>
-              {challenge.difficulty}
-            </span>
             <span className="points-badge">{challenge.points} pts</span>
             <span className="category-badge">{challenge.category}</span>
             <span

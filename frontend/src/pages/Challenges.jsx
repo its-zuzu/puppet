@@ -326,9 +326,6 @@ function Challenges() {
                   onClick={() => handleChallengeClick(challenge)}
                 >
                   <div className="challenge-header">
-                    <span className={`difficulty-badge ${challenge.difficulty.toLowerCase()}`}>
-                      {challenge.difficulty}
-                    </span>
                     <span className="points-badge">
                       {challenge.currentValue || challenge.points} pts
                     </span>

@@ -43,8 +43,8 @@ function CreateChallenge() {
     const { name, value } = e.target;
     setFormData({
       ...formData,
-      [name]: name === 'points' || name === 'initial' || name === 'minimum' || name === 'decay' 
-        ? parseInt(value, 10) || '' 
+      [name]: name === 'points' || name === 'initial' || name === 'minimum' || name === 'decay'
+        ? parseInt(value, 10) || ''
         : value
     });
     setFormError('');
@@ -190,22 +190,6 @@ function CreateChallenge() {
                 <option value="misc">Miscellaneous</option>
               </select>
             </div>
-
-            <div className="form-group">
-              <label htmlFor="difficulty">Difficulty</label>
-              <select
-                id="difficulty"
-                name="difficulty"
-                value={difficulty}
-                onChange={onChange}
-                required
-              >
-                <option value="Easy">Easy</option>
-                <option value="Medium">Medium</option>
-                <option value="Hard">Hard</option>
-                <option value="Expert">Expert</option>
-              </select>
-            </div>
           </div>
 
           <div className="form-group">
@@ -222,7 +206,7 @@ function CreateChallenge() {
               required
             />
             <small className="form-hint">
-              {formData.function === 'static' 
+              {formData.function === 'static'
                 ? 'Fixed points - all solvers get this amount'
                 : 'Current value (will change as users solve)'}
             </small>
@@ -302,7 +286,7 @@ function CreateChallenge() {
                     required
                   />
                   <small className="form-hint">
-                    {formData.function === 'linear' 
+                    {formData.function === 'linear'
                       ? `Points decrease by ${formData.decay} per solve`
                       : `Reaches minimum at ~${formData.decay} solves`}
                   </small>
