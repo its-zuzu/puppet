@@ -160,7 +160,7 @@ function PlatformControl() {
         <button
           className="control-btn start-btn"
           onClick={handleStartEvent}
-          disabled={loading || eventState.status === 'started'}
+          disabled={loading || (eventState.status === 'started' && !customMessage)}
         >
           <span className="btn-icon">▶️</span>
           <span className="btn-text">START EVENT</span>

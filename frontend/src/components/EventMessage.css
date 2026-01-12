@@ -18,12 +18,6 @@
     box-shadow: 0 10px 40px rgba(0, 0, 0, 0.4);
 }
 
-.message-icon {
-    font-size: 4rem;
-    margin-bottom: 1.5rem;
-    animation: pulse 2s ease-in-out infinite;
-}
-
 .message-title {
     font-size: 2.5rem;
     font-weight: 700;
