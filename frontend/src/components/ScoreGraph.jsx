@@ -113,7 +113,7 @@ const ScoreGraph = ({ type = 'teams', limit = 10, height = '400px' }) => {
           textStyle: { color: '#fff' },
           formatter: (params) => {
             const date = new Date(params[0].axisValue);
-            let result = `<div style="font-weight:bold; margin-bottom:5px;">${date.toLocaleTimeString()}</div>`;
+            let result = `<div style="font-weight:bold; margin-bottom:5px;">${date.toLocaleString()}</div>`;
             params.sort((a, b) => b.data[1] - a.data[1]);
             params.forEach(item => {
               const score = item.data[1];
