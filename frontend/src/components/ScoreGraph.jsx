@@ -62,6 +62,8 @@ function ScoreGraph({ type = 'teams', limit = 10 }) {
       return;
     }
 
+    console.log('[ScoreGraph] Processing data for', accounts.length, 'accounts');
+
     // Transform to component format
     const timelineData = accounts.map((account, index) => {
       // Timeline is already sorted and cumulative from backend
@@ -69,6 +71,8 @@ function ScoreGraph({ type = 'teams', limit = 10 }) {
         time: new Date(point.time),
         score: point.score
       }));
+
+      console.log(`[ScoreGraph] ${account.name}: ${points.length} points`, points.length > 0 ? `0→${points[points.length-1]?.score}` : 'no data');
 
       // If no points, create a baseline
       if (points.length === 0) {
