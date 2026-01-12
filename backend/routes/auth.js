@@ -5,7 +5,7 @@ const config = require('../config');
 const User = require('../models/User');
 const LoginLog = require('../models/LoginLog');
 const { protect, authorize } = require('../middleware/auth');
-const { protect, authorize } = require('../middleware/auth');
+
 const {
   loginLimiter,
   sanitizeInput,
