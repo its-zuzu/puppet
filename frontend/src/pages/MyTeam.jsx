@@ -6,15 +6,15 @@ import Loading from '../components/Loading';
 import './MyTeam.css';
 
 function MyTeam() {
-  const [loading, setLoading] = useState(true);
+  const [pageLoading, setPageLoading] = useState(true);
   const [error, setError] = useState(null);
-  const { isAuthenticated, loading: authLoading } = useContext(AuthContext);
+  const { isAuthenticated, loading } = useContext(AuthContext);
   const navigate = useNavigate();
 
   useEffect(() => {
     const fetchMyTeam = async () => {
       // Wait for auth to finish loading before checking authentication
-      if (authLoading) {
+      if (loading) {
         return;
       }
 
@@ -40,14 +40,14 @@ function MyTeam() {
         } else {
           setError('Failed to fetch your team information.');
         }
-        setLoading(false);
+        setPageLoading(false);
       }
     };
 
     fetchMyTeam();
-  }, [isAuthenticated, authLoading, navigate]);
+  }, [isAuthenticated, loading, navigate]);
 
-  if (loading) {
+  if (pageLoading) {
     return (
       <div className="my-team-container">
         <Loading size="medium" text="Loading team" />
