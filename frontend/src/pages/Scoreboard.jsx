@@ -88,7 +88,7 @@ function Scoreboard() {
       {/* Graph */}
       <div style={{ marginBottom: '40px', background: '#1a2634', padding: '20px', borderRadius: '10px', boxShadow: '0 4px 6px rgba(0,0,0,0.3)' }}>
         <h3 style={{ textAlign: 'center', marginBottom: '15px' }}>Top 10 Trend</h3>
-        <ScoreGraph type={viewType} limit={10} />
+        <ScoreGraph key={viewType} type={viewType} limit={10} />
       </div>
 
       {/* Table */}
