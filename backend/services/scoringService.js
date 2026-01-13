@@ -17,6 +17,7 @@ const Submission = require('../models/Submission');
 
 /**
  * Calculate current value of a challenge based on solve count
+ * Uses CTFd-exact formulas with solve_count-1 adjustment
  * @param {Object} challenge - Challenge document
  * @param {Number} solveCount - Number of solves (excluding hidden/banned users)
  * @returns {Number} Current point value
@@ -30,30 +31,27 @@ function calculateChallengeValue(challenge, solveCount = null) {
   // For dynamic challenges
   const initial = challenge.initial || challenge.points;
   const minimum = challenge.minimum || challenge.points;
-  const decay = challenge.decay || 0;
+  let decay = challenge.decay || 0;
 
   // If solveCount not provided, use challenge's solvedBy length
   if (solveCount === null) {
     solveCount = challenge.solvedBy?.length || 0;
   }
 
-  // CTFd-exact: Decay starts immediately after the first solve.
-  // If 1 person solved it, the value for the NEXT person should be lower.
-  // So we use the current solve count directly.
-  const adjustedSolveCount = solveCount;
+  // CTFd-exact: First solver gets max points (solve_count - 1)
+  const adjustedSolveCount = solveCount > 0 ? solveCount - 1 : 0;
 
   let value;
 
   if (challenge.function === 'linear') {
-    // CTFd Linear Formula: value = initial - (decay * (solve_count - 1))
+    // CTFd Linear: value = initial - (decay * (solve_count - 1))
     value = initial - (decay * adjustedSolveCount);
   } else if (challenge.function === 'logarithmic') {
-    // CTFd Logarithmic Formula: value = (((minimum - initial) / (decay^2)) * ((solve_count-1)^2)) + initial
+    // CTFd Logarithmic: value = (((minimum - initial) / (decay^2)) * ((solve_count-1)^2)) + initial
     if (decay === 0) {
-      value = initial; // Avoid division by zero
-    } else {
-      value = (((minimum - initial) / Math.pow(decay, 2)) * Math.pow(adjustedSolveCount, 2)) + initial;
+      decay = 1; // Prevent division by zero
     }
+    value = (((minimum - initial) / Math.pow(decay, 2)) * Math.pow(adjustedSolveCount, 2)) + initial;
   } else {
     value = challenge.points; // Fallback
   }
@@ -61,7 +59,7 @@ function calculateChallengeValue(challenge, solveCount = null) {
   // Ensure value doesn't go below minimum
   value = Math.max(minimum, value);
 
-  return Math.floor(value);
+  return Math.ceil(value); // CTFd uses ceiling
 }
 
 /**
@@ -86,17 +84,18 @@ async function getValidSolveCount(challengeId) {
 }
 
 /**
- * Recalculate challenge value after a new solve
+ * Update challenge value after a new solve (CTFd-style)
+ * Only updates challenge.points field, scores calculated dynamically via JOIN
  * @param {String} challengeId - Challenge ID
  * @returns {Promise<Number>} New challenge value
  */
-async function recalculateChallengeValue(challengeId) {
+async function updateChallengeValue(challengeId) {
   const challenge = await Challenge.findById(challengeId);
   if (!challenge) {
     throw new Error('Challenge not found');
   }
 
-  // Only recalculate for dynamic challenges
+  // Only update for dynamic challenges
   if (challenge.function === 'static' || !challenge.function) {
     return challenge.points;
   }
@@ -105,17 +104,17 @@ async function recalculateChallengeValue(challengeId) {
   const newValue = calculateChallengeValue(challenge, solveCount);
 
   // Update the challenge's points field with the new value
+  // This automatically updates all users' scores (calculated via JOIN)
   challenge.points = newValue;
   await challenge.save();
+
+  console.log(`[CTFd Scoring] Challenge "${challenge.title}" value updated: ${newValue} pts (${solveCount} solves)`);
 
   return newValue;
 }
 
-// Legacy scoreboard logic removed.
-// Scoreboard aggregation is now handled directly in routes/scoreboard.js for performance and correctness.
-
 module.exports = {
   calculateChallengeValue,
   getValidSolveCount,
-  recalculateChallengeValue
+  updateChallengeValue
 };

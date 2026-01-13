@@ -19,10 +19,6 @@ const SubmissionSchema = new mongoose.Schema({
     type: Boolean,
     required: true
   },
-  points: {
-    type: Number,
-    default: 0
-  },
   submittedAt: {
     type: Date,
     default: Date.now

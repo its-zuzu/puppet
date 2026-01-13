@@ -97,23 +97,23 @@ ChallengeSchema.methods.getCurrentValue = function () {
   const decay = this.decay || 0;
   const solveCount = this.solvedBy?.length || 0;
 
-  // CTFd-exact: Decay starts immediately after the first solve.
-  // If 1 person solved it, the value for the NEXT person should be lower.
-  // So we use the current solve count directly.
-  const adjustedSolveCount = solveCount;
+  // CTFd-exact: First solver gets maximum points (solve_count - 1 adjustment)
+  // If solve_count = 0: adjustedCount = 0, value = initial
+  // If solve_count = 1: adjustedCount = 0, value = initial (first solver)
+  // If solve_count = 2: adjustedCount = 1, decay starts
+  const adjustedSolveCount = solveCount > 0 ? solveCount - 1 : 0;
 
   let value;
 
   if (this.function === 'linear') {
-    // CTFd Linear Formula: value = initial - (decay * (solve_count - 1))
+    // CTFd Linear: value = initial - (decay * (solve_count - 1))
     value = initial - (decay * adjustedSolveCount);
   } else if (this.function === 'logarithmic') {
-    // CTFd Logarithmic Formula: value = (((minimum - initial) / (decay^2)) * ((solve_count-1)^2)) + initial
+    // CTFd Logarithmic: value = (((minimum - initial) / (decay^2)) * ((solve_count-1)^2)) + initial
     if (decay === 0) {
-      value = initial; // Avoid division by zero
-    } else {
-      value = (((minimum - initial) / Math.pow(decay, 2)) * Math.pow(adjustedSolveCount, 2)) + initial;
+      decay = 1; // Prevent division by zero
     }
+    value = (((minimum - initial) / Math.pow(decay, 2)) * Math.pow(adjustedSolveCount, 2)) + initial;
   } else {
     value = this.points; // Fallback
   }
@@ -121,7 +121,7 @@ ChallengeSchema.methods.getCurrentValue = function () {
   // Ensure value doesn't go below minimum
   value = Math.max(minimum, value);
 
-  return Math.floor(value); // Return integer points
+  return Math.ceil(value); // CTFd uses ceiling
 };
 
 // Set toJSON option to include virtuals

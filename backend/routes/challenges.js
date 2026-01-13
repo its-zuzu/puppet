@@ -563,9 +563,6 @@ router.post('/:id/submit', protect, sanitizeInput, checkEventNotEnded, async (re
     const clientIp = requestIp.getClientIp(req);
     const userAgent = req.get('User-Agent') || 'Unknown';
 
-    // Calculate dynamic value BEFORE submission (CTFd-style)
-    const dynamicPoints = challenge.getCurrentValue();
-
     // Check flag using constant-time comparison to prevent timing attacks
     const expectedFlag = challenge.flag.trim();
     const submittedBuffer = Buffer.from(submittedFlag, 'utf8');
@@ -583,13 +580,13 @@ router.post('/:id/submit', protect, sanitizeInput, checkEventNotEnded, async (re
       submittedFlag.length === expectedFlag.length;
 
     // Create submission record (both success and failure) - unique index prevents duplicates
+    // CTFd-style: NO points field, calculated dynamically via JOIN
     try {
       await Submission.create({
         user: req.user._id,
         challenge: challenge._id,
         submittedFlag: submittedFlag,
         isCorrect: isCorrect,
-        points: isCorrect ? dynamicPoints : 0,
         ipAddress: clientIp,
         userAgent: userAgent
       });
@@ -659,7 +656,11 @@ router.post('/:id/submit', protect, sanitizeInput, checkEventNotEnded, async (re
         if (eventEndedInTransaction) {
           throw new Error('CTF event has ended. Submissions are no longer accepted.');
         }
-        // Update user with solve time and track personal solve (using dynamic points)
+        
+        // CTFd-style: Only update solvedBy arrays, NO points fields
+        // Scores are calculated dynamically by JOINing submissions with challenges
+        
+        // Update user with solve time and track personal solve
         await User.findByIdAndUpdate(
           req.user._id,
           {
@@ -671,39 +672,37 @@ router.post('/:id/submit', protect, sanitizeInput, checkEventNotEnded, async (re
                 solvedAt: new Date()
               }
             },
-            $inc: { points: dynamicPoints },
             $set: { lastSolveTime: new Date() }
           },
           { session }
         );
 
-        // Update challenge
+        // Update challenge solvedBy array
         await Challenge.findByIdAndUpdate(
           req.params.id,
           { $addToSet: { solvedBy: req.user._id } },
           { session }
         );
 
-        // Recalculate dynamic challenge value AFTER adding solver (CTFd behavior)
-        // This ensures the NEXT solver gets lower points
+        // For dynamic challenges: Update challenge.points value
+        // This automatically updates ALL users' scores (calculated via JOIN)
         if (challenge.function === 'linear' || challenge.function === 'logarithmic') {
           const scoringService = require('../services/scoringService');
-          await scoringService.recalculateChallengeValue(challenge._id);
+          await scoringService.updateChallengeValue(challenge._id);
         }
 
         // Clear scoreboard cache (CTFd's clear_standings())
         await clearScoreboardCache();
 
-        // If user has a team, update team AND all team members
+        // If user has a team, update team solvedBy array
         if (user.team) {
           const Team = require('../models/Team');
 
-          // Update the team (using dynamic points)
+          // Update the team solvedBy
           await Team.findByIdAndUpdate(
             user.team._id,
             {
-              $addToSet: { solvedChallenges: challenge._id },
-              $inc: { points: dynamicPoints }
+              $addToSet: { solvedChallenges: challenge._id }
             },
             { session }
           );
@@ -717,63 +716,13 @@ router.post('/:id/submit', protect, sanitizeInput, checkEventNotEnded, async (re
             },
             {
               $addToSet: { solvedChallenges: challenge._id }
-              // Don't give points to other team members, only to the solver and team
             },
             { session }
           );
         }
 
-        // --- NEW: CTFd-style Redis ZSET Update ---
-        // Formula: (Score * 10^10) + (10^10 - UnixTimestampSeconds)
-        // Earlier solve time = Higher decimal part = Higher overall score for ties
-        try {
-          const nowSeconds = Math.floor(Date.now() / 1000);
-          const weight = Math.pow(10, 10);
-          const zscore = (user.points + dynamicPoints) * weight + (weight - nowSeconds);
-
-          // Update User Scoreboard
-          const userZsetKey = 'scoreboard:users:zset';
-          await redisClient.zadd(userZsetKey, zscore, user._id.toString());
-
-          // If user has a team, update Team Scoreboard
-          if (user.team) {
-            const teamZsetKey = 'scoreboard:teams:zset';
-            const Team = require('../models/Team');
-            const team = await Team.findById(user.team._id).populate('members', 'points');
-            if (team) {
-              const teamTotalPoints = team.members.reduce((sum, member) => sum + (member.points || 0), 0);
-              // For teams, use the solve time of the current submission (it reached the new total)
-              await redisClient.zadd(teamZsetKey, teamTotalPoints * weight + (weight - nowSeconds), team._id.toString());
-            }
-          }
-
-          // Clear all scoreboard caches to force refresh on next read
-          await redisClient.del('scoreboard:teams');
-          await redisClient.del('scoreboard:users');
-
-          // Clear graph cache keys (pattern: ctfd:scoreboard:graph:*)
-          const graphKeys = await redisClient.keys('ctfd:scoreboard:graph:*');
-          if (graphKeys && graphKeys.length > 0) {
-            await redisClient.del(...graphKeys);
-          }
-
-          // Clear scoreboard full cache (pattern: ctfd:scoreboard:full:*)
-          const scoreboardKeys = await redisClient.keys('ctfd:scoreboard:full:*');
-          if (scoreboardKeys && scoreboardKeys.length > 0) {
-            await redisClient.del(...scoreboardKeys);
-          }
-
-          // Clear top cache (pattern: ctfd:scoreboard:top:*)
-          const topKeys = await redisClient.keys('ctfd:scoreboard:top:*');
-          if (topKeys && topKeys.length > 0) {
-            await redisClient.del(...topKeys);
-          }
-
-        } catch (redisError) {
-          console.error('[Scoreboard] Redis ZSET update failed:', redisError.message);
-          // Don't fail the submission if Redis update fails (MongoDB is source of truth)
-        }
-        // --- END NEW LOGIC ---
+        // Redis ZSET updates removed - scores calculated dynamically
+        // Scoreboard will aggregate from Submissions + Challenges JOINs
       });
     } catch (transactionError) {
       // If transaction failed due to event ending, return appropriate error
@@ -788,11 +737,15 @@ router.post('/:id/submit', protect, sanitizeInput, checkEventNotEnded, async (re
       await session.endSession();
     }
 
+    // Get current challenge value for response
+    const updatedChallenge = await Challenge.findById(challenge._id);
+    const currentValue = updatedChallenge.getCurrentValue();
+
     logActivity('FLAG_SUBMITTED_SUCCESS', {
       userId: req.user._id,
       challengeId: challenge._id,
       challengeTitle: challenge.title,
-      points: dynamicPoints
+      points: currentValue
     });
 
     // Publish real-time submission event to admin monitoring
@@ -804,7 +757,7 @@ router.post('/:id/submit', protect, sanitizeInput, checkEventNotEnded, async (re
         email: req.user.email,
         challenge: challenge.title,
         challengeId: challenge._id.toString(),
-        points: dynamicPoints,
+        points: currentValue,
         submittedAt: new Date().toISOString(),
         ip: clientIp,
         submittedFlag: submittedFlag
@@ -829,7 +782,7 @@ router.post('/:id/submit', protect, sanitizeInput, checkEventNotEnded, async (re
     res.json({
       success: true,
       message: 'correct',
-      points: dynamicPoints,
+      points: currentValue,
       timestamp: new Date().toISOString()
     });
   } catch (error) {

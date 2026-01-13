@@ -204,27 +204,35 @@ router.get('/graph', async (req, res) => {
 });
 
 /**
- * Helper: Aggregate User Standings
+ * Helper: Aggregate User Standings (CTFd-style with dynamic scoring)
  * Returns: [{ account_id, name, score, date, rank }, ...]
  */
 async function aggregateUserStandings(isAdmin, freezeTime, limit = null) {
   const matchStage = {
-    isCorrect: true,
-    points: { $gt: 0 } // exclude 0 point solves from summing? CTFd generally sums all. 
-    // Actually 0 points solves are fine, but usually challenges have points.
+    isCorrect: true
   };
 
   if (freezeTime) {
     matchStage.submittedAt = { $lt: new Date(freezeTime) };
   }
 
-  // 1. Aggregate Submissions
+  // CTFd-style: JOIN Submissions with Challenges to get current values
+  // This automatically handles dynamic scoring retroactively
   const submissionAgg = await Submission.aggregate([
     { $match: matchStage },
     {
+      $lookup: {
+        from: 'challenges',
+        localField: 'challenge',
+        foreignField: '_id',
+        as: 'challengeData'
+      }
+    },
+    { $unwind: '$challengeData' },
+    {
       $group: {
         _id: "$user",
-        score: { $sum: "$points" },
+        score: { $sum: "$challengeData.points" }, // Sum current challenge values
         lastSolve: { $max: "$submittedAt" }
       }
     }
@@ -315,27 +323,28 @@ async function aggregateUserStandings(isAdmin, freezeTime, limit = null) {
 }
 
 /**
- * Helper: Aggregate Team Standings
+ * Helper: Aggregate Team Standings (CTFd-style with dynamic scoring)
  */
 async function aggregateTeamStandings(isAdmin, freezeTime, limit = null) {
-  // 1. Get all teams and their members first (Reverse mapping needed?)
-  // Or we can aggregate from Submissions and lookup Team?
-  // Submission -> User -> Team. 
-  // Faster to Aggregate Submission -> Lookup User -> Group by User.Team
-
   const matchStage = {
-    isCorrect: true,
-    points: { $gt: 0 }
+    isCorrect: true
   };
   if (freezeTime) {
     matchStage.submittedAt = { $lt: new Date(freezeTime) };
   }
 
-  // Aggregate Solves grouped by Team
-  // This requires a lookup which can be expensive on large datasets, 
-  // but standard for Mongo.
+  // CTFd-style: JOIN Submissions with Challenges to get current values
   const teamSolves = await Submission.aggregate([
     { $match: matchStage },
+    {
+      $lookup: {
+        from: 'challenges',
+        localField: 'challenge',
+        foreignField: '_id',
+        as: 'challengeData'
+      }
+    },
+    { $unwind: '$challengeData' },
     {
       $lookup: {
         from: 'users',
@@ -354,7 +363,7 @@ async function aggregateTeamStandings(isAdmin, freezeTime, limit = null) {
     {
       $group: {
         _id: '$userInfo.team',
-        score: { $sum: '$points' },
+        score: { $sum: '$challengeData.points' }, // Sum current challenge values
         lastSolve: { $max: '$submittedAt' }
       }
     }
@@ -459,7 +468,7 @@ async function aggregateTeamStandings(isAdmin, freezeTime, limit = null) {
 }
 
 /**
- * Helper: Get detailed solve history for graph/top view
+ * Helper: Get detailed solve history for graph/top view (CTFd-style with current values)
  */
 async function getSolveHistory(accountId, isTeam, freezeTime) {
   const history = [];
@@ -473,26 +482,27 @@ async function getSolveHistory(accountId, isTeam, freezeTime) {
     ids.push(accountId);
   }
 
-  // Solves
+  // Solves - JOIN with Challenges to get current values
   const solveQuery = {
     user: { $in: ids },
-    isCorrect: true,
-    points: { $gt: 0 }
+    isCorrect: true
   };
   if (freezeTime) solveQuery.submittedAt = { $lt: new Date(freezeTime) };
 
   const solves = await Submission.find(solveQuery)
-    .populate('challenge', 'title') // simplified
-    .select('points submittedAt challenge')
+    .populate('challenge', 'title points') // Get current points value
+    .select('submittedAt challenge')
     .lean();
 
   solves.forEach(s => {
-    history.push({
-      challenge_id: s.challenge?._id,
-      challenge_name: s.challenge?.title || 'Unknown',
-      value: s.points,
-      date: s.submittedAt
-    });
+    if (s.challenge) {
+      history.push({
+        challenge_id: s.challenge._id,
+        challenge_name: s.challenge.title || 'Unknown',
+        value: s.challenge.points, // Current challenge value (dynamic)
+        date: s.submittedAt
+      });
+    }
   });
 
   // Awards
