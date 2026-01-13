@@ -8,7 +8,7 @@ import './MyTeam.css';
 function MyTeam() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const { token, isAuthenticated } = useContext(AuthContext);
+  const { isAuthenticated } = useContext(AuthContext);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -19,13 +19,8 @@ function MyTeam() {
       }
 
       try {
-        const config = {
-          headers: {
-            Authorization: `Bearer ${token}`
-          }
-        };
-
-        const response = await axios.get('/api/teams/my/team', config);
+        // Cookie sent automatically with request
+        const response = await axios.get('/api/teams/my/team');
 
         if (response.data.success && response.data.data) {
           // Redirect to the team details page
@@ -45,7 +40,7 @@ function MyTeam() {
     };
 
     fetchMyTeam();
-  }, [isAuthenticated, token, navigate]);
+  }, [isAuthenticated, navigate]);
 
   if (loading) {
     return (
