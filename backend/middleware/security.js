@@ -48,11 +48,42 @@ const submissionLimiter = createRateLimit(
   'submit'
 );
 
-// 3. Security Headers (Helmet)
+// 3. Security Headers (Helmet with comprehensive security)
 const secureHeaders = helmet({
-  contentSecurityPolicy: false, // Managed in server.js or relaxed for CTF
-  crossOriginEmbedderPolicy: false,
-  hsts: false // Managed in server.js
+  // Content Security Policy to mitigate XSS
+  contentSecurityPolicy: {
+    directives: {
+      defaultSrc: ["'self'"],
+      scriptSrc: ["'self'", "'unsafe-inline'"], // Allow inline scripts for React/Vite
+      styleSrc: ["'self'", "'unsafe-inline'"],
+      imgSrc: ["'self'", 'data:', 'https:'],
+      connectSrc: ["'self'"],
+      fontSrc: ["'self'", 'data:'],
+      objectSrc: ["'none'"],
+      mediaSrc: ["'self'"],
+      frameSrc: ["'none'"],
+      upgradeInsecureRequests: process.env.NODE_ENV === 'production' ? [] : null
+    },
+  },
+  // Strict Transport Security (HSTS) - Force HTTPS
+  hsts: {
+    maxAge: 31536000, // 1 year
+    includeSubDomains: true,
+    preload: true
+  },
+  // Prevent clickjacking attacks
+  frameguard: {
+    action: 'deny' // X-Frame-Options: DENY
+  },
+  // Other security headers
+  crossOriginEmbedderPolicy: false, // May break some functionality
+  crossOriginResourcePolicy: { policy: 'same-origin' },
+  dnsPrefetchControl: { allow: false },
+  ieNoOpen: true,
+  noSniff: true, // X-Content-Type-Options: nosniff
+  permittedCrossDomainPolicies: { permittedPolicies: 'none' },
+  referrerPolicy: { policy: 'strict-origin-when-cross-origin' },
+  xssFilter: true // X-XSS-Protection: 1; mode=block
 });
 
 // 4. Input Sanitization

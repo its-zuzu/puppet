@@ -104,6 +104,30 @@ const generateToken = (id) => {
   }
 };
 
+// Helper: Set JWT in secure httpOnly cookie (XSS protection)
+const setTokenCookie = (res, token) => {
+  const isProduction = process.env.NODE_ENV === 'production';
+  
+  res.cookie('token', token, {
+    httpOnly: true,        // Cannot be accessed by JavaScript (XSS protection)
+    secure: isProduction,  // Only sent over HTTPS in production
+    sameSite: 'strict',    // CSRF protection
+    maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
+    path: '/'
+  });
+};
+
+// Helper: Clear token cookie on logout
+const clearTokenCookie = (res) => {
+  res.cookie('token', '', {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: 'strict',
+    expires: new Date(0),
+    path: '/'
+  });
+};
+
 // @route   POST /api/auth/register
 // @desc    Public registration disabled - Admin only
 // @access  Public
@@ -162,13 +186,14 @@ router.post('/verify-otp', async (req, res) => {
     user.clearOTP();
     await user.save();
 
-    // Generate token
+    // Generate token and set in httpOnly cookie
     const token = generateToken(user._id);
+    setTokenCookie(res, token);
 
     res.json({
       success: true,
       message: 'Email verified successfully',
-      token,
+      // Token NOT sent in response body (httpOnly cookie only)
       user: {
         id: user._id,
         username: user.username,
@@ -407,11 +432,11 @@ router.post('/login', sanitizeInput, async (req, res) => {
       console.error('[Debug] Populate error:', popErr);
     }
 
-    // Generate token with shorter expiry for security
+    // Generate token and set in httpOnly cookie
     console.log('[Debug] Generating token...');
-    // Ensure ID is string
     const token = generateToken(user._id.toString());
-    console.log('[Debug] Token generated.');
+    setTokenCookie(res, token);
+    console.log('[Debug] Token set in httpOnly cookie.');
 
     logActivity('LOGIN_SUCCESS', { userId: user._id, username: user.username, ip: req.ip, userAgent: req.get('User-Agent') });
 
@@ -419,7 +444,7 @@ router.post('/login', sanitizeInput, async (req, res) => {
 
     res.json({
       success: true,
-      token,
+      // Token NOT sent in response body (httpOnly cookie only)
       user: {
         id: user._id,
         username: user.username,
@@ -434,6 +459,31 @@ router.post('/login', sanitizeInput, async (req, res) => {
     res.status(500).json({
       success: false,
       message: process.env.NODE_ENV === 'development' ? error.message : 'Error logging in'
+    });
+  }
+});
+
+// @route   POST /api/auth/logout
+// @desc    Logout user and clear token cookie
+// @access  Private
+router.post('/logout', protect, async (req, res) => {
+  try {
+    clearTokenCookie(res);
+    
+    logActivity('LOGOUT_SUCCESS', { 
+      userId: req.user._id, 
+      username: req.user.username 
+    });
+
+    res.json({
+      success: true,
+      message: 'Logged out successfully'
+    });
+  } catch (error) {
+    console.error('Logout error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error logging out'
     });
   }
 });

@@ -10,12 +10,15 @@ const CACHE_TTL = Math.floor(config.redis.ttl.userCache / 1000); // Convert ms t
 exports.protect = async (req, res, next) => {
   let token;
 
-  // Check if auth header exists and starts with Bearer
-  if (
+  // Priority 1: Check httpOnly cookie (secure, XSS-protected)
+  if (req.cookies && req.cookies.token) {
+    token = req.cookies.token;
+  }
+  // Priority 2: Check Bearer token in header (backwards compatibility)
+  else if (
     req.headers.authorization &&
     req.headers.authorization.startsWith('Bearer')
   ) {
-    // Set token from Bearer token in header
     token = req.headers.authorization.split(' ')[1];
   }
 

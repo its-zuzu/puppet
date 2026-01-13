@@ -1,4 +1,4 @@
-import { createContext, useState, useEffect, useContext } from 'react';
+import { createContext, useState, useEffect, useContext, useCallback } from 'react';
 import axios from 'axios';
 
 const AuthContext = createContext();
@@ -82,6 +82,20 @@ export const AuthProvider = ({ children }) => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
+  // Logout user - defined early for use in useEffect dependencies
+  const logout = useCallback(async () => {
+    try {
+      // Call backend to clear httpOnly cookie
+      await axios.post('/api/auth/logout');
+    } catch (err) {
+      console.error('Logout error:', err);
+    } finally {
+      // Clear local state regardless of API call result
+      setUser(null);
+      setIsAuthenticated(false);
+    }
+  }, []);
+
   // Load user on mount (cookie-based authentication)
   useEffect(() => {
     const loadUser = async () => {
@@ -157,14 +171,14 @@ export const AuthProvider = ({ children }) => {
   }, [isAuthenticated, user, logout]);
 
   // Update user data (points, solved challenges, etc.)
-  const updateUserData = async () => {
+  const updateUserData = useCallback(async () => {
     try {
       const res = await axios.get('/api/auth/me');
       setUser(res.data.user);
     } catch (err) {
       console.error('Error updating user data:', err);
     }
-  };
+  }, []);
 
   // Register user
   const register = async (userData) => {
@@ -230,24 +244,10 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  // Logout user
-  const logout = async () => {
-    try {
-      // Call backend to clear httpOnly cookie
-      await axios.post('/api/auth/logout');
-    } catch (err) {
-      console.error('Logout error:', err);
-    } finally {
-      // Clear local state regardless of API call result
-      setUser(null);
-      setIsAuthenticated(false);
-    }
-  };
-
   // Clear errors
-  const clearErrors = () => {
+  const clearErrors = useCallback(() => {
     setError(null);
-  };
+  }, []);
 
   return (
     <AuthContext.Provider

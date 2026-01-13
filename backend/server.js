@@ -7,7 +7,8 @@ const multer = require('multer');
 const cors = require('cors');
 const compression = require('compression');
 const requestIp = require('request-ip');
-const morgan = require('morgan')
+const morgan = require('morgan');
+const cookieParser = require('cookie-parser')
 
 // Load environment variables FIRST - before any other imports that might use them
 dotenv.config({ path: path.join(__dirname, '.env') });
@@ -130,6 +131,9 @@ app.use(express.urlencoded({
   limit: '1mb',
   parameterLimit: 20
 }));
+
+// Cookie parsing for JWT authentication
+app.use(cookieParser());
 
 // MongoDB injection protection
 app.use(mongoSanitize);
