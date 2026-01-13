@@ -5,7 +5,7 @@ import AuthContext from '../context/AuthContext';
 import './CreateChallenge.css';
 
 function CreateChallenge() {
-  const { isAuthenticated, user, token } = useContext(AuthContext);
+  const { isAuthenticated, user } = useContext(AuthContext);
   const navigate = useNavigate();
 
   const [formData, setFormData] = useState({
@@ -83,13 +83,6 @@ function CreateChallenge() {
     setIsSubmitting(true);
 
     try {
-      const config = {
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`
-        }
-      };
-
       const challengeData = {
         ...formData,
         hints: validHints
@@ -104,8 +97,7 @@ function CreateChallenge() {
 
       const res = await axios.post(
         '/api/challenges',
-        challengeData,
-        config
+        challengeData
       );
 
       setSuccessMessage('Challenge created successfully!');

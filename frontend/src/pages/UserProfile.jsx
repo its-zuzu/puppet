@@ -7,7 +7,7 @@ import './UserProfile.css';
 function UserProfile() {
   const { userId } = useParams();
   const navigate = useNavigate();
-  const { token, isAuthenticated } = useContext(AuthContext);
+  const { isAuthenticated } = useContext(AuthContext);
   const [user, setUser] = useState(null);
   const [challenges, setChallenges] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -19,17 +19,13 @@ function UserProfile() {
       return;
     }
     fetchUserProfile();
-  }, [userId, token, isAuthenticated, navigate]);
+  }, [userId, isAuthenticated, navigate]);
 
   const fetchUserProfile = async () => {
     try {
-      const config = {
-        headers: { Authorization: `Bearer ${token}` }
-      };
-
       const [userRes, challengesRes] = await Promise.all([
-        axios.get(`/api/auth/user/${userId}`, config),
-        axios.get('/api/challenges', config)
+        axios.get(`/api/auth/user/${userId}`),
+        axios.get('/api/challenges')
       ]);
 
       setUser(userRes.data.user);

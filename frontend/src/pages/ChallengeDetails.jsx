@@ -9,17 +9,11 @@ import './ChallengeDetails.css'
 const SolvesModal = ({ challenge, onClose }) => {
   const [solves, setSolves] = useState([]);
   const [loading, setLoading] = useState(true);
-  const { token } = useContext(AuthContext);
 
   useEffect(() => {
     const fetchSolves = async () => {
       try {
-        const config = token ? {
-          headers: {
-            Authorization: `Bearer ${token}`
-          }
-        } : {};
-        const res = await axios.get(`/api/challenges/${challenge._id}/solves`, config);
+        const res = await axios.get(`/api/challenges/${challenge._id}/solves`);
         setSolves(res.data.data || []);
         setLoading(false);
       } catch (err) {
@@ -29,7 +23,7 @@ const SolvesModal = ({ challenge, onClose }) => {
     };
 
     fetchSolves();
-  }, [challenge._id, token]);
+  }, [challenge._id]);
 
   return (
     <div className="modal-overlay" onClick={onClose}>
@@ -161,18 +155,14 @@ function ChallengeDetails() {
   const [unlockedHints, setUnlockedHints] = useState([]);
   const [unlockingHint, setUnlockingHint] = useState(null);
   const [showSolvesModal, setShowSolvesModal] = useState(false);
-  const { user, isAuthenticated, token, updateUserData } = useContext(AuthContext);
+  const { user, isAuthenticated, updateUserData } = useContext(AuthContext);
   const { eventState, isEnded } = useEventState();
 
   useEffect(() => {
     const fetchChallenge = async () => {
       try {
         setLoading(true);
-        const config = token ? {
-          headers: { Authorization: `Bearer ${token}` }
-        } : {};
-
-        const res = await axios.get(`/api/challenges/${id}`, config);
+        const res = await axios.get(`/api/challenges/${id}`);
         setChallenge(res.data.data);
         setUnlockedHints(res.data.unlockedHints || []);
         setLoading(false);
@@ -184,7 +174,7 @@ function ChallengeDetails() {
     };
 
     fetchChallenge();
-  }, [id, token]);
+  }, [id]);
 
   const openModal = () => {
     if (!isAuthenticated) {
@@ -206,8 +196,7 @@ function ChallengeDetails() {
     try {
       const res = await axios.post(
         `/api/challenges/${challenge._id}/submit`,
-        { flag },
-        { headers: { Authorization: `Bearer ${token}` } }
+        { flag }
       );
 
       await updateUserData();
@@ -231,9 +220,7 @@ function ChallengeDetails() {
     let teamPoints = 0;
     if (hasTeam) {
       try {
-        const teamRes = await axios.get(`/api/teams/${user.team._id}`, {
-          headers: { Authorization: `Bearer ${token}` }
-        });
+        const teamRes = await axios.get(`/api/teams/${user.team._id}`);
         // Calculate team points from members (as backend does)
         const calculatedPoints = teamRes.data.data.members.reduce((sum, member) => sum + (member.points || 0), 0);
         teamPoints = calculatedPoints || teamRes.data.data.points || 0;
@@ -265,8 +252,7 @@ function ChallengeDetails() {
       setUnlockingHint(hintIndex);
       const res = await axios.post(
         `/api/challenges/${challenge._id}/unlock-hint`,
-        { hintIndex },
-        { headers: { Authorization: `Bearer ${token}` } }
+        { hintIndex }
       );
 
       // Update unlocked hints

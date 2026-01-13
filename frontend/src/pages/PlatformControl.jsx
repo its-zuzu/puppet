@@ -7,7 +7,7 @@ import Loading from '../components/Loading';
 import './PlatformControl.css';
 
 function PlatformControl() {
-  const { isAuthenticated, user, token } = useContext(AuthContext);
+  const { isAuthenticated, user } = useContext(AuthContext);
   const { eventState, customMessage, refresh } = useEventState();
   const navigate = useNavigate();
 
@@ -40,9 +40,7 @@ function PlatformControl() {
 
     setLoading(true);
     try {
-      const res = await axios.post('/api/event-control/start', {}, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
+      const res = await axios.post('/api/event-control/start', {});
       showSuccess(res.data.message);
       refresh();
     } catch (err) {
@@ -57,9 +55,7 @@ function PlatformControl() {
 
     setLoading(true);
     try {
-      const res = await axios.post('/api/event-control/end', {}, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
+      const res = await axios.post('/api/event-control/end', {});
       showSuccess(res.data.message);
       refresh();
     } catch (err) {
@@ -73,8 +69,7 @@ function PlatformControl() {
     setLoading(true);
     try {
       const res = await axios.post('/api/event-control/set-message',
-        { message: messageInput || null },
-        { headers: { Authorization: `Bearer ${token}` } }
+        { message: messageInput || null }
       );
       showSuccess(res.data.message);
       setShowMessageModal(false);
@@ -92,9 +87,7 @@ function PlatformControl() {
 
     setLoading(true);
     try {
-      const res = await axios.put('/api/auth/platform-control/unblock-all-users', {}, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
+      const res = await axios.put('/api/auth/platform-control/unblock-all-users', {});
       showSuccess(`${res.data.data?.unblockedCount || 0} users unblocked`);
     } catch (err) {
       showError(err.response?.data?.message || 'Failed to unblock users');

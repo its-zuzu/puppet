@@ -8,7 +8,7 @@ import './TeamDetails.css';
 function TeamDetails() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { token, isAuthenticated } = useContext(AuthContext);
+  const { isAuthenticated, loading: authLoading } = useContext(AuthContext);
 
   const [team, setTeam] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -16,19 +16,19 @@ function TeamDetails() {
 
   useEffect(() => {
     const fetchTeamDetails = async () => {
-      if (!isAuthenticated || !token) {
+      // Wait for auth to finish loading
+      if (authLoading) {
+        return;
+      }
+
+      if (!isAuthenticated) {
         navigate('/login');
         return;
       }
 
       try {
-        const config = {
-          headers: {
-            Authorization: `Bearer ${token}`
-          }
-        };
-
-        const res = await axios.get(`/api/teams/${id}`, config);
+        // Cookie sent automatically
+        const res = await axios.get(`/api/teams/${id}`);
         setTeam(res.data.data);
         console.log('Team data loaded:', res.data.data);
         console.log('Team members unlockedHints:', res.data.data.members.map(m => ({
@@ -44,7 +44,7 @@ function TeamDetails() {
     };
 
     fetchTeamDetails();
-  }, [id, token, isAuthenticated, navigate]);
+  }, [id, isAuthenticated, authLoading, navigate]);
 
   if (loading) {
     return (

@@ -5,7 +5,7 @@ import AuthContext from '../context/AuthContext';
 import './Analytics.css';
 
 function Analytics() {
-  const { user, isAuthenticated, token, loading } = useContext(AuthContext);
+  const { user, isAuthenticated, loading } = useContext(AuthContext);
   const [overview, setOverview] = useState(null);
   const [engagement, setEngagement] = useState(null);
   const [challengeStats, setChallengeStats] = useState(null);
@@ -25,14 +25,9 @@ function Analytics() {
   }, [isAuthenticated, user]);
 
   useEffect(() => {
-    if (!token) return;
-
     const fetchAnalytics = async () => {
       try {
         setDataLoading(true);
-        const config = {
-          headers: { Authorization: `Bearer ${token}` }
-        };
 
         const [
           overviewRes,
@@ -41,11 +36,11 @@ function Analytics() {
           trafficRes,
           scoreboardRes
         ] = await Promise.all([
-          axios.get('/api/analytics/overview', config),
-          axios.get('/api/analytics/user-engagement', config),
-          axios.get('/api/analytics/challenge-stats', config),
-          axios.get('/api/analytics/traffic', config),
-          axios.get('/api/analytics/scoreboard-stats', config)
+          axios.get('/api/analytics/overview'),
+          axios.get('/api/analytics/user-engagement'),
+          axios.get('/api/analytics/challenge-stats'),
+          axios.get('/api/analytics/traffic'),
+          axios.get('/api/analytics/scoreboard-stats')
         ]);
 
         setOverview(overviewRes.data.data);
@@ -62,7 +57,7 @@ function Analytics() {
     };
 
     fetchAnalytics();
-  }, [token]);
+  }, []);
 
   if (!loading && !isAuthenticated) {
     return <Navigate to="/login" />;

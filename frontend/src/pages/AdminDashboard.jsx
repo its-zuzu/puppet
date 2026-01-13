@@ -6,7 +6,7 @@ import Loading from '../components/Loading';
 import './AdminDashboard.css';
 
 function AdminDashboard() {
-  const { isAuthenticated, user, token } = useContext(AuthContext);
+  const { isAuthenticated, user } = useContext(AuthContext);
   const navigate = useNavigate();
 
   const [users, setUsers] = useState([]);
@@ -61,8 +61,6 @@ function AdminDashboard() {
 
   useEffect(() => {
     const fetchData = async () => {
-      if (!token) return;
-
       // Only show loading for initial load, not for search
       if (!debouncedSearchTerm) {
         setLoading(true);
@@ -71,23 +69,17 @@ function AdminDashboard() {
       }
       setError(null);
 
-      const config = {
-        headers: {
-          Authorization: `Bearer ${token}`
-        }
-      };
-
       try {
         let usersRes;
         if (debouncedSearchTerm) {
           // When searching, get all matching users without pagination
-          usersRes = await axios.get(`/api/auth/users?all=true&search=${encodeURIComponent(debouncedSearchTerm)}`, config);
+          usersRes = await axios.get(`/api/auth/users?all=true&search=${encodeURIComponent(debouncedSearchTerm)}`);
           setUsers(usersRes.data.users || []);
           setUserTotal(usersRes.data.users?.length || 0);
           setAllUsers(usersRes.data.users || []);
         } else {
           // Normal pagination when not searching
-          usersRes = await axios.get(`/api/auth/users?page=${userPage}&limit=${itemsPerPage}`, config);
+          usersRes = await axios.get(`/api/auth/users?page=${userPage}&limit=${itemsPerPage}`);
           setUsers(usersRes.data.users || []);
           setUserTotal(usersRes.data.total || 0);
         }
@@ -95,10 +87,10 @@ function AdminDashboard() {
         // Only fetch other data on initial load or when not searching
         if (!debouncedSearchTerm) {
           const [challengesRes, subscribersRes, teamsRes, noticesRes] = await Promise.all([
-            axios.get(`/api/challenges?page=${challengePage}&limit=${itemsPerPage}`, config),
-            axios.get('/api/newsletter/subscribers', config).catch(() => ({ data: [] })),
-            axios.get(`/api/teams?page=${teamPage}&limit=${itemsPerPage}`, config).catch(() => ({ data: { data: [] } })),
-            axios.get('/api/notices', config).catch(() => ({ data: { data: [] } }))
+            axios.get(`/api/challenges?page=${challengePage}&limit=${itemsPerPage}`),
+            axios.get('/api/newsletter/subscribers').catch(() => ({ data: [] })),
+            axios.get(`/api/teams?page=${teamPage}&limit=${itemsPerPage}`).catch(() => ({ data: { data: [] } })),
+            axios.get('/api/notices').catch(() => ({ data: { data: [] } }))
           ]);
 
           setChallenges(challengesRes.data.data || []);
@@ -121,7 +113,7 @@ function AdminDashboard() {
     };
 
     fetchData();
-  }, [token, userPage, teamPage, challengePage, debouncedSearchTerm]);
+  }, [userPage, teamPage, challengePage, debouncedSearchTerm]);
 
   // Reset to page 1 when search term changes
   useEffect(() => {
@@ -136,13 +128,7 @@ function AdminDashboard() {
     if (!window.confirm('Are you sure you want to delete this challenge?')) return;
 
     try {
-      const config = {
-        headers: {
-          Authorization: `Bearer ${token}`
-        }
-      };
-
-      await axios.delete(`/api/challenges/${id}`, config);
+      await axios.delete(`/api/challenges/${id}`);
       setChallenges(challenges.filter(c => c._id !== id));
       setSuccessMessage('Challenge deleted successfully!');
       setTimeout(() => setSuccessMessage(''), 3000);
@@ -156,13 +142,7 @@ function AdminDashboard() {
     if (!window.confirm('Are you sure you want to delete this team?')) return;
 
     try {
-      const config = {
-        headers: {
-          Authorization: `Bearer ${token}`
-        }
-      };
-
-      await axios.delete(`/api/teams/${id}`, config);
+      await axios.delete(`/api/teams/${id}`);
       setTeams(teams.filter(t => t._id !== id));
       setSuccessMessage('Team deleted successfully!');
       setTimeout(() => setSuccessMessage(''), 3000);
@@ -176,9 +156,7 @@ function AdminDashboard() {
     if (!window.confirm('Are you sure you want to remove this subscriber?')) return;
 
     try {
-      await axios.delete(`/api/newsletter/subscribers/${id}`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
+      await axios.delete(`/api/newsletter/subscribers/${id}`);
       setSubscribers(subscribers.filter(s => s._id !== id));
       setSuccessMessage('Subscriber removed!');
       setTimeout(() => setSuccessMessage(''), 3000);
@@ -192,12 +170,7 @@ function AdminDashboard() {
     try {
       await axios.put(
         `/api/challenges/${challengeId}`,
-        { isVisible: !currentVisibility },
-        {
-          headers: {
-            Authorization: `Bearer ${token}`
-          }
-        }
+        { isVisible: !currentVisibility }
       );
 
       setChallenges(challenges.map(c =>
@@ -219,9 +192,7 @@ function AdminDashboard() {
     if (!window.confirm('Are you sure you want to delete this notice?')) return;
 
     try {
-      await axios.delete(`/api/notices/${id}`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
+      await axios.delete(`/api/notices/${id}`);
       setNotices(notices.filter(n => n._id !== id));
       setSuccessMessage('Notice deleted successfully!');
       setTimeout(() => setSuccessMessage(''), 3000);
@@ -240,20 +211,15 @@ function AdminDashboard() {
     }
 
     try {
-      const config = {
-        headers: { Authorization: `Bearer ${token}` }
-      };
-
       if (editingNotice) {
         const response = await axios.put(
           `/api/notices/${editingNotice._id}`,
-          noticeForm,
-          config
+          noticeForm
         );
         setNotices(notices.map(n => n._id === editingNotice._id ? response.data.data : n));
         setSuccessMessage('Notice updated successfully!');
       } else {
-        const response = await axios.post('/api/notices', noticeForm, config);
+        const response = await axios.post('/api/notices', noticeForm);
         setNotices([response.data.data, ...notices]);
         setSuccessMessage('Notice created successfully!');
       }
@@ -316,12 +282,7 @@ function AdminDashboard() {
     try {
       await axios.put(
         `/api/auth/users/${userId}/role`,
-        { newRole },
-        {
-          headers: {
-            Authorization: `Bearer ${token}`
-          }
-        }
+        { newRole }
       );
 
       setUsers(users.map(u =>
@@ -350,11 +311,6 @@ function AdminDashboard() {
         {
           isBlocked: !isCurrentlyBlocked,
           reason: reason || 'No reason provided'
-        },
-        {
-          headers: {
-            Authorization: `Bearer ${token}`
-          }
         }
       );
 
@@ -374,14 +330,7 @@ function AdminDashboard() {
     if (!window.confirm(`Are you sure you want to delete user "${username}"? This action cannot be undone.`)) return;
 
     try {
-      await axios.delete(
-        `/api/auth/users/${userId}`,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`
-          }
-        }
-      );
+      await axios.delete(`/api/auth/users/${userId}`);
 
       setUsers(users.filter(u => u._id !== userId));
       setSuccessMessage('User deleted successfully!');

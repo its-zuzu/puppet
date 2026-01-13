@@ -6,7 +6,7 @@ import './AdminDashboard.css';
 import './AdminSubmissions.css';
 
 function AdminSubmissions() {
-  const { isAuthenticated, user, token } = useContext(AuthContext);
+  const { isAuthenticated, user } = useContext(AuthContext);
   const navigate = useNavigate();
   const [challenges, setChallenges] = useState([]);
   const [selectedChallenge, setSelectedChallenge] = useState(null);
@@ -24,16 +24,12 @@ function AdminSubmissions() {
 
   useEffect(() => {
     fetchChallenges();
-  }, [token]);
+  }, []);
 
   const fetchChallenges = async () => {
-    if (!token) return;
-
     try {
       setLoading(true);
-      const res = await axios.get('/api/analytics/challenge-submissions', {
-        headers: { Authorization: `Bearer ${token}` }
-      });
+      const res = await axios.get('/api/analytics/challenge-submissions');
       setChallenges(res.data.data);
     } catch (err) {
       setError('Failed to fetch challenge submissions');
@@ -44,9 +40,7 @@ function AdminSubmissions() {
 
   const fetchSubmissionDetails = async (challengeId) => {
     try {
-      const res = await axios.get(`/api/analytics/challenge-submissions/${challengeId}`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
+      const res = await axios.get(`/api/analytics/challenge-submissions/${challengeId}`);
       setSubmissionDetails(res.data.data);
       setSelectedChallenge(challengeId);
     } catch (err) {

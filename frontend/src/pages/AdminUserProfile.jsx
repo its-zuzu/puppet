@@ -7,7 +7,7 @@ import './Profile.css'; // Reusing the profile styles
 function AdminUserProfile() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { isAuthenticated, user: adminUser, token } = useContext(AuthContext);
+  const { isAuthenticated, user: adminUser } = useContext(AuthContext);
 
   const [user, setUser] = useState(null);
   const [solvedChallenges, setSolvedChallenges] = useState([]);
@@ -29,21 +29,13 @@ function AdminUserProfile() {
   // Fetch user data and solved challenges
   useEffect(() => {
     const fetchUserData = async () => {
-      if (!token) return;
-
       try {
         setLoading(true);
         setError(null);
         console.log('Fetching user data for ID:', id);
 
-        const config = {
-          headers: {
-            Authorization: `Bearer ${token}`
-          }
-        };
-
         // Fetch user details
-        const userRes = await axios.get(`/api/auth/users/${id}`, config);
+        const userRes = await axios.get(`/api/auth/users/${id}`);
         console.log('User data received:', userRes.data);
         setUser(userRes.data.user);
 
@@ -53,8 +45,7 @@ function AdminUserProfile() {
           const challenges = [];
           for (const challengeId of userRes.data.user.solvedChallenges) {
             const challengeRes = await axios.get(
-              `/api/challenges/${challengeId}`,
-              config
+              `/api/challenges/${challengeId}`
             );
             challenges.push(challengeRes.data.data);
           }
@@ -73,7 +64,7 @@ function AdminUserProfile() {
     if (isAuthenticated && adminUser?.role === 'admin') {
       fetchUserData();
     }
-  }, [id, token, isAuthenticated, adminUser]);
+  }, [id, isAuthenticated, adminUser]);
 
   const handleToggleBlockUser = async () => {
     if (!user) return;
@@ -89,19 +80,12 @@ function AdminUserProfile() {
     setError(null);
 
     try {
-      const config = {
-        headers: {
-          Authorization: `Bearer ${token}`
-        }
-      };
-
       const response = await axios.put(
         `/api/auth/users/${user._id}/block`,
         {
           isBlocked: isBlocking,
           reason: isBlocking ? blockReason : null
-        },
-        config
+        }
       );
 
       setUser(response.data.user);

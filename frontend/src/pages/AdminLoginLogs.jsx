@@ -6,7 +6,7 @@ import Loading from '../components/Loading';
 import './AdminLoginLogs.css';
 
 function AdminLoginLogs() {
-  const { isAuthenticated, user, token } = useContext(AuthContext);
+  const { isAuthenticated, user } = useContext(AuthContext);
   const navigate = useNavigate();
 
   const [logs, setLogs] = useState([]);
@@ -31,12 +31,12 @@ function AdminLoginLogs() {
 
   useEffect(() => {
     fetchLogs();
-  }, [page, filters, token]);
+  }, [page, filters]);
 
   // Auto-refresh every 5 seconds
   useEffect(() => {
     let interval;
-    if (autoRefresh && token) {
+    if (autoRefresh) {
       interval = setInterval(() => {
         fetchLogs();
       }, 5000);
@@ -44,11 +44,9 @@ function AdminLoginLogs() {
     return () => {
       if (interval) clearInterval(interval);
     };
-  }, [autoRefresh, token, page, filters]);
+  }, [autoRefresh, page, filters]);
 
   const fetchLogs = async () => {
-    if (!token) return;
-
     setLoading(true);
     setError(null);
 
@@ -61,9 +59,7 @@ function AdminLoginLogs() {
       if (filters.status) params.append('status', filters.status);
       if (filters.search) params.append('search', filters.search);
 
-      const res = await axios.get(`/api/auth/admin/login-logs?${params}`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
+      const res = await axios.get(`/api/auth/admin/login-logs?${params}`);
 
       setLogs(res.data.logs);
       setTotalPages(res.data.pages);
@@ -88,9 +84,7 @@ function AdminLoginLogs() {
     }
 
     try {
-      const response = await axios.delete('/api/auth/admin/login-logs', {
-        headers: { Authorization: `Bearer ${token}` }
-      });
+      const response = await axios.delete('/api/auth/admin/login-logs');
 
       fetchLogs();
       alert(response.data.message || 'All login logs cleared successfully');

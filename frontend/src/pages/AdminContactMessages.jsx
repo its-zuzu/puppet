@@ -5,7 +5,7 @@ import AuthContext from '../context/AuthContext';
 import './AdminContactMessages.css';
 
 function AdminContactMessages() {
-  const { isAuthenticated, user, token } = useContext(AuthContext);
+  const { isAuthenticated, user } = useContext(AuthContext);
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
 
@@ -28,20 +28,12 @@ function AdminContactMessages() {
   // Fetch messages
   useEffect(() => {
     const fetchMessages = async () => {
-      if (!token) return;
-
       setLoading(true);
       setError(null);
 
-      const config = {
-        headers: {
-          Authorization: `Bearer ${token}`
-        }
-      };
-
       try {
-        console.log('Fetching messages with token:', token);
-        const res = await axios.get('/api/contact', config);
+        console.log('Fetching messages');
+        const res = await axios.get('/api/contact');
         console.log('Raw API response:', res);
         console.log('Response data:', res.data);
 
@@ -75,22 +67,16 @@ function AdminContactMessages() {
     };
 
     fetchMessages();
-  }, [token, searchParams]);
+  }, [searchParams]);
 
   // Add a refresh button to manually fetch messages
   const handleRefresh = async () => {
     setLoading(true);
     setError(null);
 
-    const config = {
-      headers: {
-        Authorization: `Bearer ${token}`
-      }
-    };
-
     try {
       console.log('Refreshing messages...');
-      const res = await axios.get('/api/contact', config);
+      const res = await axios.get('/api/contact');
       console.log('Refresh response:', res.data);
 
       // Handle both array and object responses
@@ -122,13 +108,7 @@ function AdminContactMessages() {
 
     try {
       setError(null);
-      const config = {
-        headers: {
-          Authorization: `Bearer ${token}`
-        }
-      };
-
-      await axios.delete(`/api/contact/${messageId}`, config);
+      await axios.delete(`/api/contact/${messageId}`);
 
       setMessages(messages.filter(msg => msg._id !== messageId));
 

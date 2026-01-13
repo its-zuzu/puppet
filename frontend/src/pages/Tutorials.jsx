@@ -14,7 +14,7 @@ function Tutorials() {
     search: ''
   });
   const navigate = useNavigate();
-  const { token, isAuthenticated } = useContext(AuthContext);
+  const { isAuthenticated } = useContext(AuthContext);
 
   useEffect(() => {
     const fetchTutorials = async () => {
@@ -25,13 +25,7 @@ function Tutorials() {
           return;
         }
 
-        const config = {
-          headers: {
-            Authorization: `Bearer ${token}`
-          }
-        };
-
-        const response = await axios.get('/api/tutorials', config);
+        const response = await axios.get('/api/tutorials');
         if (response.data.success) {
           setTutorials(response.data.tutorials);
         } else {
@@ -50,7 +44,7 @@ function Tutorials() {
     };
 
     fetchTutorials();
-  }, [isAuthenticated, token, navigate]);
+  }, [isAuthenticated, navigate]);
 
   const handleStartTutorial = (tutorial) => {
     if (tutorial.link) {

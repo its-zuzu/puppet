@@ -5,7 +5,7 @@ import AuthContext from '../context/AuthContext';
 import './CreateChallenge.css'; // Reusing the same styles
 
 function EditChallenge() {
-  const { isAuthenticated, user, token } = useContext(AuthContext);
+  const { isAuthenticated, user } = useContext(AuthContext);
   const navigate = useNavigate();
   const { id } = useParams();
   const location = useLocation();
@@ -54,14 +54,9 @@ function EditChallenge() {
           minimum: challenge.minimum || 100,
           decay: challenge.decay || 20
         });
-      } else if (id && token) {
+      } else if (id) {
         try {
-          const config = {
-            headers: {
-              Authorization: `Bearer ${token}`
-            }
-          };
-          const res = await axios.get(`/api/challenges/${id}`, config);
+          const res = await axios.get(`/api/challenges/${id}`);
           const challengeData = res.data.data;
           setFormData({
             title: challengeData.title,
@@ -82,7 +77,7 @@ function EditChallenge() {
     };
     
     fetchChallenge();
-  }, [challenge, id, token]);
+  }, [challenge, id]);
 
   const onChange = (e) => {
     const { name, value } = e.target;
@@ -107,13 +102,6 @@ function EditChallenge() {
     setIsSubmitting(true);
 
     try {
-      const config = {
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`
-        }
-      };
-
       // Only include flag in the update if it was changed
       const updateData = { ...formData };
       if (!updateData.flag) {
@@ -122,8 +110,7 @@ function EditChallenge() {
 
       const res = await axios.put(
         `/api/challenges/${id}`,
-        updateData,
-        config
+        updateData
       );
 
       setSuccessMessage('Challenge updated successfully!');

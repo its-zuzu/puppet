@@ -9,7 +9,6 @@ import Loading from './Loading';
  * Matches official CTFd visual style
  */
 const ScoreGraph = ({ type = 'teams', limit = 10, height = '400px' }) => {
-  const { token } = useContext(AuthContext);
   const [option, setOption] = useState(null);
   const [loading, setLoading] = useState(true);
   const [hasData, setHasData] = useState(false);
@@ -18,15 +17,11 @@ const ScoreGraph = ({ type = 'teams', limit = 10, height = '400px' }) => {
     fetchGraphData();
     const interval = setInterval(fetchGraphData, 60000); // 1 minute refresh
     return () => clearInterval(interval);
-  }, [type, limit, token]);
+  }, [type, limit]);
 
   const fetchGraphData = async () => {
     try {
-      const config = {
-        headers: { Authorization: `Bearer ${token}` }
-      };
-
-      const res = await axios.get(`/api/v1/scoreboard/graph?type=${type}`, config);
+      const res = await axios.get(`/api/v1/scoreboard/graph?type=${type}`);
       const data = res.data.data; // { "1": { id, name, data: [{time, score}, ...] } }
 
       if (Object.keys(data).length === 0) {

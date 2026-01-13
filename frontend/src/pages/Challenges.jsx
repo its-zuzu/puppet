@@ -12,17 +12,11 @@ import './Challenges.css'
 const SolvesModal = ({ challenge, onClose }) => {
   const [solves, setSolves] = useState([]);
   const [loading, setLoading] = useState(true);
-  const { token } = useContext(AuthContext);
 
   useEffect(() => {
     const fetchSolves = async () => {
       try {
-        const config = {
-          headers: {
-            Authorization: `Bearer ${token}`
-          }
-        };
-        const res = await axios.get(`/api/challenges/${challenge._id}/solves`, config);
+        const res = await axios.get(`/api/challenges/${challenge._id}/solves`);
         setSolves(res.data.data || []);
         setLoading(false);
       } catch (err) {
@@ -32,7 +26,7 @@ const SolvesModal = ({ challenge, onClose }) => {
     };
 
     fetchSolves();
-  }, [challenge._id, token]);
+  }, [challenge._id]);
 
   return (
     <div className="modal-overlay" onClick={onClose}>
@@ -149,7 +143,7 @@ function Challenges() {
   const [showSolvesModal, setShowSolvesModal] = useState(false)
   const [selectedChallengeForSolves, setSelectedChallengeForSolves] = useState(null)
 
-  const { user, isAuthenticated, token, updateUserData } = useContext(AuthContext)
+  const { user, isAuthenticated, updateUserData } = useContext(AuthContext)
   const { eventState, customMessage, isEnded } = useEventState()
 
   const categories = [
@@ -178,13 +172,7 @@ function Challenges() {
       }
       Logger.info('FETCH_CHALLENGES_START');
 
-      const config = token ? {
-        headers: {
-          Authorization: `Bearer ${token}`
-        }
-      } : {};
-
-      const res = await axios.get('/api/challenges?page=1&limit=1000', config);
+      const res = await axios.get('/api/challenges?page=1&limit=1000');
 
       if (!isMounted.current) return;
 
@@ -229,7 +217,7 @@ function Challenges() {
     }, 10000);
 
     return () => clearInterval(pollInterval);
-  }, [user?.role, token, isAuthenticated]);
+  }, [user?.role, isAuthenticated]);
 
   // Removed redundant openModal function since handleChallengeClick handles navigation
   // const openModal = ...

@@ -5,7 +5,7 @@ import AuthContext from '../context/AuthContext';
 import './AdminCreateUser.css';
 
 function AdminCreateUser() {
-  const { isAuthenticated, user, token } = useContext(AuthContext);
+  const { isAuthenticated, user } = useContext(AuthContext);
   const navigate = useNavigate();
 
   const [formData, setFormData] = useState({
@@ -77,20 +77,13 @@ function AdminCreateUser() {
     setError('');
 
     try {
-      const config = {
-        headers: {
-          Authorization: `Bearer ${token}`
-        }
-      };
-
       const res = await axios.post(
         '/api/auth/register-admin',
         {
           username: formData.username,
           email: formData.email,
           password: formData.password
-        },
-        config
+        }
       );
 
       setSuccessMessage('User created successfully!');

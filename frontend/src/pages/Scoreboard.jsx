@@ -12,7 +12,7 @@ import { useEventState } from '../hooks/useEventState';
 
 function Scoreboard() {
   const { eventState: ctfEventState, customMessage, isEnded } = useEventState();
-  const { isAuthenticated, token } = useContext(AuthContext);
+  const { isAuthenticated } = useContext(AuthContext);
   const [viewType, setViewType] = useState('teams'); // 'teams' or 'users'
   const [standings, setStandings] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -30,12 +30,7 @@ function Scoreboard() {
 
   const fetchScoreboard = async () => {
     try {
-      const config = {};
-      if (isAuthenticated) {
-        config.headers = { Authorization: `Bearer ${token}` };
-      }
-
-      const res = await axios.get(`/api/v1/scoreboard?type=${viewType}`, config);
+      const res = await axios.get(`/api/v1/scoreboard?type=${viewType}`);
       if (res.data.success) {
         setStandings(res.data.data);
       }

@@ -5,7 +5,6 @@ import AuthContext from '../context/AuthContext';
 import './AdminDashboard.css';
 
 function PlatformReset() {
-  const { token } = useContext(AuthContext);
   const navigate = useNavigate();
   const [securityCode, setSecurityCode] = useState('');
   const [isResetting, setIsResetting] = useState(false);
@@ -41,18 +40,11 @@ function PlatformReset() {
     setSuccess('');
 
     try {
-      const config = {
-        headers: {
-          Authorization: `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        }
-      };
-
       const endpoint = confirmationType === 'full' 
         ? '/api/admin/reset/full-platform'
         : '/api/admin/reset/competition-progress';
 
-      const response = await axios.post(endpoint, { securityCode }, config);
+      const response = await axios.post(endpoint, { securityCode });
       
       setSuccess(response.data.message || 'Reset completed successfully!');
       setSecurityCode('');

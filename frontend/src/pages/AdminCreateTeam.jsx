@@ -5,7 +5,7 @@ import AuthContext from '../context/AuthContext';
 import './AdminCreateTeam.css';
 
 function AdminCreateTeam() {
-  const { isAuthenticated, user, token } = useContext(AuthContext);
+  const { isAuthenticated, user } = useContext(AuthContext);
   const navigate = useNavigate();
   const DEFAULT_MAX_MEMBERS = 2;
 
@@ -36,13 +36,7 @@ function AdminCreateTeam() {
   useEffect(() => {
     const fetchUsers = async () => {
       try {
-        const config = {
-          headers: {
-            Authorization: `Bearer ${token}`
-          }
-        };
-
-        const res = await axios.get('/api/auth/users?all=true', config);
+        const res = await axios.get('/api/auth/users?all=true');
         // Filter out admin users and users who already have a team
         const availableUsers = (res.data.users || []).filter(u => u.role !== 'admin' && !u.team);
         setUsers(availableUsers);
@@ -55,10 +49,8 @@ function AdminCreateTeam() {
       }
     };
 
-    if (token) {
-      fetchUsers();
-    }
-  }, [token]);
+    fetchUsers();
+  }, []);
 
   useEffect(() => {
     if (searchTerm.trim() === '') {
@@ -150,12 +142,6 @@ function AdminCreateTeam() {
     setError('');
 
     try {
-      const config = {
-        headers: {
-          Authorization: `Bearer ${token}`
-        }
-      };
-
       await axios.post(
         '/api/teams',
         {
@@ -164,8 +150,7 @@ function AdminCreateTeam() {
           members: formData.members,
           captain: formData.captain,
           maxMembers: formData.maxMembers
-        },
-        config
+        }
       );
 
       setSuccessMessage('Team created successfully!');

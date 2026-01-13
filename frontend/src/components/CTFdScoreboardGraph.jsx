@@ -103,18 +103,11 @@ function CTFdScoreboardGraph() {
   const [graphData, setGraphData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const { token } = useContext(AuthContext);
 
   const fetchGraphData = async () => {
     try {
-      const config = {
-        headers: {
-          Authorization: `Bearer ${token}`
-        }
-      };
-
       // CTFd-style endpoint: /api/scoreboard/top/{count}
-      const response = await axios.get('/api/scoreboard/top/10', config);
+      const response = await axios.get('/api/scoreboard/top/10');
 
       if (response.data.success) {
         // CTFd format: { "1": {id, name, score, solves: []}, "2": {...} }
@@ -218,7 +211,7 @@ function CTFdScoreboardGraph() {
     fetchGraphData();
     const interval = setInterval(fetchGraphData, 30000); // Refresh every 30s
     return () => clearInterval(interval);
-  }, [token]);
+  }, []);
 
   if (loading) {
     return (
