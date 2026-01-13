@@ -2,6 +2,7 @@ import { useState, useEffect, useContext } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import AuthContext from '../context/AuthContext';
+import Loading from '../components/Loading';
 import './TeamDetails.css';
 
 function TeamDetails() {
@@ -48,7 +49,7 @@ function TeamDetails() {
   if (loading) {
     return (
       <div className="team-details-container">
-        <div className="loading">Loading team details...</div>
+        <Loading size="large" text="Loading team details" />
       </div>
     );
   }

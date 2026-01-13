@@ -1,6 +1,7 @@
 import { useState, useEffect, useContext } from 'react';
 import axios from 'axios';
 import AuthContext from '../context/AuthContext';
+import Loading from '../components/Loading';
 import './Notice.css';
 
 function Notice() {
@@ -60,9 +61,7 @@ function Notice() {
   if (loading) {
     return (
       <div className="notice-page">
-        <div className="loading">
-          <p>Loading notices...</p>
-        </div>
+        <Loading size="large" text="Loading notices" />
       </div>
     );
   }
