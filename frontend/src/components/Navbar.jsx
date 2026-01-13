@@ -75,18 +75,14 @@ function Navbar() {
   }, [isAuthenticated, user]);
 
   const fetchUnreadCount = async () => {
-    // Skip if not authenticated or no token in localStorage
-    if (!isAuthenticated || !localStorage.getItem('token')) {
+    // Skip if not authenticated
+    if (!isAuthenticated) {
       return;
     }
 
     try {
-      const token = localStorage.getItem('token');
-      const response = await axios.get('/api/notices/unread-count', {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      });
+      // Cookie sent automatically with request
+      const response = await axios.get('/api/notices/unread-count');
       const newCount = response.data.count;
 
       // Play notification sound if count increased (but not on first load)

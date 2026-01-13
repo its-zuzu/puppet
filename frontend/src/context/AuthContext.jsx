@@ -19,13 +19,7 @@ axios.defaults.headers.common['Content-Type'] = 'application/json';
 // Enhanced axios interceptors for better multi-user support
 axios.interceptors.response.use(
   response => {
-    // Check for new token in response headers
-    const newToken = response.headers['x-new-token'];
-    if (newToken) {
-      localStorage.setItem('token', newToken);
-      axios.defaults.headers.common['Authorization'] = `Bearer ${newToken}`;
-      console.log('Token refreshed automatically');
-    }
+    // Cookies are handled automatically - no manual token refresh needed
     return response;
   },
   error => {
@@ -59,7 +53,7 @@ axios.interceptors.response.use(
     // Handle authentication errors
     if (error.response?.status === 401) {
       const currentPath = window.location.pathname;
-      localStorage.removeItem('token');
+      // Cookie cleared automatically by browser
 
       // Only redirect if not already on login page
       if (currentPath !== '/login' && currentPath !== '/register') {
@@ -84,77 +78,56 @@ axios.interceptors.response.use(
 
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
-  const [token, setToken] = useState(localStorage.getItem('token'));
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  // Set axios default headers
-  useEffect(() => {
-    if (token) {
-      axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
-    } else {
-      delete axios.defaults.headers.common['Authorization'];
-    }
-  }, [token]);
-
-  // Load user if token exists
+  // Load user on mount (cookie-based authentication)
   useEffect(() => {
     const loadUser = async () => {
-      if (token) {
-        // Explicitly set header to avoid useEffect race conditions
-        axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
-        try {
-          const res = await axios.get('/api/auth/me');
+      try {
+        const res = await axios.get('/api/auth/me');
 
-          // Check if user is blocked
-          if (res.status === 403 || res.data.isBlocked) {
-            console.warn('User is blocked');
-            localStorage.removeItem('token');
-            setToken(null);
-            setUser(null);
-            setIsAuthenticated(false);
-            setError('Your account has been blocked.');
-            // Redirect will be handled by ProtectedRoute
-            window.location.href = '/blocked';
-            setLoading(false);
-            return;
-          }
-
-          setUser(res.data.user);
-          setIsAuthenticated(true);
-        } catch (err) {
-          console.error('Auth error:', err);
-
-          // Check if error is due to user being blocked
-          if (err.response?.status === 403 && err.response?.data?.isBlocked) {
-            console.warn('User is blocked (from error)');
-            localStorage.removeItem('token');
-            setToken(null);
-            setUser(null);
-            setIsAuthenticated(false);
-            setError('Your account has been blocked.');
-            window.location.href = '/blocked';
-            setLoading(false);
-            return;
-          }
-
-          localStorage.removeItem('token');
-          setToken(null);
+        // Check if user is blocked
+        if (res.status === 403 || res.data.isBlocked) {
+          console.warn('User is blocked');
           setUser(null);
           setIsAuthenticated(false);
-          setError('Authentication failed. Please login again.');
+          setError('Your account has been blocked.');
+          window.location.href = '/blocked';
+          setLoading(false);
+          return;
         }
+
+        setUser(res.data.user);
+        setIsAuthenticated(true);
+      } catch (err) {
+        console.error('Auth error:', err);
+
+        // Check if error is due to user being blocked
+        if (err.response?.status === 403 && err.response?.data?.isBlocked) {
+          console.warn('User is blocked (from error)');
+          setUser(null);
+          setIsAuthenticated(false);
+          setError('Your account has been blocked.');
+          window.location.href = '/blocked';
+          setLoading(false);
+          return;
+        }
+
+        // Not authenticated - cookie invalid or absent
+        setUser(null);
+        setIsAuthenticated(false);
       }
       setLoading(false);
     };
 
     loadUser();
-  }, [token]);
+  }, []);
 
   // Periodic check for user block status (every 60 seconds)
   useEffect(() => {
-    if (!isAuthenticated || !token || !user) return;
+    if (!isAuthenticated || !user) return;
 
     const blockCheckInterval = setInterval(async () => {
       try {
@@ -163,10 +136,7 @@ export const AuthProvider = ({ children }) => {
         // If user is blocked, logout immediately
         if (res.data.isBlocked) {
           console.warn('User has been blocked - logging out');
-          localStorage.removeItem('token');
-          setToken(null);
-          setUser(null);
-          setIsAuthenticated(false);
+          logout();
           setError('Your account has been blocked by an administrator.');
           window.location.href = '/blocked';
         }
@@ -175,10 +145,7 @@ export const AuthProvider = ({ children }) => {
         // Ignore 401 errors as they're handled by axios interceptor
         if (err.response?.status === 403 && err.response?.data?.isBlocked) {
           console.warn('User has been blocked - logging out');
-          localStorage.removeItem('token');
-          setToken(null);
-          setUser(null);
-          setIsAuthenticated(false);
+          logout();
           setError('Your account has been blocked by an administrator.');
           window.location.href = '/blocked';
         }
@@ -187,7 +154,7 @@ export const AuthProvider = ({ children }) => {
     }, 60000); // Check every 60 seconds
 
     return () => clearInterval(blockCheckInterval);
-  }, [isAuthenticated, token, user]);
+  }, [isAuthenticated, user, logout]);
 
   // Update user data (points, solved challenges, etc.)
   const updateUserData = async () => {
@@ -207,8 +174,7 @@ export const AuthProvider = ({ children }) => {
 
       const res = await axios.post('/api/auth/register', userData);
 
-      localStorage.setItem('token', res.data.token);
-      setToken(res.data.token);
+      // Cookie is set automatically by backend
       setUser(res.data.user);
       setIsAuthenticated(true);
       setLoading(false);
@@ -237,8 +203,7 @@ export const AuthProvider = ({ children }) => {
 
       const res = await axios.post('/api/auth/login', userData);
 
-      localStorage.setItem('token', res.data.token);
-      setToken(res.data.token);
+      // Cookie is set automatically by backend
       setUser(res.data.user);
       setIsAuthenticated(true);
       setLoading(false);
@@ -266,11 +231,17 @@ export const AuthProvider = ({ children }) => {
   };
 
   // Logout user
-  const logout = () => {
-    localStorage.removeItem('token');
-    setToken(null);
-    setUser(null);
-    setIsAuthenticated(false);
+  const logout = async () => {
+    try {
+      // Call backend to clear httpOnly cookie
+      await axios.post('/api/auth/logout');
+    } catch (err) {
+      console.error('Logout error:', err);
+    } finally {
+      // Clear local state regardless of API call result
+      setUser(null);
+      setIsAuthenticated(false);
+    }
   };
 
   // Clear errors
@@ -282,7 +253,6 @@ export const AuthProvider = ({ children }) => {
     <AuthContext.Provider
       value={{
         user,
-        token,
         isAuthenticated,
         loading,
         error,
