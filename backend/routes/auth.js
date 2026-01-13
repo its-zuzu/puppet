@@ -111,7 +111,7 @@ const setTokenCookie = (res, token) => {
   res.cookie('token', token, {
     httpOnly: true,        // Cannot be accessed by JavaScript (XSS protection)
     secure: isProduction,  // Only sent over HTTPS in production
-    sameSite: 'strict',    // CSRF protection
+    sameSite: 'lax',       // CSRF protection while allowing same-site navigation
     maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
     path: '/'
   });
