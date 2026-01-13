@@ -8,11 +8,16 @@ import './MyTeam.css';
 function MyTeam() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const { isAuthenticated } = useContext(AuthContext);
+  const { isAuthenticated, loading: authLoading } = useContext(AuthContext);
   const navigate = useNavigate();
 
   useEffect(() => {
     const fetchMyTeam = async () => {
+      // Wait for auth to finish loading before checking authentication
+      if (authLoading) {
+        return;
+      }
+
       if (!isAuthenticated) {
         navigate('/login');
         return;
@@ -40,7 +45,7 @@ function MyTeam() {
     };
 
     fetchMyTeam();
-  }, [isAuthenticated, navigate]);
+  }, [isAuthenticated, authLoading, navigate]);
 
   if (loading) {
     return (
