@@ -1,328 +1,303 @@
-import { Link, useLocation } from 'react-router-dom'
-import { useContext, useState, useEffect, useRef } from 'react'
-import AuthContext from '../context/AuthContext'
-import axios from 'axios'
-
-import './Navbar.css'
+import React, { useContext, useState, useEffect, useRef } from 'react';
+import { Link, useLocation } from 'react-router-dom';
+import { motion, AnimatePresence } from 'framer-motion';
+import { 
+  Home, Flag, Trophy, Users, Shield, Bell, Menu, X, 
+  User, LogOut, Settings, ChevronDown, FileText, Mail
+} from 'lucide-react';
+import AuthContext from '../context/AuthContext';
+import axios from 'axios';
+import { Badge } from './ui';
+import './Navbar.css';
 
 function Navbar() {
   const { isAuthenticated, user, logout } = useContext(AuthContext);
-  const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
-  const [scrolled, setScrolled] = useState(false);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
+  const [isAdminMenuOpen, setIsAdminMenuOpen] = useState(false);
   const [unreadNoticeCount, setUnreadNoticeCount] = useState(0);
+  const [scrolled, setScrolled] = useState(false);
   const location = useLocation();
-  const dropdownRef = useRef(null);
-  const menuRef = useRef(null);
-  const audioRef = useRef(null);
-  const previousCountRef = useRef(null);
+  const userMenuRef = useRef(null);
+  const adminMenuRef = useRef(null);
 
   useEffect(() => {
-    let timeoutId;
-
-    const handleScroll = () => {
-      // Simple debounce/throttle
-      if (timeoutId) return;
-
-      timeoutId = setTimeout(() => {
-        setScrolled(window.scrollY > 50);
-        timeoutId = null;
-      }, 50);
-    };
-
+    const handleScroll = () => setScrolled(window.scrollY > 20);
     window.addEventListener('scroll', handleScroll, { passive: true });
-    return () => {
-      window.removeEventListener('scroll', handleScroll);
-      if (timeoutId) clearTimeout(timeoutId);
-    };
+    return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
-  // Fetch unread notice count
   useEffect(() => {
     if (isAuthenticated && user) {
-      // Small delay to ensure token is set in axios
-      const timeoutId = setTimeout(() => {
-        fetchUnreadCount();
-      }, 100);
-
-      // Poll every 30 seconds for new notices
+      fetchUnreadCount();
       const interval = setInterval(fetchUnreadCount, 30000);
-
-      // Refresh when tab becomes visible
-      const handleVisibilityChange = () => {
-        if (!document.hidden && isAuthenticated) {
-          fetchUnreadCount();
-        }
-      };
-      document.addEventListener('visibilitychange', handleVisibilityChange);
-
-      // Listen for notice read events
-      const handleNoticeRead = () => {
-        fetchUnreadCount();
-      };
-      window.addEventListener('noticeRead', handleNoticeRead);
-
-      return () => {
-        clearTimeout(timeoutId);
-        clearInterval(interval);
-        document.removeEventListener('visibilitychange', handleVisibilityChange);
-        window.removeEventListener('noticeRead', handleNoticeRead);
-      };
-    } else {
-      // Reset count when not authenticated
-      setUnreadNoticeCount(0);
+      return () => clearInterval(interval);
     }
   }, [isAuthenticated, user]);
 
-  const fetchUnreadCount = async () => {
-    // Skip if not authenticated
-    if (!isAuthenticated) {
-      return;
-    }
-
-    try {
-      // Cookie sent automatically with request
-      const response = await axios.get('/api/notices/unread-count');
-      const newCount = response.data.count;
-
-      // Play notification sound if count increased (but not on first load)
-      if (previousCountRef.current !== null && newCount > previousCountRef.current) {
-        playNotificationSound();
-      }
-
-      previousCountRef.current = newCount;
-      setUnreadNoticeCount(newCount);
-    } catch (err) {
-      console.error('Error fetching unread notice count:', err);
-      console.error('Error details:', err.response?.data || err.message);
-    }
-  };
-
-  const playNotificationSound = () => {
-    try {
-      if (!audioRef.current) {
-        audioRef.current = new Audio('/notification.wav');
-      }
-      audioRef.current.play().catch(err => console.error('Error playing sound:', err));
-    } catch (err) {
-      console.error('Error with notification sound:', err);
-    }
-  };
-
-  // Close mobile menu when route changes
   useEffect(() => {
-    setIsMenuOpen(false);
-    setIsDropdownOpen(false);
-    // Refresh unread count when navigating
-    if (isAuthenticated) {
-      fetchUnreadCount();
-    }
-  }, [location, isAuthenticated]);
+    setIsMobileMenuOpen(false);
+    setIsUserMenuOpen(false);
+    setIsAdminMenuOpen(false);
+  }, [location]);
 
-  // Close dropdown when clicking outside
   useEffect(() => {
     const handleClickOutside = (event) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
-        setIsDropdownOpen(false);
+      if (userMenuRef.current && !userMenuRef.current.contains(event.target)) {
+        setIsUserMenuOpen(false);
       }
-      if (menuRef.current && !menuRef.current.contains(event.target) && !event.target.closest('.menu-toggle')) {
-        setIsMenuOpen(false);
+      if (adminMenuRef.current && !adminMenuRef.current.contains(event.target)) {
+        setIsAdminMenuOpen(false);
       }
     };
-
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  // Close menu on escape key
-  useEffect(() => {
-    const handleEscape = (event) => {
-      if (event.key === 'Escape') {
-        setIsMenuOpen(false);
-        setIsDropdownOpen(false);
-      }
-    };
-
-    document.addEventListener('keydown', handleEscape);
-    return () => document.removeEventListener('keydown', handleEscape);
-  }, []);
-
-  const toggleMenu = () => {
-    setIsMenuOpen(!isMenuOpen);
-    setIsDropdownOpen(false); // Close dropdown when opening menu
-  };
-
-  const toggleDropdown = () => {
-    setIsDropdownOpen(!isDropdownOpen);
+  const fetchUnreadCount = async () => {
+    try {
+      const response = await axios.get('/api/notices/unread-count');
+      setUnreadNoticeCount(response.data.count);
+    } catch (err) {
+      console.error('Error fetching unread notice count:', err);
+    }
   };
 
   const handleLogout = () => {
     logout();
-    setIsDropdownOpen(false);
+    setIsUserMenuOpen(false);
+    setIsMobileMenuOpen(false);
   };
 
-  const isActiveLink = (path) => {
-    return location.pathname === path;
-  };
+  const isActive = (path) => location.pathname === path;
+
+  const navLinks = [
+    { path: '/', label: 'Home', icon: Home, auth: false },
+    { path: '/challenges', label: 'Challenges', icon: Flag, auth: true },
+    { path: '/scoreboard', label: 'Leaderboard', icon: Trophy, auth: true },
+    { path: '/my-team', label: 'Team', icon: Users, auth: true },
+    { path: '/documentation', label: 'Docs', icon: FileText, auth: false },
+    { path: '/contact', label: 'Contact', icon: Mail, auth: false },
+  ];
+
+  const adminLinks = [
+    { path: '/admin', label: 'Dashboard' },
+    { path: '/admin/create-user', label: 'Create User' },
+    { path: '/admin/create-team', label: 'Create Team' },
+    { path: '/admin/messages', label: 'Messages' },
+    { path: '/admin/login-logs', label: 'Login Logs' },
+    { path: '/admin/platform-control', label: 'Platform Control' },
+    { path: '/admin/analytics', label: 'Analytics' },
+    { path: '/admin/live-monitor', label: 'Live Monitor' },
+    { path: '/admin/submissions', label: 'Submissions' },
+  ];
 
   return (
-    <nav className={`navbar ${scrolled ? 'scrolled' : ''}`}>
-      <div className="navbar-container">
-        {/* Logo on the left */}
-        <div className="navbar-brand">
-          <Link to="/" className="navbar-logo">
-            <span className="logo-text">CTF<span className="logo-highlight">Quest</span></span>
-          </Link>
-        </div>
+    <nav className={`cyber-navbar ${scrolled ? 'cyber-navbar--scrolled' : ''}`}>
+      <div className="cyber-navbar-container">
+        <Link to="/" className="cyber-navbar-brand">
+          <Shield size={28} className="cyber-navbar-logo-icon" />
+          <span className="cyber-navbar-logo-text">
+            CTF<span className="text-gradient">Quest</span>
+          </span>
+        </Link>
 
-        {/* Navigation content on the right */}
-        <div className={`navbar-content ${isMenuOpen ? 'active' : ''}`} ref={menuRef}>
-          <ul className="navbar-links">
-            <li><Link to="/" className={`nav-link ${isActiveLink('/') ? 'active' : ''}`}>Home</Link></li>
-            {isAuthenticated && (
-              <li><Link to="/challenges" className={`nav-link ${isActiveLink('/challenges') ? 'active' : ''}`}>Challenges</Link></li>
-            )}
-            {isAuthenticated && (
-              <li><Link to="/scoreboard" className={`nav-link ${isActiveLink('/scoreboard') ? 'active' : ''}`}>Scoreboard</Link></li>
-            )}
-            {isAuthenticated && (
-              <li><Link to="/my-team" className={`nav-link ${isActiveLink('/my-team') ? 'active' : ''}`}>My Team</Link></li>
-            )}
-            {user?.role === 'admin' && (
-              <li className="admin-dropdown">
-                <span className="nav-link admin-trigger">Admin <i className="fas fa-chevron-down"></i></span>
-                <div className="admin-submenu">
-                  <Link to="/admin" className="submenu-item">Dashboard</Link>
-                  <Link to="/admin/create-user" className="submenu-item">Create User</Link>
-                  <Link to="/admin/create-team" className="submenu-item">Create Team</Link>
-                  <Link to="/admin/messages" className="submenu-item">Messages</Link>
-                  <Link to="/admin/login-logs" className="submenu-item">Login Logs</Link>
-                  <Link to="/admin/platform-control" className="submenu-item">Platform Control</Link>
-                  <Link to="/admin/analytics" className="submenu-item">Analytics</Link>
-                </div>
-              </li>
-            )}
-            {isAuthenticated && (
-              <li>
-                <Link to="/notices" className={`nav-link ${isActiveLink('/notices') ? 'active' : ''}`}>
-                  Notices
-                  {unreadNoticeCount > 0 && (
-                    <span className="notification-badge">{unreadNoticeCount}</span>
-                  )}
+        <div className="cyber-navbar-desktop">
+          <div className="cyber-navbar-links">
+            {navLinks.map((link) => {
+              if (link.auth && !isAuthenticated) return null;
+              const Icon = link.icon;
+              return (
+                <Link
+                  key={link.path}
+                  to={link.path}
+                  className={`cyber-navbar-link ${isActive(link.path) ? 'cyber-navbar-link--active' : ''}`}
+                >
+                  <Icon size={18} />
+                  <span>{link.label}</span>
                 </Link>
-              </li>
+              );
+            })}
+
+            {user?.role === 'admin' && (
+              <div className="cyber-navbar-dropdown" ref={adminMenuRef}>
+                <button
+                  className="cyber-navbar-link cyber-navbar-link--dropdown"
+                  onClick={() => setIsAdminMenuOpen(!isAdminMenuOpen)}
+                >
+                  <Settings size={18} />
+                  <span>Admin</span>
+                  <ChevronDown size={16} className={`cyber-navbar-chevron ${isAdminMenuOpen ? 'cyber-navbar-chevron--open' : ''}`} />
+                </button>
+                <AnimatePresence>
+                  {isAdminMenuOpen && (
+                    <motion.div
+                      className="cyber-navbar-dropdown-menu"
+                      initial={{ opacity: 0, y: -10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: -10 }}
+                      transition={{ duration: 0.2 }}
+                    >
+                      {adminLinks.map((link) => (
+                        <Link
+                          key={link.path}
+                          to={link.path}
+                          className="cyber-navbar-dropdown-item"
+                          onClick={() => setIsAdminMenuOpen(false)}
+                        >
+                          {link.label}
+                        </Link>
+                      ))}
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
             )}
-            <li><Link to="/documentation" className={`nav-link ${isActiveLink('/documentation') ? 'active' : ''}`}>Docs</Link></li>
-            <li><Link to="/contact" className={`nav-link ${isActiveLink('/contact') ? 'active' : ''}`}>Contact</Link></li>
-          </ul>
 
-          <div className="navbar-auth">
-            {isAuthenticated ? (
-              <div className="auth-section">
-                <div className="user-menu" ref={dropdownRef}>
-                  <button
-                    className="user-button"
-                    onClick={toggleDropdown}
-                    aria-expanded={isDropdownOpen}
-                    aria-haspopup="true"
-                    aria-label={`User menu for ${user?.username}`}
-                  >
-                    <div className="user-avatar">
-                      {user?.username.charAt(0).toUpperCase()}
-                    </div>
-                    <span className="username">{user?.username}</span>
-                    <i className={`fas fa-chevron-${isDropdownOpen ? 'up' : 'down'}`}></i>
-                  </button>
-
-                  {isDropdownOpen && (
-                    <div className="dropdown-menu" role="menu">
-                      <div className="dropdown-header">Account</div>
-                      <Link
-                        to="/profile"
-                        className="dropdown-item"
-                        onClick={() => setIsDropdownOpen(false)}
-                        role="menuitem"
-                      >
-                        <i className="fas fa-user"></i>
-                        Profile
-                      </Link>
-                      {isAuthenticated && (
-                        <Link
-                          to="/challenges"
-                          className="dropdown-item"
-                          onClick={() => setIsDropdownOpen(false)}
-                          role="menuitem"
-                        >
-                          <i className="fas fa-flag"></i>
-                          Challenges
-                        </Link>
-                      )}
-                      {isAuthenticated && (
-                        <Link
-                          to="/my-team"
-                          className="dropdown-item"
-                          onClick={() => setIsDropdownOpen(false)}
-                          role="menuitem"
-                        >
-                          <i className="fas fa-users"></i>
-                          My Team
-                        </Link>
-                      )}
-
-                      {user?.role === 'admin' && (
-                        <>
-                          <div className="dropdown-divider"></div>
-                          <div className="dropdown-header">Admin</div>
-                          <Link
-                            to="/admin"
-                            className="dropdown-item"
-                            onClick={() => setIsDropdownOpen(false)}
-                            role="menuitem"
-                          >
-                            <i className="fas fa-cog"></i>
-                            Dashboard
-                          </Link>
-                          <Link
-                            to="/admin/messages"
-                            className="dropdown-item"
-                            onClick={() => setIsDropdownOpen(false)}
-                            role="menuitem"
-                          >
-                            <i className="fas fa-envelope"></i>
-                            Messages
-                          </Link>
-                        </>
-                      )}
-                      <div className="dropdown-divider"></div>
-                      <div className="dropdown-footer">
-                        <button
-                          className="dropdown-item logout"
-                          onClick={handleLogout}
-                          role="menuitem"
-                        >
-                          <i className="fas fa-sign-out-alt"></i>
-                          Logout
-                        </button>
-                      </div>
-                    </div>
+            {isAuthenticated && (
+              <Link
+                to="/notices"
+                className={`cyber-navbar-link ${isActive('/notices') ? 'cyber-navbar-link--active' : ''}`}
+              >
+                <div className="cyber-navbar-notice-icon">
+                  <Bell size={18} />
+                  {unreadNoticeCount > 0 && (
+                    <Badge variant="danger" size="sm" className="cyber-navbar-badge">
+                      {unreadNoticeCount}
+                    </Badge>
                   )}
                 </div>
+                <span>Notices</span>
+              </Link>
+            )}
+          </div>
+
+          <div className="cyber-navbar-actions">
+            {isAuthenticated ? (
+              <div className="cyber-navbar-user" ref={userMenuRef}>
+                <button
+                  className="cyber-navbar-user-button"
+                  onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
+                >
+                  <div className="cyber-navbar-avatar">
+                    {user?.username?.charAt(0).toUpperCase()}
+                  </div>
+                  <span className="cyber-navbar-username">{user?.username}</span>
+                  <ChevronDown size={16} className={`cyber-navbar-chevron ${isUserMenuOpen ? 'cyber-navbar-chevron--open' : ''}`} />
+                </button>
+                <AnimatePresence>
+                  {isUserMenuOpen && (
+                    <motion.div
+                      className="cyber-navbar-user-menu"
+                      initial={{ opacity: 0, y: -10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: -10 }}
+                      transition={{ duration: 0.2 }}
+                    >
+                      <div className="cyber-navbar-user-info">
+                        <div className="cyber-navbar-user-name">{user?.username}</div>
+                        <div className="cyber-navbar-user-role">{user?.role}</div>
+                      </div>
+                      <div className="cyber-navbar-user-menu-divider"></div>
+                      <Link to="/profile" className="cyber-navbar-user-menu-item" onClick={() => setIsUserMenuOpen(false)}>
+                        <User size={16} />
+                        <span>Profile</span>
+                      </Link>
+                      <Link to="/my-team" className="cyber-navbar-user-menu-item" onClick={() => setIsUserMenuOpen(false)}>
+                        <Users size={16} />
+                        <span>My Team</span>
+                      </Link>
+                      <div className="cyber-navbar-user-menu-divider"></div>
+                      <button className="cyber-navbar-user-menu-item cyber-navbar-user-menu-item--danger" onClick={handleLogout}>
+                        <LogOut size={16} />
+                        <span>Logout</span>
+                      </button>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
               </div>
             ) : (
-              <div className="auth-buttons">
-                <Link to="/register" className="login-button">Register</Link>
-              </div>
+              <Link to="/login" className="cyber-navbar-login-button">
+                <User size={18} />
+                <span>Login</span>
+              </Link>
             )}
           </div>
         </div>
 
-        {/* Mobile menu toggle */}
-        <button className="menu-toggle" onClick={toggleMenu} aria-label="Toggle menu">
-          <span className={`menu-icon ${isMenuOpen ? 'open' : ''}`}></span>
+        <button
+          className="cyber-navbar-mobile-toggle"
+          onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+        >
+          {isMobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
         </button>
       </div>
+
+      <AnimatePresence>
+        {isMobileMenuOpen && (
+          <motion.div
+            className="cyber-navbar-mobile"
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: 'auto' }}
+            exit={{ opacity: 0, height: 0 }}
+            transition={{ duration: 0.3 }}
+          >
+            <div className="cyber-navbar-mobile-links">
+              {navLinks.map((link) => {
+                if (link.auth && !isAuthenticated) return null;
+                const Icon = link.icon;
+                return (
+                  <Link
+                    key={link.path}
+                    to={link.path}
+                    className={`cyber-navbar-mobile-link ${isActive(link.path) ? 'cyber-navbar-mobile-link--active' : ''}`}
+                    onClick={() => setIsMobileMenuOpen(false)}
+                  >
+                    <Icon size={18} />
+                    <span>{link.label}</span>
+                  </Link>
+                );
+              })}
+              {user?.role === 'admin' && (
+                <>
+                  <div className="cyber-navbar-mobile-divider">Admin</div>
+                  {adminLinks.map((link) => (
+                    <Link
+                      key={link.path}
+                      to={link.path}
+                      className="cyber-navbar-mobile-link"
+                      onClick={() => setIsMobileMenuOpen(false)}
+                    >
+                      {link.label}
+                    </Link>
+                  ))}
+                </>
+              )}
+              {isAuthenticated && (
+                <>
+                  <div className="cyber-navbar-mobile-divider">Account</div>
+                  <Link to="/profile" className="cyber-navbar-mobile-link" onClick={() => setIsMobileMenuOpen(false)}>
+                    <User size={18} />
+                    <span>Profile</span>
+                  </Link>
+                  <button className="cyber-navbar-mobile-link cyber-navbar-mobile-link--danger" onClick={handleLogout}>
+                    <LogOut size={18} />
+                    <span>Logout</span>
+                  </button>
+                </>
+              )}
+              {!isAuthenticated && (
+                <Link to="/login" className="cyber-navbar-mobile-link" onClick={() => setIsMobileMenuOpen(false)}>
+                  <User size={18} />
+                  <span>Login</span>
+                </Link>
+              )}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </nav>
-  )
+  );
 }
 
-export default Navbar
+export default Navbar;

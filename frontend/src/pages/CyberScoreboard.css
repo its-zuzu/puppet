@@ -1,0 +1,341 @@
+/* Professional Cybersecurity Leaderboard */
+
+.cyber-scoreboard-container {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 40px 24px;
+}
+
+.cyber-scoreboard-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 40px;
+  flex-wrap: wrap;
+  gap: 24px;
+}
+
+.cyber-scoreboard-title-section {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+
+.cyber-scoreboard-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 80px;
+  height: 80px;
+  background: var(--bg-tertiary);
+  border: 2px solid var(--primary);
+  border-radius: 50%;
+  color: var(--primary);
+  box-shadow: 0 0 30px var(--primary-glow);
+}
+
+.cyber-scoreboard-title {
+  font-family: var(--font-heading);
+  font-size: 2.5rem;
+  font-weight: 700;
+  margin-bottom: 8px;
+  letter-spacing: 2px;
+}
+
+.cyber-scoreboard-subtitle {
+  color: var(--text-secondary);
+  font-size: 1rem;
+}
+
+.cyber-scoreboard-actions {
+  display: flex;
+  gap: 12px;
+}
+
+/* Tabs */
+.cyber-scoreboard-tabs {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 32px;
+  background: var(--bg-secondary);
+  padding: 8px;
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--border-primary);
+}
+
+.cyber-scoreboard-tab {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 14px 24px;
+  background: transparent;
+  color: var(--text-secondary);
+  border: 1px solid transparent;
+  border-radius: var(--radius-md);
+  font-family: var(--font-mono);
+  font-size: 0.938rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all var(--transition-normal);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.cyber-scoreboard-tab:hover {
+  color: var(--text-primary);
+  background: var(--bg-hover);
+}
+
+.cyber-scoreboard-tab--active {
+  background: var(--primary);
+  color: var(--bg-primary);
+  border-color: var(--primary);
+  box-shadow: 0 0 20px var(--primary-glow);
+}
+
+/* Graph Card */
+.cyber-scoreboard-graph-card {
+  margin-bottom: 32px;
+}
+
+.cyber-scoreboard-graph-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+/* Table */
+.cyber-scoreboard-table-card {
+  overflow: hidden;
+}
+
+.cyber-scoreboard-loading {
+  padding: 80px 24px;
+}
+
+.cyber-scoreboard-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 80px 24px;
+  text-align: center;
+}
+
+.cyber-scoreboard-empty-icon {
+  color: var(--text-tertiary);
+  margin-bottom: 24px;
+  opacity: 0.5;
+}
+
+.cyber-scoreboard-empty h3 {
+  font-size: 1.5rem;
+  margin-bottom: 8px;
+  color: var(--text-primary);
+}
+
+.cyber-scoreboard-empty p {
+  color: var(--text-secondary);
+}
+
+.cyber-scoreboard-table {
+  width: 100%;
+}
+
+.cyber-scoreboard-table-header {
+  display: grid;
+  grid-template-columns: 100px 1fr 150px;
+  padding: 20px 24px;
+  background: var(--bg-tertiary);
+  border-bottom: 2px solid var(--border-primary);
+  font-family: var(--font-mono);
+  font-size: 0.813rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: var(--text-tertiary);
+}
+
+.cyber-scoreboard-table-body {
+  max-height: none;
+}
+
+.cyber-scoreboard-table-row {
+  display: grid;
+  grid-template-columns: 100px 1fr 150px;
+  padding: 20px 24px;
+  border-bottom: 1px solid var(--border-primary);
+  transition: all var(--transition-normal);
+  background: var(--bg-secondary);
+}
+
+.cyber-scoreboard-table-row:hover {
+  background: var(--bg-hover);
+  transform: translateX(4px);
+}
+
+.cyber-scoreboard-table-row--current {
+  background: rgba(0, 180, 255, 0.1);
+  border-left: 4px solid var(--primary);
+  padding-left: 20px;
+}
+
+.cyber-scoreboard-table-row--current:hover {
+  background: rgba(0, 180, 255, 0.15);
+}
+
+.cyber-scoreboard-table-row--top1 {
+  background: rgba(255, 215, 0, 0.05);
+}
+
+.cyber-scoreboard-table-row--top2 {
+  background: rgba(192, 192, 192, 0.05);
+}
+
+.cyber-scoreboard-table-row--top3 {
+  background: rgba(205, 127, 50, 0.05);
+}
+
+.cyber-scoreboard-table-cell {
+  display: flex;
+  align-items: center;
+}
+
+.cyber-scoreboard-table-cell--rank {
+  justify-content: center;
+}
+
+.cyber-scoreboard-table-cell--name {
+  gap: 12px;
+}
+
+.cyber-scoreboard-table-cell--score {
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+/* Rank Icons */
+.rank-number {
+  font-family: var(--font-mono);
+  font-size: 1.125rem;
+  font-weight: 700;
+  color: var(--text-secondary);
+}
+
+.rank-icon {
+  filter: drop-shadow(0 0 8px currentColor);
+}
+
+.rank-icon--gold {
+  color: #ffd700;
+}
+
+.rank-icon--silver {
+  color: #c0c0c0;
+}
+
+.rank-icon--bronze {
+  color: #cd7f32;
+}
+
+/* Name Link */
+.cyber-scoreboard-name-link {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  color: var(--text-primary);
+  text-decoration: none;
+  font-family: var(--font-mono);
+  font-weight: 500;
+  transition: color var(--transition-fast);
+}
+
+.cyber-scoreboard-name-link:hover {
+  color: var(--primary);
+}
+
+.cyber-scoreboard-you-badge {
+  animation: pulse-glow 2s ease-in-out infinite;
+}
+
+@keyframes pulse-glow {
+  0%, 100% {
+    box-shadow: 0 0 10px var(--primary-glow);
+  }
+  50% {
+    box-shadow: 0 0 20px var(--primary-glow);
+  }
+}
+
+/* Score Display */
+.cyber-scoreboard-score {
+  font-family: var(--font-mono);
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--primary);
+}
+
+.cyber-scoreboard-points-label {
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--text-tertiary);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .cyber-scoreboard-container {
+    padding: 24px 16px;
+  }
+
+  .cyber-scoreboard-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .cyber-scoreboard-title {
+    font-size: 2rem;
+  }
+
+  .cyber-scoreboard-icon {
+    width: 60px;
+    height: 60px;
+  }
+
+  .cyber-scoreboard-table-header,
+  .cyber-scoreboard-table-row {
+    grid-template-columns: 80px 1fr 120px;
+    padding: 16px;
+  }
+
+  .cyber-scoreboard-score {
+    font-size: 1.25rem;
+  }
+
+  .cyber-scoreboard-tabs {
+    flex-direction: column;
+  }
+}
+
+@media (max-width: 480px) {
+  .cyber-scoreboard-table-header,
+  .cyber-scoreboard-table-row {
+    grid-template-columns: 60px 1fr 100px;
+    padding: 12px;
+  }
+
+  .cyber-scoreboard-name-link {
+    font-size: 0.875rem;
+  }
+
+  .cyber-scoreboard-score {
+    font-size: 1.125rem;
+  }
+}

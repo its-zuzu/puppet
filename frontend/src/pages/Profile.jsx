@@ -1,29 +1,80 @@
 import { useContext, useEffect, useState } from 'react';
 import { Navigate } from 'react-router-dom';
+import { motion } from 'framer-motion';
+import { 
+  User, Mail, Award, Trophy, Calendar, Shield, 
+  TrendingUp, Clock, CheckCircle, Target 
+} from 'lucide-react';
 import AuthContext from '../context/AuthContext';
 import axios from 'axios';
-import Loading from '../components/Loading';
+import { Card, CardHeader, CardBody, Badge, Loading } from '../components/ui';
 import './Profile.css';
+
+const DIFFICULTIES = {
+  easy: { label: 'Easy', color: 'success' },
+  medium: { label: 'Medium', color: 'warning' },
+  hard: { label: 'Hard', color: 'danger' },
+  insane: { label: 'Insane', color: 'info' },
+};
 
 function Profile() {
   const { user, isAuthenticated, loading } = useContext(AuthContext);
   const [solvedChallenges, setSolvedChallenges] = useState([]);
   const [loadingChallenges, setLoadingChallenges] = useState(true);
+  const [stats, setStats] = useState({
+    totalPoints: 0,
+    totalSolves: 0,
+    rank: 0,
+    easyCount: 0,
+    mediumCount: 0,
+    hardCount: 0,
+    insaneCount: 0
+  });
 
   useEffect(() => {
     const fetchChallenges = async () => {
       try {
         if (user && user.solvedChallenges && user.solvedChallenges.length > 0) {
           const solved = [];
+          let easy = 0, medium = 0, hard = 0, insane = 0;
+          
           for (const challengeId of user.solvedChallenges) {
             try {
               const res = await axios.get(`/api/challenges/${challengeId}`);
-              solved.push(res.data.data);
+              const challenge = res.data.data;
+              solved.push(challenge);
+              
+              // Count by difficulty
+              const diff = challenge.difficulty?.toLowerCase();
+              if (diff === 'easy') easy++;
+              else if (diff === 'medium') medium++;
+              else if (diff === 'hard') hard++;
+              else if (diff === 'insane') insane++;
             } catch (err) {
               console.error(`Error fetching challenge ${challengeId}:`, err);
             }
           }
+          
           setSolvedChallenges(solved);
+          setStats({
+            totalPoints: user.points || 0,
+            totalSolves: solved.length,
+            rank: user.rank || 0,
+            easyCount: easy,
+            mediumCount: medium,
+            hardCount: hard,
+            insaneCount: insane
+          });
+        } else {
+          setStats({
+            totalPoints: user?.points || 0,
+            totalSolves: 0,
+            rank: user?.rank || 0,
+            easyCount: 0,
+            mediumCount: 0,
+            hardCount: 0,
+            insaneCount: 0
+          });
         }
       } catch (err) {
         console.error('Error fetching challenges:', err);
@@ -43,82 +94,221 @@ function Profile() {
 
   if (loading || !user) {
     return (
-      <div className="profile-container">
-        <Loading size="medium" text="Loading profile" />
+      <div className="profile-page">
+        <Loading size="large" text="Loading profile..." />
       </div>
     );
   }
 
+  const containerVariants = {
+    hidden: { opacity: 0 },
+    visible: {
+      opacity: 1,
+      transition: { staggerChildren: 0.1 }
+    }
+  };
+
+  const itemVariants = {
+    hidden: { opacity: 0, y: 20 },
+    visible: { opacity: 1, y: 0 }
+  };
+
   return (
-    <div className="profile-container">
-      {/* User Details Section */}
-      <div className="profile-section user-details-section">
-        <h2>User Details</h2>
-        <div className="user-details-grid">
-          <div className="detail-item">
-            <span className="detail-label">Username:</span>
-            <span className="detail-value">{user.username}</span>
-          </div>
-          <div className="detail-item">
-            <span className="detail-label">Email:</span>
-            <span className="detail-value">{user.email}</span>
-          </div>
-          <div className="detail-item">
-            <span className="detail-label">Role:</span>
-            <span className="detail-value">{user.role}</span>
-          </div>
-          <div className="detail-item">
-            <span className="detail-label">Member Since:</span>
-            <span className="detail-value">
-              {new Date(user.createdAt || Date.now()).toLocaleDateString('en-US', {
-                year: 'numeric',
-                month: 'long',
-                day: 'numeric'
-              })}
-            </span>
-          </div>
-          <div className="detail-item">
-            <span className="detail-label">Points:</span>
-            <span className="detail-value highlight">{user.points || 0}</span>
-          </div>
+    <div className="profile-page">
+      {/* Header */}
+      <motion.div 
+        className="profile-header"
+        initial={{ opacity: 0, y: -20 }}
+        animate={{ opacity: 1, y: 0 }}
+      >
+        <div className="profile-avatar">
+          <User size={40} />
         </div>
-      </div>
-
-      {/* Challenges Solved Summary */}
-      <div className="profile-section challenges-summary-section">
-        <h2>Challenges Solved</h2>
-        <div className="solved-count">
-          <span className="count-number">{user.solvedChallenges?.length || 0}</span>
-          <span className="count-label">Total Challenges Solved</span>
+        <div className="profile-info">
+          <h1 className="profile-name">{user.username}</h1>
+          <p className="profile-email">
+            <Mail size={16} />
+            {user.email}
+          </p>
+          {user.team && (
+            <p className="profile-team">
+              <Shield size={16} />
+              Team: {user.team}
+            </p>
+          )}
         </div>
-      </div>
+      </motion.div>
 
-      {/* Solved Challenges List */}
-      <div className="profile-section solved-challenges-section">
-        <h2>Solved Challenges Details</h2>
-        {loadingChallenges ? (
-          <Loading size="small" inline text="Loading challenges" />
-        ) : solvedChallenges.length > 0 ? (
-          <div className="solved-challenges-list">
-            {solvedChallenges.map(challenge => (
-              <div key={challenge._id} className="solved-challenge-item">
-                <div className="challenge-title">{challenge.title}</div>
-                <div className="challenge-details">
-                  <span className={`difficulty ${challenge.difficulty.toLowerCase()}`}>
-                    {challenge.difficulty}
-                  </span>
-                  <span className="category">{challenge.category}</span>
-                  <span className="points">{challenge.points} pts</span>
+      {/* Stats Cards */}
+      <motion.div 
+        className="stats-grid"
+        variants={containerVariants}
+        initial="hidden"
+        animate="visible"
+      >
+        <motion.div variants={itemVariants}>
+          <Card className="stat-card stat-card--primary" hover>
+            <CardBody>
+              <div className="stat-card-icon">
+                <Award />
+              </div>
+              <div className="stat-card-content">
+                <span className="stat-card-value">{stats.totalPoints}</span>
+                <span className="stat-card-label">Total Points</span>
+              </div>
+            </CardBody>
+          </Card>
+        </motion.div>
+
+        <motion.div variants={itemVariants}>
+          <Card className="stat-card stat-card--success" hover>
+            <CardBody>
+              <div className="stat-card-icon">
+                <CheckCircle />
+              </div>
+              <div className="stat-card-content">
+                <span className="stat-card-value">{stats.totalSolves}</span>
+                <span className="stat-card-label">Challenges Solved</span>
+              </div>
+            </CardBody>
+          </Card>
+        </motion.div>
+
+        <motion.div variants={itemVariants}>
+          <Card className="stat-card stat-card--warning" hover>
+            <CardBody>
+              <div className="stat-card-icon">
+                <TrendingUp />
+              </div>
+              <div className="stat-card-content">
+                <span className="stat-card-value">#{stats.rank || '???'}</span>
+                <span className="stat-card-label">Global Rank</span>
+              </div>
+            </CardBody>
+          </Card>
+        </motion.div>
+
+        <motion.div variants={itemVariants}>
+          <Card className="stat-card stat-card--info" hover>
+            <CardBody>
+              <div className="stat-card-icon">
+                <Calendar />
+              </div>
+              <div className="stat-card-content">
+                <span className="stat-card-value">
+                  {new Date(user.createdAt || Date.now()).toLocaleDateString('en-US', {
+                    month: 'short',
+                    year: 'numeric'
+                  })}
+                </span>
+                <span className="stat-card-label">Member Since</span>
+              </div>
+            </CardBody>
+          </Card>
+        </motion.div>
+      </motion.div>
+
+      {/* Difficulty Breakdown */}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.4 }}
+      >
+        <Card className="difficulty-card">
+          <CardHeader>
+            <h2 className="section-title">
+              <Target size={20} />
+              Difficulty Breakdown
+            </h2>
+          </CardHeader>
+          <CardBody>
+            <div className="difficulty-stats">
+              <div className="difficulty-stat difficulty-stat--easy">
+                <div className="difficulty-stat-bar" style={{ width: `${stats.totalSolves > 0 ? (stats.easyCount / stats.totalSolves) * 100 : 0}%` }}></div>
+                <div className="difficulty-stat-info">
+                  <span className="difficulty-stat-label">Easy</span>
+                  <span className="difficulty-stat-value">{stats.easyCount}</span>
                 </div>
               </div>
-            ))}
-          </div>
-        ) : (
-          <div className="no-challenges">
-            <p>No challenges solved yet.</p>
-          </div>
-        )}
-      </div>
+              <div className="difficulty-stat difficulty-stat--medium">
+                <div className="difficulty-stat-bar" style={{ width: `${stats.totalSolves > 0 ? (stats.mediumCount / stats.totalSolves) * 100 : 0}%` }}></div>
+                <div className="difficulty-stat-info">
+                  <span className="difficulty-stat-label">Medium</span>
+                  <span className="difficulty-stat-value">{stats.mediumCount}</span>
+                </div>
+              </div>
+              <div className="difficulty-stat difficulty-stat--hard">
+                <div className="difficulty-stat-bar" style={{ width: `${stats.totalSolves > 0 ? (stats.hardCount / stats.totalSolves) * 100 : 0}%` }}></div>
+                <div className="difficulty-stat-info">
+                  <span className="difficulty-stat-label">Hard</span>
+                  <span className="difficulty-stat-value">{stats.hardCount}</span>
+                </div>
+              </div>
+              <div className="difficulty-stat difficulty-stat--insane">
+                <div className="difficulty-stat-bar" style={{ width: `${stats.totalSolves > 0 ? (stats.insaneCount / stats.totalSolves) * 100 : 0}%` }}></div>
+                <div className="difficulty-stat-info">
+                  <span className="difficulty-stat-label">Insane</span>
+                  <span className="difficulty-stat-value">{stats.insaneCount}</span>
+                </div>
+              </div>
+            </div>
+          </CardBody>
+        </Card>
+      </motion.div>
+
+      {/* Solved Challenges */}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.6 }}
+      >
+        <Card className="challenges-card">
+          <CardHeader>
+            <h2 className="section-title">
+              <Trophy size={20} />
+              Solved Challenges
+            </h2>
+          </CardHeader>
+          <CardBody>
+            {loadingChallenges ? (
+              <Loading size="small" text="Loading challenges..." />
+            ) : solvedChallenges.length > 0 ? (
+              <div className="solved-challenges-list">
+                {solvedChallenges.map((challenge, index) => (
+                  <motion.div
+                    key={challenge._id}
+                    className="solved-challenge-item"
+                    initial={{ opacity: 0, x: -20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: 0.7 + index * 0.05 }}
+                  >
+                    <CheckCircle className="solve-icon" size={20} />
+                    <div className="challenge-info">
+                      <div className="challenge-name">{challenge.title}</div>
+                      <div className="challenge-metadata">
+                        <Badge variant={DIFFICULTIES[challenge.difficulty?.toLowerCase()]?.color || 'primary'}>
+                          {DIFFICULTIES[challenge.difficulty?.toLowerCase()]?.label || challenge.difficulty}
+                        </Badge>
+                        <span className="challenge-category">{challenge.category}</span>
+                        <span className="challenge-points">
+                          <Award size={14} />
+                          {challenge.points} pts
+                        </span>
+                      </div>
+                    </div>
+                  </motion.div>
+                ))}
+              </div>
+            ) : (
+              <div className="no-challenges">
+                <Target size={48} />
+                <h3>No challenges solved yet</h3>
+                <p>Start solving challenges to see your progress here</p>
+              </div>
+            )}
+          </CardBody>
+        </Card>
+      </motion.div>
     </div>
   );
 }

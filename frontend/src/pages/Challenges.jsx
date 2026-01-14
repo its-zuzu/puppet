@@ -1,379 +1,333 @@
-import { useState, useEffect, useContext, useRef } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
-import axios from 'axios'
-import AuthContext from '../context/AuthContext'
-import Logger from '../utils/logger'
-import { useEventState } from '../hooks/useEventState'
-import Loading from '../components/Loading'
-import CustomMessageDisplay from '../components/CustomMessageDisplay'
-import CTFEndedDisplay from '../components/CTFEndedDisplay'
-import './Challenges.css'
+import { useState, useEffect, useContext } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { motion, AnimatePresence } from 'framer-motion';
+import { 
+  Search, Filter, Flag, Lock, Award, Users, 
+  CheckCircle, Clock, TrendingUp, ChevronRight 
+} from 'lucide-react';
+import axios from 'axios';
+import AuthContext from '../context/AuthContext';
+import { Button, Input, Card, CardHeader, CardBody, Badge, Loading } from '../components/ui';
+import './Challenges.css';
 
-const SolvesModal = ({ challenge, onClose }) => {
-  const [solves, setSolves] = useState([]);
-  const [loading, setLoading] = useState(true);
+const CATEGORIES = [
+  { id: 'all', name: 'All Categories', icon: null },
+  { id: 'web', name: 'Web', icon: '????' },
+  { id: 'crypto', name: 'Cryptography', icon: '????' },
+  { id: 'forensics', name: 'Forensics', icon: '????' },
+  { id: 'pwn', name: 'Binary', icon: '????' },
+  { id: 'reverse', name: 'Reverse Engineering', icon: '????' },
+  { id: 'misc', name: 'Miscellaneous', icon: '????' },
+];
 
-  useEffect(() => {
-    const fetchSolves = async () => {
-      try {
-        const res = await axios.get(`/api/challenges/${challenge._id}/solves`);
-        setSolves(res.data.data || []);
-        setLoading(false);
-      } catch (err) {
-        console.error('Error fetching solves:', err);
-        setLoading(false);
-      }
-    };
-
-    fetchSolves();
-  }, [challenge._id]);
-
-  return (
-    <div className="modal-overlay" onClick={onClose}>
-      <div className="modal-content solves-modal" onClick={(e) => e.stopPropagation()}>
-        <div className="modal-header">
-          <h3>{challenge.title} - Solves ({solves.length})</h3>
-          <button className="modal-close" onClick={onClose}>×</button>
-        </div>
-
-        {loading ? (
-          <Loading size="small" inline text="Loading solves" />
-        ) : solves.length === 0 ? (
-          <div className="no-solves">No one has solved this challenge yet!</div>
-        ) : (
-          <div className="solves-list">
-            <table className="solves-table">
-              <thead>
-                <tr>
-                  <th>#</th>
-                  <th>User</th>
-                  <th>Team</th>
-                  <th>Solved At</th>
-                </tr>
-              </thead>
-              <tbody>
-                {solves.map((solve, index) => (
-                  <tr key={index}>
-                    <td>{index + 1}</td>
-                    <td>{solve.username}</td>
-                    <td>{solve.team}</td>
-                    <td>{new Date(solve.solvedAt).toLocaleString()}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
-      </div>
-    </div>
-  );
-};
-
-const FlagSubmissionModal = ({ challenge, onClose, onSubmit }) => {
-  const [flag, setFlag] = useState('');
-  const [error, setError] = useState('');
-  const [success, setSuccess] = useState('');
-  const [isSubmitting, setIsSubmitting] = useState(false);
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    if (!flag.trim()) {
-      setError('Please enter a flag');
-      return;
-    }
-
-    setIsSubmitting(true);
-    setError('');
-    setSuccess('');
-
-    try {
-      await onSubmit(flag);
-      setSuccess('Flag submitted successfully!');
-      setTimeout(() => onClose(), 1500);
-    } catch (err) {
-      setError(err.message || 'Failed to submit flag');
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
-  return (
-    <div className="modal-overlay" onClick={onClose}>
-      <div className="modal-content" onClick={(e) => e.stopPropagation()}>
-        <div className="modal-header">
-          <h3>Submit Flag: {challenge.title}</h3>
-          <button className="modal-close" onClick={onClose}>×</button>
-        </div>
-
-        {error && <div className="modal-error">{error}</div>}
-        {success && <div className="modal-success">{success}</div>}
-
-        <form onSubmit={handleSubmit} className="flag-form">
-          <div className="form-group">
-            <label htmlFor="flag">Flag</label>
-            <input
-              type="text"
-              id="flag"
-              value={flag}
-              onChange={(e) => setFlag(e.target.value)}
-              placeholder="Enter the flag SECE{Flag}"
-              autoComplete="off"
-              disabled={isSubmitting || success}
-            />
-          </div>
-
-          <button
-            type="submit"
-            className="submit-flag-button"
-            disabled={isSubmitting || success}
-          >
-            {isSubmitting ? 'Submitting...' : 'Submit Flag'}
-          </button>
-        </form>
-      </div>
-    </div>
-  );
+const DIFFICULTIES = {
+  easy: { label: 'Easy', color: 'success' },
+  medium: { label: 'Medium', color: 'warning' },
+  hard: { label: 'Hard', color: 'danger' },
+  insane: { label: 'Insane', color: 'info' },
 };
 
 function Challenges() {
-  const [activeCategory, setActiveCategory] = useState('all')
-  const [challenges, setChallenges] = useState([])
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState(null)
-  const [showSolvesModal, setShowSolvesModal] = useState(false)
-  const [selectedChallengeForSolves, setSelectedChallengeForSolves] = useState(null)
-
-  const { user, isAuthenticated, updateUserData } = useContext(AuthContext)
-  const { eventState, customMessage, isEnded } = useEventState()
-
-  const categories = [
-    { id: 'all', name: 'All Challenges' },
-    { id: 'web', name: 'Web Exploitation' },
-    { id: 'crypto', name: 'Cryptography' },
-    { id: 'forensics', name: 'Forensics' },
-    { id: 'reverse', name: 'Reverse Engineering' },
-    { id: 'osint', name: 'OSINT' },
-    { id: 'misc', name: 'Miscellaneous' }
-  ]
-
-  const isMounted = useRef(false);
-
+  const { user, isAuthenticated } = useContext(AuthContext);
+  const navigate = useNavigate();
+  
+  const [challenges, setChallenges] = useState([]);
+  const [filteredChallenges, setFilteredChallenges] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [selectedCategory, setSelectedCategory] = useState('all');
+  const [selectedDifficulty, setSelectedDifficulty] = useState('all');
+  const [sortBy, setSortBy] = useState('points'); // points, solves, title
+  
   useEffect(() => {
-    isMounted.current = true;
-    return () => {
-      isMounted.current = false;
-    };
+    fetchChallenges();
   }, []);
 
-  const fetchChallenges = async (showLoadingState = true) => {
+  useEffect(() => {
+    filterChallenges();
+  }, [challenges, searchTerm, selectedCategory, selectedDifficulty, sortBy]);
+
+  const fetchChallenges = async () => {
     try {
-      if (showLoadingState && isMounted.current) {
-        setLoading(true);
-      }
-      Logger.info('FETCH_CHALLENGES_START');
-
+      setLoading(true);
       const res = await axios.get('/api/challenges?page=1&limit=1000');
-
-      if (!isMounted.current) return;
-
-      if (!res.data.data || !Array.isArray(res.data.data)) {
-        setChallenges([]);
-        if (showLoadingState) {
-          setLoading(false);
-        }
-        return;
-      }
-
-      const visibleChallenges = user?.role === 'admin'
-        ? res.data.data
-        : res.data.data.filter(challenge => challenge.isVisible === true);
-
-      setChallenges(visibleChallenges);
-      if (showLoadingState) {
-        setLoading(false);
-      }
-      Logger.info('FETCH_CHALLENGES_SUCCESS', {
-        count: visibleChallenges.length
-      });
+      setChallenges(res.data.data || []);
     } catch (err) {
-      if (!isMounted.current) return;
-
-      Logger.error('FETCH_CHALLENGES_ERROR', { error: err.message });
-      setError('Failed to fetch challenges. Please try again.');
-      if (showLoadingState) {
-        setLoading(false);
-      }
+      console.error('Error fetching challenges:', err);
+    } finally {
+      setLoading(false);
     }
   };
 
-  useEffect(() => {
-    fetchChallenges(true);
+  const filterChallenges = () => {
+    let filtered = [...challenges];
 
-    // Poll for new challenges every 10 seconds (without showing loading state)
-    const pollInterval = setInterval(() => {
-      if (isMounted.current) {
-        fetchChallenges(false);
+    // Search filter
+    if (searchTerm) {
+      filtered = filtered.filter(c =>
+        c.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        c.description?.toLowerCase().includes(searchTerm.toLowerCase())
+      );
+    }
+
+    // Category filter
+    if (selectedCategory !== 'all') {
+      filtered = filtered.filter(c =>
+        c.category?.toLowerCase() === selectedCategory.toLowerCase()
+      );
+    }
+
+    // Difficulty filter
+    if (selectedDifficulty !== 'all') {
+      filtered = filtered.filter(c =>
+        c.difficulty?.toLowerCase() === selectedDifficulty.toLowerCase()
+      );
+    }
+
+    // Sort
+    filtered.sort((a, b) => {
+      switch (sortBy) {
+        case 'points':
+          return (b.points || 0) - (a.points || 0);
+        case 'solves':
+          return (b.solves?.length || 0) - (a.solves?.length || 0);
+        case 'title':
+          return a.title.localeCompare(b.title);
+        default:
+          return 0;
       }
-    }, 10000);
+    });
 
-    return () => clearInterval(pollInterval);
-  }, [user?.role, isAuthenticated]);
-
-  // Removed redundant openModal function since handleChallengeClick handles navigation
-  // const openModal = ...
-
-
-
-  const navigate = useNavigate();
-
-  const handleChallengeClick = (challenge) => {
-    navigate(`/challenges/${challenge._id}`);
+    setFilteredChallenges(filtered);
   };
 
-  const filteredChallenges = activeCategory === 'all'
-    ? challenges
-    : challenges.filter(challenge => challenge.category === activeCategory)
+  const isSolved = (challengeId) => {
+    return user?.solvedChallenges?.includes(challengeId);
+  };
 
-  // Check for custom message or ended state
-  if (customMessage) {
-    return <CustomMessageDisplay message={customMessage} />
-  }
+  const handleChallengeClick = (challengeId) => {
+    navigate(`/challenges/${challengeId}`);
+  };
 
-  if (isEnded) {
-    return <CTFEndedDisplay endedAt={eventState?.endedAt} />
-  }
+  const containerVariants = {
+    hidden: { opacity: 0 },
+    visible: {
+      opacity: 1,
+      transition: { staggerChildren: 0.05 }
+    }
+  };
+
+  const itemVariants = {
+    hidden: { opacity: 0, y: 20 },
+    visible: { opacity: 1, y: 0 }
+  };
 
   if (loading) {
     return (
-      <div className="challenges-container">
-        <Loading size="medium" text="Loading challenges" />
+      <div className="challenges-page">
+        <Loading size="large" text="Loading challenges..." />
       </div>
-    )
-  }
-
-  if (error) {
-    return (
-      <div className="challenges-container">
-        <div className="error">{error}</div>
-      </div>
-    )
+    );
   }
 
   return (
-    <div className="challenges-container">
-      {isEnded && (
-        <div style={{
-          backgroundColor: 'rgba(139, 92, 246, 0.2)',
-          border: '2px solid #8b5cf6',
-          color: '#c4b5fd',
-          padding: '15px',
-          textAlign: 'center',
-          marginBottom: '20px',
-          borderRadius: '5px',
-          fontWeight: 'bold',
-          boxShadow: '0 0 15px rgba(139, 92, 246, 0.3)'
-        }}>
-          CTF Event Has Ended - Flag submissions are no longer accepted
-        </div>
-      )}
+    <div className="challenges-page">
+      {/* Header */}
       <div className="challenges-header">
-        <div className="header-content">
-          <h1 className="page-title">Challenges</h1>
-
-          {!isAuthenticated && (
-            <div className="auth-notice">
-              <p>🔒 You can view challenges, but you need to <Link to="/login">login</Link> to solve them and earn points!</p>
-            </div>
-          )}
-
-          <div className="category-nav">
-            {categories.map(category => (
-              <button
-                key={category.id}
-                className={`category-button ${activeCategory === category.id ? 'active' : ''}`}
-                onClick={() => setActiveCategory(category.id)}
-              >
-                {category.name}
-              </button>
-            ))}
+        <motion.div
+          className="header-content"
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+        >
+          <div className="header-title-section">
+            <h1 className="page-title">
+              <Flag className="title-icon" />
+              Challenges
+            </h1>
+            <p className="page-description">
+              Test your skills across {challenges.length} cybersecurity challenges
+            </p>
           </div>
 
-          {isAuthenticated && user?.role === 'admin' && (
-            <Link to="/create-challenge" className="create-challenge-button" style={{ marginTop: '1rem', display: 'inline-block' }}>
-              Create Challenge
-            </Link>
-          )}
-        </div>
+          <div className="header-stats">
+            <div className="stat-box">
+              <Award className="stat-icon" />
+              <div>
+                <span className="stat-number">{user?.solvedChallenges?.length || 0}</span>
+                <span className="stat-label">Solved</span>
+              </div>
+            </div>
+            <div className="stat-box">
+              <Clock className="stat-icon" />
+              <div>
+                <span className="stat-number">{challenges.length - (user?.solvedChallenges?.length || 0)}</span>
+                <span className="stat-label">Remaining</span>
+              </div>
+            </div>
+          </div>
+        </motion.div>
       </div>
 
-      <div className="challenges-main">
-        <div className="challenges-grid">
-          {challenges.length === 0 && !loading ? (
-            <div className="no-challenges">
-              <p>No challenges available at the moment. Please check back later!</p>
+      {/* Filters */}
+      <motion.div 
+        className="challenges-filters"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ delay: 0.2 }}
+      >
+        <Card className="filters-card">
+          <CardBody>
+            {/* Search */}
+            <div className="filter-section">
+              <div className="search-box">
+                <Search className="search-icon" size={20} />
+                <Input
+                  type="text"
+                  placeholder="Search challenges..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="search-input"
+                />
+              </div>
             </div>
-          ) : filteredChallenges.length === 0 ? (
-            <div className="no-challenges">
-              <p>No challenges found in this category.</p>
+
+            {/* Category Filters */}
+            <div className="filter-section">
+              <label className="filter-label">
+                <Filter size={16} />
+                Category
+              </label>
+              <div className="filter-buttons">
+                {CATEGORIES.map(cat => (
+                  <button
+                    key={cat.id}
+                    className={`filter-btn ${selectedCategory === cat.id ? 'active' : ''}`}
+                    onClick={() => setSelectedCategory(cat.id)}
+                  >
+                    {cat.icon && <span className="btn-icon">{cat.icon}</span>}
+                    {cat.name}
+                  </button>
+                ))}
+              </div>
             </div>
-          ) : (
-            filteredChallenges.map(challenge => {
-              const isSolved = user?.solvedChallenges?.includes(challenge._id);
-              return (
-                <div
-                  key={challenge._id}
-                  className={`challenge-card ${isSolved ? 'solved' : ''}`}
-                  onClick={() => handleChallengeClick(challenge)}
+
+            {/* Difficulty & Sort */}
+            <div className="filter-row">
+              <div className="filter-group">
+                <label className="filter-label">Difficulty</label>
+                <select
+                  className="filter-select"
+                  value={selectedDifficulty}
+                  onChange={(e) => setSelectedDifficulty(e.target.value)}
                 >
-                  <div className="challenge-header">
-                    <span className="points-badge">
-                      {challenge.currentValue || challenge.points} pts
-                    </span>
-                  </div>
-                  <h3 className="challenge-title">
-                    {challenge.title}
-                    {isSolved && <span className="solved-badge">✓</span>}
-                  </h3>
-                  <div className="challenge-footer">
-                    <span
-                      className="solved-count clickable"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setSelectedChallengeForSolves(challenge);
-                        setShowSolvesModal(true);
-                      }}
-                    >
-                      {challenge.solvedBy?.length || 0} solves
-                    </span>
-                    <button
-                      className={`solve-button ${isSolved ? 'solved' : ''}`}
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleChallengeClick(challenge);
-                      }}
-                    >
-                      {isSolved ? 'Solved ✓' : 'View Challenge'}
-                    </button>
-                  </div>
-                </div>
-              );
-            })
-          )}
-        </div>
+                  <option value="all">All</option>
+                  {Object.entries(DIFFICULTIES).map(([key, val]) => (
+                    <option key={key} value={key}>{val.label}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="filter-group">
+                <label className="filter-label">Sort By</label>
+                <select
+                  className="filter-select"
+                  value={sortBy}
+                  onChange={(e) => setSortBy(e.target.value)}
+                >
+                  <option value="points">Points</option>
+                  <option value="solves">Solves</option>
+                  <option value="title">Title</option>
+                </select>
+              </div>
+            </div>
+          </CardBody>
+        </Card>
+      </motion.div>
+
+      {/* Results Count */}
+      <div className="results-info">
+        <span className="results-count">
+          {filteredChallenges.length} challenge{filteredChallenges.length !== 1 ? 's' : ''} found
+        </span>
       </div>
 
-      {showSolvesModal && selectedChallengeForSolves && (
-        <SolvesModal
-          challenge={selectedChallengeForSolves}
-          onClose={() => {
-            setShowSolvesModal(false);
-            setSelectedChallengeForSolves(null);
-          }}
-        />
-      )}
-
+      {/* Challenges Grid */}
+      <motion.div
+        className="challenges-grid"
+        variants={containerVariants}
+        initial="hidden"
+        animate="visible"
+      >
+        <AnimatePresence>
+          {filteredChallenges.length === 0 ? (
+            <motion.div
+              className="no-results"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+            >
+              <Search size={48} />
+              <h3>No challenges found</h3>
+              <p>Try adjusting your filters</p>
+            </motion.div>
+          ) : (
+            filteredChallenges.map((challenge) => (
+              <motion.div
+                key={challenge._id}
+                variants={itemVariants}
+                layout
+              >
+                <Card
+                  className={`challenge-card ${isSolved(challenge._id) ? 'solved' : ''}`}
+                  hover
+                  onClick={() => handleChallengeClick(challenge._id)}
+                >
+                  <CardHeader>
+                    <div className="challenge-header">
+                      <div className="challenge-title-row">
+                        <h3 className="challenge-title">{challenge.title}</h3>
+                        {isSolved(challenge._id) && (
+                          <CheckCircle className="solved-icon" size={20} />
+                        )}
+                      </div>
+                      <div className="challenge-meta">
+                        <Badge variant={DIFFICULTIES[challenge.difficulty?.toLowerCase()]?.color || 'primary'}>
+                          {DIFFICULTIES[challenge.difficulty?.toLowerCase()]?.label || challenge.difficulty}
+                        </Badge>
+                        <span className="challenge-category">
+                          {CATEGORIES.find(c => c.id === challenge.category?.toLowerCase())?.icon || '????'}
+                          {challenge.category}
+                        </span>
+                      </div>
+                    </div>
+                  </CardHeader>
+                  <CardBody>
+                    <p className="challenge-description">
+                      {challenge.description?.substring(0, 120)}
+                      {challenge.description?.length > 120 && '...'}
+                    </p>
+                    <div className="challenge-footer">
+                      <div className="challenge-stats">
+                        <div className="stat">
+                          <Award size={16} />
+                          <span>{challenge.points || 0} pts</span>
+                        </div>
+                        <div className="stat">
+                          <Users size={16} />
+                          <span>{challenge.solves?.length || 0} solves</span>
+                        </div>
+                      </div>
+                      <ChevronRight className="arrow-icon" size={20} />
+                    </div>
+                  </CardBody>
+                </Card>
+              </motion.div>
+            ))
+          )}
+        </AnimatePresence>
+      </motion.div>
     </div>
-  )
+  );
 }
 
-export default Challenges
+export default Challenges;
