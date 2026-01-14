@@ -17,6 +17,7 @@ const getTokenFromCookie = () => {
 const AdminLiveMonitor = () => {
     const [submissions, setSubmissions] = useState([]);
     const [connectionStatus, setConnectionStatus] = useState('connecting'); // connecting, connected, error
+    const [hasToken, setHasToken] = useState(false);
     const { user } = useAuth();
     const eventSourceRef = useRef(null);
 
@@ -25,6 +26,7 @@ const AdminLiveMonitor = () => {
         if (!user) {
             console.log('Waiting for user authentication...');
             setConnectionStatus('error');
+            setHasToken(false);
             return;
         }
 
@@ -34,8 +36,11 @@ const AdminLiveMonitor = () => {
         if (!token) {
             console.log('No authentication token found in cookies');
             setConnectionStatus('error');
+            setHasToken(false);
             return;
         }
+
+        setHasToken(true);
 
         // Use absolute path from root (works for both dev and production)
         const sseUrl = `/api/r-submission?token=${token}`;
@@ -99,13 +104,13 @@ const AdminLiveMonitor = () => {
                 </div>
             </div>
 
-            {!token && (
+            {!hasToken && (
                 <div style={{padding: '20px', color: '#f39c12', background: '#2d1f0f', borderRadius: '8px', margin: '20px 0'}}>
                     ⚠️ Authentication token not available. Please refresh the page or log in again.
                 </div>
             )}
 
-            <div className="table-container">{connectionStatus === 'error' && token && (
+            <div className="table-container">{connectionStatus === 'error' && hasToken && (
                     <div style={{padding: '10px', color: '#e74c3c', marginBottom: '10px'}}>
                         Connection failed. Check console for details.
                     </div>
