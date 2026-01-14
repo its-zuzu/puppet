@@ -1,0 +1,212 @@
+.admin-create-user {
+  min-height: 100vh;
+  padding: 2rem;
+  background: linear-gradient(135deg, rgba(10, 15, 25, 0.98), rgba(20, 30, 50, 0.98));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.create-user-container {
+  max-width: 600px;
+  width: 100%;
+  background: linear-gradient(135deg, rgba(26, 46, 70, 0.95), rgba(15, 25, 35, 0.95));
+  padding: 3rem;
+  border-radius: 16px;
+  border: 1px solid rgba(0, 255, 170, 0.2);
+  box-shadow: 0 10px 40px rgba(0, 255, 170, 0.1);
+}
+
+.create-user-header {
+  margin-bottom: 2.5rem;
+  text-align: center;
+}
+
+.create-user-header h1 {
+  font-size: 2rem;
+  color: #ffffff;
+  margin: 0 0 0.5rem 0;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  text-shadow: 0 0 10px rgba(0, 255, 170, 0.2);
+}
+
+.create-user-header .highlight {
+  color: #00ffaa;
+  text-shadow: 0 0 10px rgba(0, 255, 170, 0.5);
+}
+
+.create-user-header p {
+  color: #a0a0a0;
+  font-size: 1rem;
+  margin: 0;
+}
+
+.create-user-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+}
+
+.form-group label {
+  display: block;
+  color: #e0e0e0;
+  margin-bottom: 0.75rem;
+  font-weight: 600;
+  font-size: 0.95rem;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.form-group input {
+  width: 100%;
+  padding: 1rem;
+  background: rgba(15, 25, 35, 0.9);
+  border: 2px solid rgba(0, 255, 170, 0.3);
+  border-radius: 8px;
+  color: #e0e0e0;
+  font-size: 1rem;
+  transition: all 0.3s ease;
+}
+
+.form-group input::placeholder {
+  color: #606080;
+}
+
+.form-group input:focus {
+  outline: none;
+  border-color: #00ffaa;
+  box-shadow: 0 0 20px rgba(0, 255, 170, 0.3);
+  background: rgba(15, 25, 35, 0.95);
+  transform: translateY(-1px);
+}
+
+.form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.5rem;
+}
+
+.form-actions {
+  display: flex;
+  gap: 1rem;
+  justify-content: flex-end;
+  margin-top: 1rem;
+  padding-top: 1.5rem;
+  border-top: 2px solid rgba(0, 255, 170, 0.2);
+}
+
+.btn-primary,
+.btn-secondary {
+  padding: 1rem 2rem;
+  border: 2px solid;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 1rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
+  min-width: 120px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  text-decoration: none;
+}
+
+.btn-primary {
+  background: linear-gradient(135deg, #00ffaa, #00cc88);
+  color: #000000;
+  border-color: #00ffaa;
+  box-shadow: 0 4px 15px rgba(0, 255, 170, 0.3);
+}
+
+.btn-primary:hover:not(:disabled) {
+  background: linear-gradient(135deg, #00cc88, #00aa66);
+  transform: translateY(-3px);
+  box-shadow: 0 8px 25px rgba(0, 255, 170, 0.4);
+}
+
+.btn-primary:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.btn-secondary {
+  background: rgba(255, 100, 100, 0.1);
+  color: #ff6464;
+  border-color: rgba(255, 100, 100, 0.3);
+}
+
+.btn-secondary:hover {
+  background: rgba(255, 100, 100, 0.2);
+  transform: translateY(-3px);
+  box-shadow: 0 8px 25px rgba(255, 100, 100, 0.3);
+}
+
+.error-message {
+  background: rgba(255, 68, 68, 0.15);
+  color: #ff6666;
+  padding: 1rem 1.5rem;
+  border-radius: 8px;
+  border-left: 4px solid #ff4444;
+  font-weight: 500;
+  animation: slideIn 0.3s ease;
+}
+
+.success-message {
+  background: rgba(0, 255, 170, 0.15);
+  color: #00ffaa;
+  padding: 1rem 1.5rem;
+  border-radius: 8px;
+  border-left: 4px solid #00ffaa;
+  font-weight: 500;
+  animation: slideIn 0.3s ease;
+}
+
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (max-width: 768px) {
+  .admin-create-user {
+    padding: 1rem;
+  }
+
+  .create-user-container {
+    padding: 2rem;
+  }
+
+  .create-user-header h1 {
+    font-size: 1.5rem;
+  }
+
+  .form-row {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+
+  .form-actions {
+    flex-direction: column;
+    gap: 0.8rem;
+  }
+
+  .btn-primary,
+  .btn-secondary {
+    width: 100%;
+  }
+}
