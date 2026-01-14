@@ -6,7 +6,7 @@ export default defineConfig(({ mode }) => {
   // Load env file based on `mode` in the current working directory.
   // Set the third parameter to '' to load all env regardless of the `VITE_` prefix.
   const env = loadEnv(mode, process.cwd(), '')
-  
+
   return {
     plugins: [react()],
     build: {
@@ -14,58 +14,12 @@ export default defineConfig(({ mode }) => {
       cssTarget: ['chrome63', 'safari11.1', 'firefox67', 'edge79'],
       rollupOptions: {
         output: {
-          manualChunks: (id) => {
-            // Vendor libraries in separate chunk
-            if (id.includes('node_modules')) {
-              if (id.includes('react') || id.includes('react-dom') || id.includes('react-router')) {
-                return 'vendor-react';
-              }
-              if (id.includes('axios')) {
-                return 'vendor-axios';
-              }
-              if (id.includes('socket.io')) {
-                return 'vendor-socket';
-              }
-              return 'vendor-other';
-            }
-            
-            // Admin routes in separate, obfuscated chunks (only loaded for admins)
-            if (id.includes('pages/Admin')) {
-              return 'admin-core';
-            }
-            if (id.includes('pages/PlatformControl') || id.includes('pages/PlatformReset')) {
-              return 'admin-platform';
-            }
-            if (id.includes('pages/Analytics') || id.includes('pages/AdminSubmissions')) {
-              return 'admin-analytics';
-            }
-            if (id.includes('pages/CreateChallenge') || id.includes('pages/EditChallenge')) {
-              return 'admin-challenges';
-            }
-            
-            // User pages in separate chunks
-            if (id.includes('pages/')) {
-              return 'pages';
-            }
-            
-            // Components in separate chunk
-            if (id.includes('components/')) {
-              return 'components';
-            }
+          manualChunks: {
+            vendor: ['react', 'react-dom', 'react-router-dom', 'framer-motion', 'axios'],
+            charts: ['recharts', 'chart.js', 'react-chartjs-2'],
           },
           // Obfuscate chunk names in production
-          chunkFileNames: (chunkInfo) => {
-            const name = chunkInfo.name;
-            // Keep vendor chunks named for caching, obfuscate admin chunks
-            if (name.startsWith('vendor-')) {
-              return `assets/${name}-[hash].js`;
-            }
-            if (name.startsWith('admin-')) {
-              // Use hash-based naming to obscure admin functionality
-              return `assets/[hash].js`;
-            }
-            return 'assets/[name]-[hash].js';
-          }
+          chunkFileNames: 'assets/[name]-[hash].js'
         }
       }
     },
