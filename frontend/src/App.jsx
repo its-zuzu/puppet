@@ -8,7 +8,7 @@ import './enable-copy.css'
 import { AuthProvider } from './context/AuthContext'
 
 // Components (loaded immediately - they're used on every page)
-import CyberNavbar from './components/CyberNavbar'
+import Navbar from './components/Navbar'
 import Footer from './components/Footer'
 import ProtectedRoute from './components/ProtectedRoute'
 import ScrollToTop from './components/ScrollToTop'
@@ -19,13 +19,13 @@ import Loading from './components/Loading';
 const PageLoader = () => <Loading text="INITIALIZING..." />;
 
 // Lazy load pages - only load when needed
-const Home = lazy(() => import('./pages/CyberDashboard'))
-const Challenges = lazy(() => import('./pages/CyberChallenges'))
+const Home = lazy(() => import('./pages/Home'))
+const Challenges = lazy(() => import('./pages/Challenges'))
 const About = lazy(() => import('./pages/About'))
-const Login = lazy(() => import('./pages/CyberLogin'))
+const Login = lazy(() => import('./pages/Login'))
 const Register = lazy(() => import('./pages/Register'))
-const Profile = lazy(() => import('./pages/CyberProfile'))
-const Scoreboard = lazy(() => import('./pages/CyberScoreboard'))
+const Profile = lazy(() => import('./pages/Profile'))
+const Scoreboard = lazy(() => import('./pages/Scoreboard'))
 const CreateChallenge = lazy(() => import('./pages/CreateChallenge'))
 const EditChallenge = lazy(() => import('./pages/EditChallenge'))
 const AdminDashboard = lazy(() => import('./pages/AdminDashboard'))
@@ -85,7 +85,7 @@ function App() {
       <Router>
         <ScrollToTop />
         <div className="app-container">
-          <CyberNavbar />
+          <Navbar />
           <main className="main-content">
             <Suspense fallback={<PageLoader />}>
               <Routes>
