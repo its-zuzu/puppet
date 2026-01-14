@@ -22,9 +22,8 @@ router.get('/status', async (req, res) => {
         status: eventState.status,
         startedAt: eventState.startedAt,
         endedAt: eventState.endedAt,
-        startedBy: eventState.startedBy,
-        endedBy: eventState.endedBy,
         customMessage: eventState.customMessage
+        // Removed startedBy and endedBy (admin info not needed for public)
       }
     });
   } catch (error) {
