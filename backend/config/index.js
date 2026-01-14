@@ -85,7 +85,8 @@ module.exports = {
   rateLimit: {
     login: {
       windowMs: parseDuration(process.env.LOGIN_RATE_WINDOW || '15m', 900000), // 15 minutes
-      max: parseIntHelper(process.env.LOGIN_RATE_MAX, 100) // 100 attempts per window - very generous
+      max: parseIntHelper(process.env.LOGIN_RATE_MAX, 100), // 100 attempts per window - very generous
+      cooldownSeconds: parseIntHelper(process.env.LOGIN_RATE_COOLDOWN, 300) // 5 minute cooldown when limit hit
     },
     flagSubmit: {
       // Per-user rate limiting (authentication-based, not IP-based)

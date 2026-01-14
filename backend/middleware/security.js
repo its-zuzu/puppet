@@ -2,14 +2,15 @@ const rateLimit = require('express-rate-limit');
 const helmet = require('helmet');
 const mongoSanitize = require('express-mongo-sanitize');
 const RedisStore = require('rate-limit-redis').default;
+const requestIp = require('request-ip');
 const { getRedisClient } = require('../utils/redis');
 const config = require('../config');
 
 const redisClient = getRedisClient();
 
 // 1. Rate Limiting Factory (Redis-backed)
-const createRateLimit = (windowMs, max, message, prefix) => {
-  return rateLimit({
+const createRateLimit = (windowMs, max, message, prefix, cooldownSeconds = null) => {
+  const limiterConfig = {
     windowMs,
     max,
     message: { success: false, message, blocked: true },
@@ -19,9 +20,34 @@ const createRateLimit = (windowMs, max, message, prefix) => {
       sendCommand: (...args) => redisClient.call(...args),
       prefix: `ctf:rl:${prefix}:` // Unique prefix per limiter
     }),
-    keyGenerator: (req) => req.ip, // Use request-ip resolved IP
+    keyGenerator: (req) => requestIp.getClientIp(req), // Use request-ip to get real IP behind proxy
     passOnStoreError: true // FAIL-OPEN: If Redis is down, allow request
-  });
+  };
+
+  // Add cooldown handler if specified
+  if (cooldownSeconds) {
+    limiterConfig.handler = async (req, res) => {
+      const ip = requestIp.getClientIp(req);
+      const blockedKey = `ctf:rl:blocked:${prefix}:${ip}`;
+      
+      // Check if already blocked
+      const existingBlock = await redisClient.get(blockedKey);
+      const ttl = existingBlock ? await redisClient.ttl(blockedKey) : cooldownSeconds;
+      
+      // Set block if not already set
+      if (!existingBlock) {
+        await redisClient.setex(blockedKey, cooldownSeconds, 'blocked');
+      }
+      
+      return res.status(429).json({
+        success: false,
+        message: `Too many attempts, slow down!`,
+        retryAfter: ttl > 0 ? ttl : cooldownSeconds
+      });
+    };
+  }
+
+  return rateLimit(limiterConfig);
 };
 
 // 2. Defined Limiters
@@ -29,7 +55,8 @@ const loginLimiter = createRateLimit(
   config.rateLimit.login.windowMs,
   config.rateLimit.login.max,
   'Too many login attempts. Please wait a bit.',
-  'login'
+  'login',
+  config.rateLimit.login.cooldownSeconds
 );
 
 const apiLimiter = createRateLimit(
