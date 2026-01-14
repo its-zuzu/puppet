@@ -1,0 +1,216 @@
+/**
+ * CTF Platform Design Tokens
+ * Cyberpunk Professional Theme
+ */
+
+:root {
+    /* ===== Color Palette ===== */
+
+    /* Background Colors */
+    --color-bg-primary: #0a0e17;
+    --color-bg-secondary: #0f1923;
+    --color-bg-tertiary: #1a2332;
+    --color-bg-elevated: #1e2a3a;
+
+    /* Accent Colors */
+    --color-accent-primary: #00ffaa;
+    --color-accent-secondary: #00c9ff;
+    --color-accent-tertiary: #ff6b6b;
+    --color-accent-warning: #ffd93d;
+    --color-accent-success: #6bcb77;
+    --color-accent-purple: #9d4edd;
+
+    /* Text Colors */
+    --color-text-primary: #ffffff;
+    --color-text-secondary: #e0e0e0;
+    --color-text-tertiary: #a0a0a0;
+    --color-text-muted: #6b7280;
+    --color-text-inverse: #0a0e17;
+
+    /* Border Colors */
+    --color-border-primary: #1a2e46;
+    --color-border-secondary: rgba(255, 255, 255, 0.1);
+    --color-border-accent: rgba(0, 255, 170, 0.3);
+
+    /* Gradient Colors */
+    --gradient-primary: linear-gradient(135deg, #00c9ff 0%, #00ffaa 100%);
+    --gradient-secondary: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    --gradient-danger: linear-gradient(135deg, #ff6b6b 0%, #ee5a6f 100%);
+    --gradient-success: linear-gradient(135deg, #6bcb77 0%, #4d96a9 100%);
+
+    /* Glassmorphism */
+    --glass-bg: rgba(26, 35, 50, 0.7);
+    --glass-bg-light: rgba(30, 42, 58, 0.5);
+    --glass-border: rgba(255, 255, 255, 0.1);
+
+    /* ===== Typography ===== */
+
+    /* Font Families */
+    --font-primary: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', sans-serif;
+    --font-mono: 'Fira Code', 'Courier New', monospace;
+
+    /* Font Sizes */
+    --font-size-xs: 0.75rem;
+    /* 12px */
+    --font-size-sm: 0.875rem;
+    /* 14px */
+    --font-size-base: 1rem;
+    /* 16px */
+    --font-size-lg: 1.125rem;
+    /* 18px */
+    --font-size-xl: 1.25rem;
+    /* 20px */
+    --font-size-2xl: 1.5rem;
+    /* 24px */
+    --font-size-3xl: 1.875rem;
+    /* 30px */
+    --font-size-4xl: 2.25rem;
+    /* 36px */
+    --font-size-5xl: 3rem;
+    /* 48px */
+    --font-size-6xl: 3.75rem;
+    /* 60px */
+
+    /* Font Weights */
+    --font-weight-normal: 400;
+    --font-weight-medium: 500;
+    --font-weight-semibold: 600;
+    --font-weight-bold: 700;
+    --font-weight-extrabold: 800;
+
+    /* Line Heights */
+    --line-height-tight: 1.25;
+    --line-height-normal: 1.5;
+    --line-height-relaxed: 1.75;
+
+    /* ===== Spacing ===== */
+
+    /* Base: 4px grid system */
+    --spacing-0: 0;
+    --spacing-1: 0.25rem;
+    /* 4px */
+    --spacing-2: 0.5rem;
+    /* 8px */
+    --spacing-3: 0.75rem;
+    /* 12px */
+    --spacing-4: 1rem;
+    /* 16px */
+    --spacing-5: 1.25rem;
+    /* 20px */
+    --spacing-6: 1.5rem;
+    /* 24px */
+    --spacing-8: 2rem;
+    /* 32px */
+    --spacing-10: 2.5rem;
+    /* 40px */
+    --spacing-12: 3rem;
+    /* 48px */
+    --spacing-16: 4rem;
+    /* 64px */
+    --spacing-20: 5rem;
+    /* 80px */
+    --spacing-24: 6rem;
+    /* 96px */
+
+    /* ===== Border Radius ===== */
+
+    --radius-sm: 0.25rem;
+    /* 4px */
+    --radius-md: 0.5rem;
+    /* 8px */
+    --radius-lg: 0.75rem;
+    /* 12px */
+    --radius-xl: 1rem;
+    /* 16px */
+    --radius-2xl: 1.5rem;
+    /* 24px */
+    --radius-full: 9999px;
+
+    /* ===== Shadows ===== */
+
+    --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+    --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+    --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+    --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+    --shadow-2xl: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+
+    /* Glow Shadows */
+    --shadow-glow-primary: 0 0 20px rgba(0, 255, 170, 0.3);
+    --shadow-glow-secondary: 0 0 20px rgba(0, 201, 255, 0.3);
+    --shadow-glow-danger: 0 0 20px rgba(255, 107, 107, 0.3);
+
+    /* ===== Z-Index ===== */
+
+    --z-dropdown: 1000;
+    --z-sticky: 1020;
+    --z-fixed: 1030;
+    --z-modal-backdrop: 1040;
+    --z-modal: 1050;
+    --z-popover: 1060;
+    --z-tooltip: 1070;
+
+    /* ===== Transitions ===== */
+
+    --transition-fast: 150ms cubic-bezier(0.4, 0, 0.2, 1);
+    --transition-base: 250ms cubic-bezier(0.4, 0, 0.2, 1);
+    --transition-slow: 350ms cubic-bezier(0.4, 0, 0.2, 1);
+    --transition-bounce: 500ms cubic-bezier(0.68, -0.55, 0.265, 1.55);
+
+    /* Easing Functions */
+    --ease-in: cubic-bezier(0.4, 0, 1, 1);
+    --ease-out: cubic-bezier(0, 0, 0.2, 1);
+    --ease-in-out: cubic-bezier(0.4, 0, 0.2, 1);
+
+    /* ===== Backdrop Blur ===== */
+
+    --blur-sm: 4px;
+    --blur-md: 8px;
+    --blur-lg: 12px;
+    --blur-xl: 16px;
+
+    /* ===== Breakpoints (for reference in JS) ===== */
+
+    --breakpoint-sm: 640px;
+    --breakpoint-md: 768px;
+    --breakpoint-lg: 1024px;
+    --breakpoint-xl: 1280px;
+    --breakpoint-2xl: 1536px;
+
+    /* ===== Component-Specific ===== */
+
+    /* Navbar */
+    --navbar-height: 75px;
+    --navbar-bg: var(--glass-bg);
+    --navbar-blur: var(--blur-lg);
+
+    /* Card */
+    --card-bg: var(--glass-bg);
+    --card-border: var(--glass-border);
+    --card-padding: var(--spacing-6);
+
+    /* Input */
+    --input-bg: rgba(15, 25, 35, 0.8);
+    --input-border: var(--color-border-secondary);
+    --input-focus-border: var(--color-accent-primary);
+    --input-height: 2.75rem;
+
+    /* Button */
+    --button-height-sm: 2rem;
+    --button-height-md: 2.5rem;
+    --button-height-lg: 3rem;
+}
+
+/* ===== Dark Mode Overrides (if needed) ===== */
+[data-theme="dark"] {
+    /* Already dark by default */
+}
+
+/* ===== Light Mode (optional, for future) ===== */
+[data-theme="light"] {
+    --color-bg-primary: #ffffff;
+    --color-bg-secondary: #f9fafb;
+    --color-bg-tertiary: #f3f4f6;
+    --color-text-primary: #111827;
+    --color-text-secondary: #374151;
+    --color-text-tertiary: #6b7280;
+}

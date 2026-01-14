@@ -1,59 +1,108 @@
+import React, { useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { FaTimes } from 'react-icons/fa';
-import { createPortal } from 'react-dom';
+import { modalVariants, backdropVariants } from '../../utils/animations';
+import './Modal.css';
 
-const Modal = ({ isOpen, onClose, title, children, className = '' }) => {
-    if (!isOpen) return null;
+/**
+ * Modal Component
+ * Animated modal with backdrop blur
+ */
+const Modal = ({
+    isOpen,
+    onClose,
+    title,
+    children,
+    footer,
+    size = 'md',
+    closeOnBackdropClick = true,
+    showCloseButton = true,
+    className = '',
+}) => {
+    // Close on Escape key
+    useEffect(() => {
+        const handleEscape = (e) => {
+            if (e.key === 'Escape' && isOpen) {
+                onClose();
+            }
+        };
 
-    return createPortal(
+        if (isOpen) {
+            document.addEventListener('keydown', handleEscape);
+            document.body.style.overflow = 'hidden';
+        }
+
+        return () => {
+            document.removeEventListener('keydown', handleEscape);
+            document.body.style.overflow = 'unset';
+        };
+    }, [isOpen, onClose]);
+
+    const handleBackdropClick = (e) => {
+        if (closeOnBackdropClick && e.target === e.currentTarget) {
+            onClose();
+        }
+    };
+
+    return (
         <AnimatePresence>
             {isOpen && (
-                <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4">
+                <div className="modal-container">
                     {/* Backdrop */}
                     <motion.div
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        exit={{ opacity: 0 }}
-                        onClick={onClose}
-                        className="absolute inset-0 bg-black/80 backdrop-blur-sm"
+                        className="modal-backdrop"
+                        variants={backdropVariants}
+                        initial="hidden"
+                        animate="visible"
+                        exit="exit"
+                        onClick={handleBackdropClick}
                     />
 
-                    {/* Modal Content */}
-                    <motion.div
-                        initial={{ opacity: 0, scale: 0.9, y: 20 }}
-                        animate={{ opacity: 1, scale: 1, y: 0 }}
-                        exit={{ opacity: 0, scale: 0.9, y: 20 }}
-                        className={`
-                            relative w-full max-w-lg bg-[var(--cyber-dark)] 
-                            border border-[var(--neon-blue)] rounded-xl 
-                            shadow-[0_0_50px_rgba(0,0,0,0.5)] 
-                            overflow-hidden
-                            ${className}
-                        `}
-                        onClick={(e) => e.stopPropagation()}
-                    >
-                        {/* Header */}
-                        <div className="flex items-center justify-between p-6 border-b border-[rgba(255,255,255,0.1)] bg-[rgba(255,255,255,0.02)]">
-                            <h3 className="text-xl font-heading font-bold text-[var(--text-primary)] uppercase tracking-wider">
-                                {title}
-                            </h3>
-                            <button
-                                onClick={onClose}
-                                className="text-[var(--text-secondary)] hover:text-[var(--neon-pink)] transition-colors text-xl"
-                            >
-                                <FaTimes />
-                            </button>
-                        </div>
+                    {/* Modal */}
+                    <div className="modal-wrapper" onClick={handleBackdropClick}>
+                        <motion.div
+                            className={`modal modal-${size} ${className}`}
+                            variants={modalVariants}
+                            initial="hidden"
+                            animate="visible"
+                            exit="exit"
+                            onClick={(e) => e.stopPropagation()}
+                        >
+                            {/* Header */}
+                            {(title || showCloseButton) && (
+                                <div className="modal-header">
+                                    {title && <h2 className="modal-title">{title}</h2>}
+                                    {showCloseButton && (
+                                        <button
+                                            className="modal-close"
+                                            onClick={onClose}
+                                            aria-label="Close modal"
+                                        >
+                                            <svg
+                                                viewBox="0 0 24 24"
+                                                fill="none"
+                                                stroke="currentColor"
+                                                strokeWidth="2"
+                                                strokeLinecap="round"
+                                                strokeLinejoin="round"
+                                            >
+                                                <line x1="18" y1="6" x2="6" y2="18" />
+                                                <line x1="6" y1="6" x2="18" y2="18" />
+                                            </svg>
+                                        </button>
+                                    )}
+                                </div>
+                            )}
 
-                        {/* Body */}
-                        <div className="p-6 max-h-[80vh] overflow-y-auto custom-scrollbar">
-                            {children}
-                        </div>
-                    </motion.div>
+                            {/* Body */}
+                            <div className="modal-body">{children}</div>
+
+                            {/* Footer */}
+                            {footer && <div className="modal-footer">{footer}</div>}
+                        </motion.div>
+                    </div>
                 </div>
             )}
-        </AnimatePresence>,
-        document.body
+        </AnimatePresence>
     );
 };
 

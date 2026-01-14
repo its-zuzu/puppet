@@ -1,45 +1,136 @@
+import React, { useState } from 'react';
 import { motion } from 'framer-motion';
+import './Input.css';
 
-const Input = ({ label, icon, error, ...props }) => {
+/**
+ * Professional Input Component
+ * Types: text, email, password, number, textarea
+ * Features: floating labels, icons, error states
+ */
+const Input = ({
+    type = 'text',
+    label,
+    placeholder,
+    value,
+    onChange,
+    onBlur,
+    onFocus,
+    error,
+    helperText,
+    icon,
+    iconPosition = 'left',
+    disabled = false,
+    required = false,
+    fullWidth = false,
+    rows = 4,
+    className = '',
+    ...props
+}) => {
+    const [isFocused, setIsFocused] = useState(false);
+    const [showPassword, setShowPassword] = useState(false);
+
+    const hasValue = value && value.length > 0;
+    const isFloating = label && (isFocused || hasValue);
+
+    const handleFocus = (e) => {
+        setIsFocused(true);
+        if (onFocus) onFocus(e);
+    };
+
+    const handleBlur = (e) => {
+        setIsFocused(false);
+        if (onBlur) onBlur(e);
+    };
+
+    const inputClass = `
+    input-wrapper
+    ${fullWidth ? 'input-full-width' : ''}
+    ${error ? 'input-error' : ''}
+    ${disabled ? 'input-disabled' : ''}
+    ${isFocused ? 'input-focused' : ''}
+    ${icon ? `input-with-icon-${iconPosition}` : ''}
+    ${className}
+  `.trim().replace(/\s+/g, ' ');
+
+    const InputElement = type === 'textarea' ? 'textarea' : 'input';
+    const inputType = type === 'password' && showPassword ? 'text' : type;
+
     return (
-        <div className="mb-4">
-            {label && (
-                <label className="block text-sm font-bold mb-2 uppercase tracking-wide text-[var(--neon-blue)]">
-                    {label}
-                </label>
+        <div className={inputClass}>
+            {icon && iconPosition === 'left' && (
+                <span className="input-icon input-icon-left">{icon}</span>
             )}
-            <div className="relative group">
-                {icon && (
-                    <div className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--text-secondary)] group-focus-within:text-[var(--neon-green)] transition-colors">
-                        {icon}
-                    </div>
-                )}
-                <motion.input
-                    className={`
-                        w-full bg-[rgba(10,14,23,0.6)] 
-                        border border-[rgba(255,255,255,0.1)] 
-                        rounded-lg py-3 px-4 
-                        ${icon ? 'pl-10' : ''}
-                        text-[var(--text-primary)] 
-                        placeholder-[var(--text-dim)]
-                        focus:outline-none focus:border-[var(--neon-blue)]
-                        transition-all duration-300
-                    `}
-                    whileFocus={{
-                        boxShadow: '0 0 15px rgba(0, 243, 255, 0.2)',
-                        scale: 1.01
-                    }}
+
+            <div className="input-field-wrapper">
+                <InputElement
+                    type={inputType}
+                    className="input-field"
+                    value={value}
+                    onChange={onChange}
+                    onFocus={handleFocus}
+                    onBlur={handleBlur}
+                    disabled={disabled}
+                    required={required}
+                    placeholder={label ? '' : placeholder}
+                    rows={type === 'textarea' ? rows : undefined}
                     {...props}
                 />
+
+                {label && (
+                    <motion.label
+                        className={`input-label ${isFloating ? 'input-label-floating' : ''}`}
+                        initial={false}
+                        animate={{
+                            top: isFloating ? '-0.5rem' : '50%',
+                            fontSize: isFloating ? 'var(--font-size-xs)' : 'var(--font-size-base)',
+                            color: error
+                                ? 'var(--color-accent-tertiary)'
+                                : isFocused
+                                    ? 'var(--color-accent-primary)'
+                                    : 'var(--color-text-tertiary)',
+                        }}
+                        transition={{ duration: 0.2 }}
+                    >
+                        {label}
+                        {required && <span className="input-required">*</span>}
+                    </motion.label>
+                )}
             </div>
-            {error && (
-                <motion.p
-                    initial={{ opacity: 0, y: -10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    className="text-[var(--neon-pink)] text-sm mt-1 font-bold"
+
+            {type === 'password' && (
+                <button
+                    type="button"
+                    className="input-password-toggle"
+                    onClick={() => setShowPassword(!showPassword)}
+                    tabIndex={-1}
                 >
-                    {error}
-                </motion.p>
+                    {showPassword ? (
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                            <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24" />
+                            <line x1="1" y1="1" x2="23" y2="23" />
+                        </svg>
+                    ) : (
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+                            <circle cx="12" cy="12" r="3" />
+                        </svg>
+                    )}
+                </button>
+            )}
+
+            {icon && iconPosition === 'right' && !type.includes('password') && (
+                <span className="input-icon input-icon-right">{icon}</span>
+            )}
+
+            {(error || helperText) && (
+                <motion.div
+                    className={`input-helper ${error ? 'input-helper-error' : ''}`}
+                    initial={{ opacity: 0, y: -5 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.2 }}
+                >
+                    {error || helperText}
+                </motion.div>
             )}
         </div>
     );
