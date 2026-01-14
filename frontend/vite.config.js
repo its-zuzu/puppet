@@ -76,7 +76,7 @@ export default defineConfig(({ mode }) => {
       cors: true,
       proxy: {
         '/api': {
-          target: env.VITE_API_URL || 'http://localhost:5000',
+          target: (env.VITE_API_URL && env.VITE_API_URL !== '/') ? env.VITE_API_URL : 'http://localhost:10000',
           changeOrigin: true,
           secure: false,
           ws: true,
