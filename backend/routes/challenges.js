@@ -114,37 +114,19 @@ const clearSubmissionAttempts = async (userId, challengeId) => {
 
 // @route   GET /api/challenges
 // @desc    Get all challenges with pagination (filtered by visibility for non-admin users)
-// @access  Public
-router.get('/', sanitizeInput, async (req, res) => {
+// @access  Private (Authentication required - Security fix for Penligent HIGH vulnerability)
+router.get('/', protect, sanitizeInput, async (req, res) => {
   try {
     const page = parseInt(req.query.page) || 1;
     const limit = parseInt(req.query.limit) || 10;
     const skip = (page - 1) * limit;
 
-    // Check if user is authenticated and get user info
-    let user = null;
-    let token = null;
-    
-    // Check for token in cookie first (new method), then Authorization header (backward compatibility)
-    if (req.cookies && req.cookies.token) {
-      token = req.cookies.token;
-    } else if (req.headers.authorization) {
-      token = req.headers.authorization.split(' ')[1];
-    }
-    
-    if (token) {
-      try {
-        const jwt = require('jsonwebtoken');
-        const decoded = jwt.verify(token, process.env.JWT_SECRET);
-        user = await User.findById(decoded.id);
-      } catch (err) {
-        // Token invalid, continue as non-authenticated user
-      }
-    }
+    // User is guaranteed to exist due to protect middleware
+    const user = req.user;
 
     const query = {};
     // Show all challenges to admins, only visible challenges to others
-    const isAdmin = user && user.role === 'admin';
+    const isAdmin = user && (user.role === 'admin' || user.role === 'superadmin');
 
     if (!isAdmin) {
       query.isVisible = true;
