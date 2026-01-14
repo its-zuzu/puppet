@@ -9,6 +9,9 @@ export default defineConfig(({ mode }) => {
   
   return {
     plugins: [react()],
+    resolve: {
+      dedupe: ['react', 'react-dom']
+    },
     build: {
       target: ['es2015', 'chrome63', 'safari11.1', 'firefox67', 'edge79'],
       cssTarget: ['chrome63', 'safari11.1', 'firefox67', 'edge79'],
@@ -20,11 +23,17 @@ export default defineConfig(({ mode }) => {
               if (id.includes('react') || id.includes('react-dom') || id.includes('react-router')) {
                 return 'vendor-react';
               }
+              if (id.includes('framer-motion')) {
+                return 'vendor-framer';
+              }
               if (id.includes('axios')) {
                 return 'vendor-axios';
               }
               if (id.includes('socket.io')) {
                 return 'vendor-socket';
+              }
+              if (id.includes('echarts') || id.includes('chart.js')) {
+                return 'vendor-charts';
               }
               return 'vendor-other';
             }
