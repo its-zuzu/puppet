@@ -1,7 +1,7 @@
 import { useState, useContext } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import AuthContext from '../context/AuthContext';
-import { sanitizeInput, validateEmail, validatePassword, rateLimiter } from '../utils/security';
+import { sanitizeInput, validateEmail, validatePassword } from '../utils/security';
 import Logger from '../utils/logger';
 import './Auth.css';
 
@@ -29,13 +29,6 @@ function Login() {
 
   const onSubmit = async (e) => {
     e.preventDefault();
-
-    // Rate limiting check
-    if (!rateLimiter.isAllowed('login', 5, 900000)) { // 5 attempts per 15 minutes
-      setFormError('Too many login attempts. Please try again later.');
-      Logger.warn('LOGIN_RATE_LIMITED', { email });
-      return;
-    }
 
     // Validation
     if (!email || !password) {
