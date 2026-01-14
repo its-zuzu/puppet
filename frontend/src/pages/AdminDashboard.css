@@ -1,0 +1,60 @@
+/* AdminDashboard.css - Shared admin styles */
+.admin-dashboard {
+    padding: calc(var(--navbar-height) + 2rem) 1.5rem 2rem;
+    max-width: 1400px;
+    margin: 0 auto;
+}
+
+.dashboard-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 2rem;
+}
+
+.header-content h1 {
+    font-size: var(--font-size-4xl);
+    margin-bottom: 0.5rem;
+}
+
+.header-content p {
+    color: var(--color-text-secondary);
+}
+
+.highlight {
+    background: var(--gradient-primary);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+.back-button {
+    padding: var(--spacing-2) var(--spacing-4);
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid var(--glass-border);
+    border-radius: var(--radius-lg);
+    color: var(--color-text-secondary);
+    font-weight: var(--font-weight-medium);
+    cursor: pointer;
+    transition: all var(--transition-fast);
+}
+
+.back-button:hover {
+    background: rgba(255, 255, 255, 0.1);
+    color: var(--color-accent-primary);
+}
+
+.loading {
+    text-align: center;
+    padding: 4rem;
+    color: var(--color-text-tertiary);
+}
+
+.error-message {
+    padding: var(--spacing-3) var(--spacing-4);
+    background: rgba(255, 107, 107, 0.1);
+    border: 1px solid rgba(255, 107, 107, 0.3);
+    border-radius: var(--radius-lg);
+    color: var(--color-accent-tertiary);
+    margin-bottom: 1.5rem;
+}
