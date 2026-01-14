@@ -30,7 +30,7 @@ const Login = () => {
         setLoading(true);
 
         try {
-            await login(formData.email, formData.password);
+            await login(formData);
             navigate('/challenges');
         } catch (err) {
             setError(err.response?.data?.message || 'Login failed');
