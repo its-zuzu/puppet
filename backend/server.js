@@ -70,7 +70,7 @@ app.use(secureHeaders);
 
 // Rate limiting
 app.use('/api/auth/login', loginLimiter);
-app.use('/api/challenges/submit', submissionLimiter); // IP-based backup
+app.use('/api/challenges/:id/submit', submissionLimiter); // IP-based rate limit for flag submissions
 app.use('/api/', apiLimiter);
 
 // CORS with development-friendly configuration
