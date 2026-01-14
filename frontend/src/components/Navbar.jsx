@@ -213,7 +213,7 @@ function Navbar() {
                     whileTap={{ scale: 0.95 }}
                   >
                     <div className="user-avatar">
-                      {user?.username.charAt(0).toUpperCase()}
+                      {(user?.username || 'U').charAt(0).toUpperCase()}
                     </div>
                     <span className="username">{user?.username}</span>
                     {isDropdownOpen ? <FaChevronUp className="text-xs" /> : <FaChevronDown className="text-xs" />}
