@@ -30,17 +30,18 @@ function ensureSubscribed() {
  * Admin Real-Time Submission Monitoring Endpoint
  * Uses Server-Sent Events (SSE) for real-time updates
  * 
- * @route GET /r-submission?token=<jwt>
+ * @route GET /r-submission
  * @access Admin only
+ * @auth Cookie (token) or Query param (?token=<jwt>)
  */
 router.get('/', async (req, res) => {
-    // 1. Authentication (via query param since EventSource doesn't support headers)
-    const token = req.query.token;
+    // 1. Authentication - check cookie first, then query param
+    const token = req.cookies.token || req.query.token;
 
     if (!token) {
         return res.status(401).json({ 
             success: false,
-            message: 'No token provided. Include ?token=<your-jwt> in URL' 
+            message: 'No token provided. Login required.' 
         });
     }
 

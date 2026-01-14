@@ -2,22 +2,9 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../context/AuthContext';
 import './AdminLiveMonitor.css';
 
-// Helper function to get token from cookie
-const getTokenFromCookie = () => {
-    const cookies = document.cookie.split(';');
-    for (let cookie of cookies) {
-        const [name, value] = cookie.trim().split('=');
-        if (name === 'token') {
-            return value;
-        }
-    }
-    return null;
-};
-
 const AdminLiveMonitor = () => {
     const [submissions, setSubmissions] = useState([]);
     const [connectionStatus, setConnectionStatus] = useState('connecting'); // connecting, connected, error
-    const [hasToken, setHasToken] = useState(false);
     const { user } = useAuth();
     const eventSourceRef = useRef(null);
 
@@ -26,33 +13,23 @@ const AdminLiveMonitor = () => {
         if (!user) {
             console.log('Waiting for user authentication...');
             setConnectionStatus('error');
-            setHasToken(false);
             return;
         }
 
-        // Get token from cookie
-        const token = getTokenFromCookie();
-        
-        if (!token) {
-            console.log('No authentication token found in cookies');
-            setConnectionStatus('error');
-            setHasToken(false);
-            return;
-        }
+        // SSE URL - cookies are sent automatically by browser
+        const sseUrl = `/api/r-submission`;
 
-        setHasToken(true);
-
-        // Use absolute path from root (works for both dev and production)
-        const sseUrl = `/api/r-submission?token=${token}`;
-
-        console.log('Token available, connecting to SSE');
+        console.log('Connecting to SSE (auth via cookies)');
 
         // Close existing connection if any
         if (eventSourceRef.current) {
             eventSourceRef.current.close();
         }
 
-        const eventSource = new EventSource(sseUrl);
+        // EventSource sends cookies automatically
+        const eventSource = new EventSource(sseUrl, {
+            withCredentials: true
+        });
         eventSourceRef.current = eventSource;
 
         eventSource.onopen = () => {
@@ -104,13 +81,8 @@ const AdminLiveMonitor = () => {
                 </div>
             </div>
 
-            {!hasToken && (
-                <div style={{padding: '20px', color: '#f39c12', background: '#2d1f0f', borderRadius: '8px', margin: '20px 0'}}>
-                    ⚠️ Authentication token not available. Please refresh the page or log in again.
-                </div>
-            )}
-
-            <div className="table-container">{connectionStatus === 'error' && hasToken && (
+            <div className="table-container">
+                {connectionStatus === 'error' && (
                     <div style={{padding: '10px', color: '#e74c3c', marginBottom: '10px'}}>
                         Connection failed. Check console for details.
                     </div>
