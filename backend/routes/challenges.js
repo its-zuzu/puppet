@@ -123,10 +123,18 @@ router.get('/', sanitizeInput, async (req, res) => {
 
     // Check if user is authenticated and get user info
     let user = null;
-    if (req.headers.authorization) {
+    let token = null;
+    
+    // Check for token in cookie first (new method), then Authorization header (backward compatibility)
+    if (req.cookies && req.cookies.token) {
+      token = req.cookies.token;
+    } else if (req.headers.authorization) {
+      token = req.headers.authorization.split(' ')[1];
+    }
+    
+    if (token) {
       try {
         const jwt = require('jsonwebtoken');
-        const token = req.headers.authorization.split(' ')[1];
         const decoded = jwt.verify(token, process.env.JWT_SECRET);
         user = await User.findById(decoded.id);
       } catch (err) {
@@ -496,9 +504,27 @@ router.post('/', protect, authorize('admin', 'superadmin'), async (req, res) => 
     });
   } catch (error) {
     console.error('Challenge creation error:', error);
+    
+    // Handle duplicate key error (MongoDB E11000)
+    if (error.code === 11000) {
+      const field = Object.keys(error.keyPattern)[0];
+      return res.status(400).json({
+        success: false,
+        message: `A challenge with this ${field} already exists. Please use a different ${field}.`
+      });
+    }
+    
+    // Handle validation errors
+    if (error.name === 'ValidationError') {
+      return res.status(400).json({
+        success: false,
+        message: Object.values(error.errors).map(e => e.message).join(', ')
+      });
+    }
+    
     res.status(500).json({
       success: false,
-      message: process.env.NODE_ENV === 'development' ? error.message : 'Error creating challenge'
+      message: 'Error creating challenge'
     });
   }
 });
