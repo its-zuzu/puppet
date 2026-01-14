@@ -4,36 +4,53 @@
   align-items: center;
   min-height: calc(100vh - 150px);
   padding: 2rem;
+  background: radial-gradient(circle at center, rgba(0, 255, 65, 0.05) 0%, transparent 70%);
 }
 
 .auth-card {
-  background-color: rgba(26, 46, 70, 0.5);
-  border-radius: 8px;
-  border: 1px solid #1a2e46;
-  box-shadow: 0 4px 20px rgba(0, 255, 255, 0.05);
-  padding: 2rem;
+  background: var(--color-surface);
+  border-radius: var(--border-radius);
+  border: 1px solid var(--color-border);
+  box-shadow: 0 4px 30px rgba(0, 0, 0, 0.5);
+  padding: 2.5rem;
   width: 100%;
   max-width: 450px;
+  position: relative;
+  overflow: hidden;
+}
+
+.auth-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, var(--color-primary), transparent);
 }
 
 .auth-header {
   text-align: center;
-  margin-bottom: 2rem;
+  margin-bottom: 2.5rem;
 }
 
 .auth-header h2 {
+  font-family: var(--font-mono);
   font-size: 2rem;
   margin-bottom: 0.5rem;
-  color: #ffffff;
+  color: var(--color-text-highlight);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
 }
 
 .auth-header p {
-  color: #a0a0a0;
+  color: var(--color-text-muted);
+  font-size: 0.95rem;
 }
 
 .highlight {
-  color: #00ffaa;
-  text-shadow: 0 0 10px rgba(0, 255, 170, 0.5);
+  color: var(--color-primary);
+  text-shadow: 0 0 10px rgba(0, 255, 65, 0.3);
 }
 
 .auth-form {
@@ -49,82 +66,97 @@
 }
 
 .form-group label {
-  color: #e0e0e0;
+  color: var(--color-text);
   font-weight: 500;
+  font-size: 0.9rem;
+  font-family: var(--font-mono);
+  text-transform: uppercase;
 }
 
 .form-group input {
-  padding: 0.75rem 1rem;
+  padding: 0.8rem 1rem;
   border-radius: 4px;
-  border: 1px solid #1a2e46;
-  background-color: rgba(15, 25, 35, 0.8);
-  color: #e0e0e0;
+  border: 1px solid var(--color-border);
+  background-color: rgba(0, 0, 0, 0.2);
+  color: var(--color-text-highlight);
   font-size: 1rem;
-  transition: border-color 0.3s ease, box-shadow 0.3s ease;
+  font-family: var(--font-mono);
+  transition: all 0.3s ease;
 }
 
 .form-group input:focus {
   outline: none;
-  border-color: #00ffaa;
-  box-shadow: 0 0 0 2px rgba(0, 255, 170, 0.2);
+  border-color: var(--color-primary);
+  box-shadow: 0 0 15px rgba(0, 255, 65, 0.1);
+  background-color: rgba(0, 255, 65, 0.02);
 }
 
 .auth-button {
   margin-top: 1rem;
-  padding: 0.75rem;
+  padding: 0.9rem;
   border-radius: 4px;
-  border: none;
-  background: linear-gradient(90deg, #00c9ff, #00ffaa);
-  color: #0a0e17;
-  font-weight: 600;
+  border: 1px solid var(--color-primary);
+  background: transparent;
+  color: var(--color-primary);
+  font-weight: 700;
+  font-family: var(--font-mono);
   font-size: 1rem;
   cursor: pointer;
-  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  transition: all 0.3s ease;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
 }
 
-.auth-button:hover {
+.auth-button:hover:not(:disabled) {
+  background: var(--color-primary);
+  color: var(--color-bg);
+  box-shadow: 0 0 20px var(--color-primary-glow);
   transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(0, 255, 170, 0.3);
 }
 
 .auth-button:disabled {
-  opacity: 0.7;
+  opacity: 0.5;
   cursor: not-allowed;
-  transform: none;
-  box-shadow: none;
+  border-color: var(--color-text-muted);
+  color: var(--color-text-muted);
 }
 
 .auth-footer {
   margin-top: 2rem;
   text-align: center;
-  color: #a0a0a0;
+  color: var(--color-text-muted);
+  font-size: 0.9rem;
+  border-top: 1px solid var(--color-border);
+  padding-top: 1.5rem;
 }
 
 .auth-link {
-  color: #00ffaa;
+  color: var(--color-primary);
   text-decoration: none;
   font-weight: 500;
-  transition: text-shadow 0.3s ease;
+  transition: all 0.3s ease;
 }
 
 .auth-link:hover {
-  text-shadow: 0 0 8px rgba(0, 255, 170, 0.7);
+  text-shadow: 0 0 8px rgba(0, 255, 65, 0.5);
+  text-decoration: underline;
 }
 
 .auth-error {
-  background-color: rgba(255, 0, 0, 0.1);
-  border: 1px solid rgba(255, 0, 0, 0.3);
-  color: #ff6b6b;
+  background-color: rgba(255, 51, 51, 0.1);
+  border: 1px solid var(--color-error);
+  color: var(--color-error);
   padding: 0.75rem 1rem;
   border-radius: 4px;
   margin-bottom: 1.5rem;
   text-align: center;
+  font-size: 0.9rem;
 }
 
 .auth-success {
-  background-color: rgba(0, 255, 170, 0.1);
-  border: 1px solid rgba(0, 255, 170, 0.3);
-  color: #00ffaa;
+  background-color: rgba(0, 255, 65, 0.1);
+  border: 1px solid var(--color-primary);
+  color: var(--color-primary);
   padding: 0.75rem 1rem;
   border-radius: 4px;
   margin-bottom: 1.5rem;
@@ -135,24 +167,18 @@
 /* Registration Info Styles */
 .registration-info {
   text-align: center;
-  padding: 2rem 0;
-}
-
-.info-icon {
-  margin-bottom: 1.5rem;
-  display: flex;
-  justify-content: center;
+  padding: 1rem 0;
 }
 
 .registration-disabled h3 {
-  color: #ffffff;
+  color: var(--color-text-highlight);
   font-size: 1.5rem;
   margin-bottom: 1.5rem;
 }
 
 .info-content {
   text-align: left;
-  color: #a0a0a0;
+  color: var(--color-text-muted);
   line-height: 1.6;
 }
 
@@ -161,17 +187,19 @@
 }
 
 .contact-info {
-  background-color: rgba(15, 25, 35, 0.6);
-  border: 1px solid #1a2e46;
-  border-radius: 6px;
+  background-color: rgba(0, 0, 0, 0.2);
+  border: 1px solid var(--color-border);
+  border-radius: 4px;
   padding: 1.5rem;
   margin: 1.5rem 0;
 }
 
 .contact-info h4 {
-  color: #00ffaa;
-  margin-bottom: 0.75rem;
+  color: var(--color-primary);
+  margin-bottom: 1rem;
   font-size: 1.1rem;
+  font-family: var(--font-mono);
+  text-transform: uppercase;
 }
 
 .contact-details {
@@ -187,36 +215,37 @@
 
 .contact-label {
   font-weight: 600;
-  color: #e0e0e0;
+  color: var(--color-text-highlight);
   min-width: 50px;
 }
 
 .contact-link {
-  color: #00ffaa;
+  color: var(--color-primary);
   text-decoration: none;
-  font-weight: 500;
+  font-family: var(--font-mono);
   transition: all 0.3s ease;
 }
 
 .contact-link:hover {
-  text-shadow: 0 0 8px rgba(0, 255, 170, 0.7);
+  text-shadow: 0 0 8px rgba(0, 255, 65, 0.5);
   text-decoration: underline;
 }
 
 .contact-note {
   margin-top: 1rem;
   padding-top: 1rem;
-  border-top: 1px solid #1a2e46;
+  border-top: 1px solid var(--color-border);
 }
 
 .contact-note p {
   margin-bottom: 0.5rem;
-  color: #e0e0e0;
+  color: var(--color-text);
+  font-weight: 500;
 }
 
 .contact-note ul {
-  margin: 0.5rem 0 0 1rem;
-  color: #a0a0a0;
+  margin: 0.5rem 0 0 1.2rem;
+  color: var(--color-text-muted);
 }
 
 .contact-note li {
@@ -229,7 +258,7 @@
   }
 
   .auth-header h2 {
-    font-size: 1.75rem;
+    font-size: 1.5rem;
   }
 
   .contact-info {
