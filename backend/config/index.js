@@ -88,11 +88,10 @@ module.exports = {
       max: parseIntHelper(process.env.LOGIN_RATE_MAX, 100) // 100 attempts per window - very generous
     },
     flagSubmit: {
-      maxAttempts: parseIntHelper(process.env.FLAG_SUBMIT_MAX_ATTEMPTS, 200),
-      windowSeconds: parseIntHelper(process.env.FLAG_SUBMIT_WINDOW, 60),
-      cooldownSeconds: parseIntHelper(process.env.FLAG_SUBMIT_COOLDOWN, 1), // Reduced to 1 second
-      windowMs: parseDuration(process.env.FLAG_SUBMIT_RATE_WINDOW || '1m', 60000), // 1 minute
-      max: parseIntHelper(process.env.FLAG_SUBMIT_RATE_MAX, 50) // 50 submissions per minute
+      // Per-user rate limiting (authentication-based, not IP-based)
+      maxAttempts: parseIntHelper(process.env.FLAG_SUBMIT_MAX_ATTEMPTS, 20), // 20 attempts per user per window
+      windowSeconds: parseIntHelper(process.env.FLAG_SUBMIT_WINDOW, 60), // 60 second window
+      cooldownSeconds: parseIntHelper(process.env.FLAG_SUBMIT_COOLDOWN, 30) // 30 second cooldown when limit hit
     },
     general: {
       windowMs: parseDuration(process.env.GENERAL_RATE_WINDOW || '15m', 900000), // 15 minutes

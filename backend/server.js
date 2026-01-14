@@ -70,7 +70,7 @@ app.use(secureHeaders);
 
 // Rate limiting
 app.use('/api/auth/login', loginLimiter);
-app.use('/api/challenges/:id/submit', submissionLimiter); // IP-based rate limit for flag submissions
+// Note: Flag submission rate limiting is per-user (authentication-based) in challenges.js route
 app.use('/api/', apiLimiter);
 
 // CORS with development-friendly configuration
