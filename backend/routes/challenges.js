@@ -480,6 +480,7 @@ router.get('/:id', async (req, res) => {
 // @access  Private/Admin
 router.post('/', protect, authorize('admin', 'superadmin'), async (req, res) => {
   try {
+    console.log('Creating challenge with data:', req.body);
     const challenge = await Challenge.create(req.body);
 
     // Invalidate public challenges cache
@@ -494,9 +495,10 @@ router.post('/', protect, authorize('admin', 'superadmin'), async (req, res) => 
       data: challenge
     });
   } catch (error) {
+    console.error('Challenge creation error:', error);
     res.status(500).json({
       success: false,
-      message: error.message
+      message: process.env.NODE_ENV === 'development' ? error.message : 'Error creating challenge'
     });
   }
 });
