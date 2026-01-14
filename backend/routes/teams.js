@@ -132,9 +132,17 @@ router.get('/', protect, async (req, res) => {
     const query = search ? { name: { $regex: search, $options: 'i' } } : {};
 
     const total = await Team.countDocuments(query);
+    
+    // Check if user is admin
+    const isAdmin = req.user.role === 'admin' || req.user.role === 'superadmin';
+    
+    // Hide emails only, keep solvedChallenges visible for transparency
+    const memberFields = isAdmin ? 'username email points' : 'username points';
+    const captainFields = isAdmin ? 'username email points' : 'username points';
+    
     const teams = await Team.find(query)
-      .populate('members', 'username email points')
-      .populate('captain', 'username email points')
+      .populate('members', memberFields)
+      .populate('captain', captainFields)
       .populate('createdBy', 'username')
       .sort({ points: -1 })
       .limit(limit)
@@ -161,9 +169,19 @@ router.get('/', protect, async (req, res) => {
 // @access  Private
 router.get('/:id', protect, async (req, res) => {
   try {
+    const isAdmin = req.user.role === 'admin' || req.user.role === 'superadmin';
+    
+    // Hide emails only, show solvedChallenges for transparency
+    const memberFields = isAdmin 
+      ? 'username email points solvedChallenges personallySolvedChallenges unlockedHints'
+      : 'username points solvedChallenges personallySolvedChallenges';
+    const captainFields = isAdmin 
+      ? 'username email points solvedChallenges personallySolvedChallenges unlockedHints'
+      : 'username points solvedChallenges personallySolvedChallenges';
+    
     const team = await Team.findById(req.params.id)
-      .populate('members', 'username email points solvedChallenges personallySolvedChallenges unlockedHints')
-      .populate('captain', 'username email points solvedChallenges personallySolvedChallenges unlockedHints')
+      .populate('members', memberFields)
+      .populate('captain', captainFields)
       .populate('createdBy', 'username');
 
     if (!team) {
@@ -172,9 +190,6 @@ router.get('/:id', protect, async (req, res) => {
         message: 'Team not found'
       });
     }
-
-    // Allow all authenticated users to view team details (public scoreboard)
-    // No IDOR restriction - teams are publicly viewable
 
     // Calculate team points from members
     const calculatedPoints = team.members.reduce((sum, member) => sum + (member.points || 0), 0);

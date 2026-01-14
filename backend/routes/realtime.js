@@ -78,7 +78,8 @@ router.get('/', async (req, res) => {
         'Cache-Control': 'no-cache, no-transform',
         'Connection': 'keep-alive',
         'X-Accel-Buffering': 'no', // Important for Nginx
-        'Access-Control-Allow-Origin': '*', // Allow CORS for admin dashboard
+        'Access-Control-Allow-Origin': process.env.CORS_ORIGIN || 'https://ctfquest.ddns.net', // Restrict to app domain
+        'Access-Control-Allow-Credentials': 'true',
     });
 
     // 3. Send initial connection message
