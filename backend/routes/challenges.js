@@ -620,8 +620,7 @@ router.post('/:id/submit', protect, sanitizeInput, checkEventNotEnded, async (re
     if (!rateCheck.allowed) {
       return res.status(429).json({
         success: false,
-        message: `Too many attempts. Please wait ${rateCheck.remainingTime} seconds before trying again.`,
-        remainingTime: rateCheck.remainingTime
+        message: "Too many attempts, slow down!"
       });
     }
 
