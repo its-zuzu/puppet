@@ -2,16 +2,37 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../context/AuthContext';
 import './AdminLiveMonitor.css';
 
+// Helper function to get token from cookie
+const getTokenFromCookie = () => {
+    const cookies = document.cookie.split(';');
+    for (let cookie of cookies) {
+        const [name, value] = cookie.trim().split('=');
+        if (name === 'token') {
+            return value;
+        }
+    }
+    return null;
+};
+
 const AdminLiveMonitor = () => {
     const [submissions, setSubmissions] = useState([]);
     const [connectionStatus, setConnectionStatus] = useState('connecting'); // connecting, connected, error
-    const { user, token } = useAuth();
+    const { user } = useAuth();
     const eventSourceRef = useRef(null);
 
     useEffect(() => {
-        // Wait for token to be available
+        // Wait for user to be loaded (admin check)
+        if (!user) {
+            console.log('Waiting for user authentication...');
+            setConnectionStatus('error');
+            return;
+        }
+
+        // Get token from cookie
+        const token = getTokenFromCookie();
+        
         if (!token) {
-            console.log('Waiting for auth token...');
+            console.log('No authentication token found in cookies');
             setConnectionStatus('error');
             return;
         }
@@ -19,8 +40,7 @@ const AdminLiveMonitor = () => {
         // Use absolute path from root (works for both dev and production)
         const sseUrl = `/api/r-submission?token=${token}`;
 
-        console.log('Token available, connecting to SSE:', sseUrl);
-        console.log('Token length:', token?.length);
+        console.log('Token available, connecting to SSE');
 
         // Close existing connection if any
         if (eventSourceRef.current) {
@@ -68,7 +88,7 @@ const AdminLiveMonitor = () => {
                 eventSourceRef.current.close();
             }
         };
-    }, [token]);
+    }, [user]);
 
     return (
         <div className="admin-live-monitor">
