@@ -10,7 +10,62 @@ const redisClient = getRedisClient();
 
 // 1. Rate Limiting Factory (Redis-backed)
 const createRateLimit = (windowMs, max, message, prefix, cooldownSeconds = null) => {
-  const limiterConfig = {
+  // If cooldown is specified, create middleware that checks blocked status first
+  if (cooldownSeconds) {
+    const limiter = rateLimit({
+      windowMs,
+      max,
+      standardHeaders: true,
+      legacyHeaders: false,
+      store: new RedisStore({
+        sendCommand: (...args) => redisClient.call(...args),
+        prefix: `ctf:rl:${prefix}:` // Unique prefix per limiter
+      }),
+      keyGenerator: (req) => requestIp.getClientIp(req),
+      handler: async (req, res) => {
+        const ip = requestIp.getClientIp(req);
+        const blockedKey = `ctf:rl:blocked:${prefix}:${ip}`;
+        
+        // Set block when rate limit exceeded
+        const existingBlock = await redisClient.get(blockedKey);
+        if (!existingBlock) {
+          await redisClient.setex(blockedKey, cooldownSeconds, 'blocked');
+        }
+        
+        const ttl = await redisClient.ttl(blockedKey);
+        
+        return res.status(429).json({
+          success: false,
+          message: `Too many attempts, slow down!`,
+          retryAfter: ttl > 0 ? ttl : cooldownSeconds
+        });
+      },
+      passOnStoreError: true
+    });
+
+    // Return middleware that checks block status first
+    return async (req, res, next) => {
+      const ip = requestIp.getClientIp(req);
+      const blockedKey = `ctf:rl:blocked:${prefix}:${ip}`;
+      
+      // Check if already blocked
+      const isBlocked = await redisClient.get(blockedKey);
+      if (isBlocked) {
+        const ttl = await redisClient.ttl(blockedKey);
+        return res.status(429).json({
+          success: false,
+          message: `Too many attempts, slow down!`,
+          retryAfter: ttl > 0 ? ttl : cooldownSeconds
+        });
+      }
+      
+      // Not blocked, continue to rate limiter
+      return limiter(req, res, next);
+    };
+  }
+
+  // No cooldown, use standard rate limiter
+  return rateLimit({
     windowMs,
     max,
     message: { success: false, message, blocked: true },
@@ -20,34 +75,9 @@ const createRateLimit = (windowMs, max, message, prefix, cooldownSeconds = null)
       sendCommand: (...args) => redisClient.call(...args),
       prefix: `ctf:rl:${prefix}:` // Unique prefix per limiter
     }),
-    keyGenerator: (req) => requestIp.getClientIp(req), // Use request-ip to get real IP behind proxy
-    passOnStoreError: true // FAIL-OPEN: If Redis is down, allow request
-  };
-
-  // Add cooldown handler if specified
-  if (cooldownSeconds) {
-    limiterConfig.handler = async (req, res) => {
-      const ip = requestIp.getClientIp(req);
-      const blockedKey = `ctf:rl:blocked:${prefix}:${ip}`;
-      
-      // Check if already blocked
-      const existingBlock = await redisClient.get(blockedKey);
-      const ttl = existingBlock ? await redisClient.ttl(blockedKey) : cooldownSeconds;
-      
-      // Set block if not already set
-      if (!existingBlock) {
-        await redisClient.setex(blockedKey, cooldownSeconds, 'blocked');
-      }
-      
-      return res.status(429).json({
-        success: false,
-        message: `Too many attempts, slow down!`,
-        retryAfter: ttl > 0 ? ttl : cooldownSeconds
-      });
-    };
-  }
-
-  return rateLimit(limiterConfig);
+    keyGenerator: (req) => requestIp.getClientIp(req),
+    passOnStoreError: true
+  });
 };
 
 // 2. Defined Limiters
