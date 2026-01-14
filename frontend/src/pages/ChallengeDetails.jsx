@@ -1,84 +1,27 @@
 import { useState, useEffect, useContext } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import axios from 'axios'
+import { motion } from 'framer-motion'
+import { FaArrowLeft, FaFlag, FaUnlock, FaCheckCircle, FaExclamationTriangle } from 'react-icons/fa'
 import AuthContext from '../context/AuthContext'
 import { useEventState } from '../hooks/useEventState'
 import Loading from '../components/Loading'
-import './ChallengeDetails.css'
+import Card from '../components/ui/Card'
+import Button from '../components/ui/Button'
+import Input from '../components/ui/Input'
+import Modal from '../components/ui/Modal'
 
-const SolvesModal = ({ challenge, onClose }) => {
-  const [solves, setSolves] = useState([]);
-  const [loading, setLoading] = useState(true);
+// --- Sub-components ---
 
-  useEffect(() => {
-    const fetchSolves = async () => {
-      try {
-        const res = await axios.get(`/api/challenges/${challenge._id}/solves`);
-        setSolves(res.data.data || []);
-        setLoading(false);
-      } catch (err) {
-        console.error('Error fetching solves:', err);
-        setLoading(false);
-      }
-    };
-
-    fetchSolves();
-  }, [challenge._id]);
-
-  return (
-    <div className="modal-overlay" onClick={onClose}>
-      <div className="modal-content solves-modal" onClick={(e) => e.stopPropagation()}>
-        <div className="modal-header">
-          <h3>{challenge.title} - Solves ({solves.length})</h3>
-          <button className="modal-close" onClick={onClose}>×</button>
-        </div>
-
-        {loading ? (
-          <Loading size="small" inline text="Loading solves" />
-        ) : solves.length === 0 ? (
-          <div className="no-solves">No one has solved this challenge yet!</div>
-        ) : (
-          <div className="solves-list">
-            <table className="solves-table">
-              <thead>
-                <tr>
-                  <th>#</th>
-                  <th>User</th>
-                  <th>Team</th>
-                  <th>Solved At</th>
-                </tr>
-              </thead>
-              <tbody>
-                {solves.map((solve, index) => (
-                  <tr key={index}>
-                    <td>{index + 1}</td>
-                    <td>{solve.username}</td>
-                    <td>{solve.team}</td>
-                    <td>{new Date(solve.solvedAt).toLocaleString()}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
-      </div>
-    </div>
-  );
-};
-
-const FlagSubmissionModal = ({ challenge, onClose, onSubmit }) => {
+const FlagSubmissionModal = ({ challenge, onClose, onSubmit, isEnded }) => {
   const [flag, setFlag] = useState('');
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const { isEnded } = useEventState();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!flag.trim()) {
-      setError('Please enter a flag');
-      return;
-    }
+    if (!flag.trim()) { setError('Please enter a flag'); return; }
 
     setIsSubmitting(true);
     setError('');
@@ -86,62 +29,54 @@ const FlagSubmissionModal = ({ challenge, onClose, onSubmit }) => {
 
     try {
       await onSubmit(flag);
-      setSuccess('Flag submitted successfully!');
-      setTimeout(() => onClose(), 1500);
+      setSuccess('SYSTEM BREACH SUCCESSFUL. POINTS AWARDED.');
+      setTimeout(() => onClose(), 2000);
     } catch (err) {
-      setError(err.message || 'Failed to submit flag');
+      setError(err.message || 'Incorrect Flag sequence.');
     } finally {
       setIsSubmitting(false);
     }
   };
 
   return (
-    <div className="modal-overlay" onClick={onClose}>
-      <div className="modal-content" onClick={(e) => e.stopPropagation()}>
-        <div className="modal-header">
-          <h3>Submit Flag: {challenge.title}</h3>
-          <button className="modal-close" onClick={onClose}>×</button>
+    <Modal isOpen={true} onClose={onClose} title={`Target: ${challenge.title}`}>
+      {isEnded && (
+        <div className="p-4 mb-4 bg-purple-900/30 border border-purple-500 rounded text-purple-300">
+          Event Concluded. Submissions Disabled.
         </div>
+      )}
 
-        {isEnded && (
-          <div className="modal-error" style={{
-            backgroundColor: 'rgba(139, 92, 246, 0.2)',
-            border: '2px solid #8b5cf6',
-            color: '#c4b5fd',
-            padding: '15px',
-            marginBottom: '15px',
-            boxShadow: '0 0 10px rgba(139, 92, 246, 0.3)'
-          }}>
-            CTF Event Has Ended - Submissions are no longer accepted
-          </div>
-        )}
-        {error && <div className="modal-error">{error}</div>}
-        {success && <div className="modal-success">{success}</div>}
+      {error && (
+        <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="p-3 mb-4 bg-red-900/30 border border-red-500 rounded text-red-300 flex items-center gap-2">
+          <FaExclamationTriangle /> {error}
+        </motion.div>
+      )}
 
-        <form onSubmit={handleSubmit} className="flag-form">
-          <div className="form-group">
-            <label htmlFor="flag">Flag</label>
-            <input
-              type="text"
-              id="flag"
-              value={flag}
-              onChange={(e) => setFlag(e.target.value)}
-              placeholder="Enter the flag SECE{flag_here}"
-              autoComplete="off"
-              disabled={isSubmitting || success || isEnded}
-            />
-          </div>
+      {success && (
+        <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="p-3 mb-4 bg-green-900/30 border border-[var(--neon-green)] rounded text-[var(--neon-green)] flex items-center gap-2">
+          <FaCheckCircle /> {success}
+        </motion.div>
+      )}
 
-          <button
-            type="submit"
-            className="submit-flag-button"
-            disabled={isSubmitting || success || isEnded}
-          >
-            {isEnded ? 'Event Ended' : isSubmitting ? 'Submitting...' : 'Submit Flag'}
-          </button>
-        </form>
-      </div>
-    </div>
+      <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+        <Input
+          label="Flag Sequence"
+          placeholder="SECE{...}"
+          value={flag}
+          onChange={(e) => setFlag(e.target.value)}
+          disabled={isSubmitting || success || isEnded}
+          autoFocus
+        />
+        <Button
+          type="submit"
+          variant="primary"
+          disabled={isSubmitting || success || isEnded}
+          className="w-full"
+        >
+          {isSubmitting ? 'Verifying...' : 'EXECUTE SUBMISSION'}
+        </Button>
+      </form>
+    </Modal>
   );
 };
 
@@ -154,9 +89,9 @@ function ChallengeDetails() {
   const [showModal, setShowModal] = useState(false);
   const [unlockedHints, setUnlockedHints] = useState([]);
   const [unlockingHint, setUnlockingHint] = useState(null);
-  const [showSolvesModal, setShowSolvesModal] = useState(false);
+
   const { user, isAuthenticated, updateUserData } = useContext(AuthContext);
-  const { eventState, isEnded } = useEventState();
+  const { isEnded } = useEventState();
 
   useEffect(() => {
     const fetchChallenge = async () => {
@@ -167,38 +102,17 @@ function ChallengeDetails() {
         setUnlockedHints(res.data.unlockedHints || []);
         setLoading(false);
       } catch (err) {
-        console.error('Error fetching challenge:', err);
-        setError('Challenge not found');
+        setError('Target not found within database.');
         setLoading(false);
       }
     };
-
     fetchChallenge();
   }, [id]);
 
-  const openModal = () => {
-    if (!isAuthenticated) {
-      navigate('/login');
-      return;
-    }
-    setShowModal(true);
-  };
-
-  const closeModal = () => {
-    setShowModal(false);
-  };
-
   const submitFlag = async (flag) => {
-    if (!challenge || !isAuthenticated) {
-      throw new Error('Challenge not found or user not authenticated');
-    }
-
+    if (!challenge || !isAuthenticated) throw new Error('Auth Error');
     try {
-      const res = await axios.post(
-        `/api/challenges/${challenge._id}/submit`,
-        { flag }
-      );
-
+      const res = await axios.post(`/api/challenges/${challenge._id}/submit`, { flag });
       await updateUserData();
       return res.data;
     } catch (err) {
@@ -207,209 +121,151 @@ function ChallengeDetails() {
   };
 
   const unlockHint = async (hintIndex) => {
-    if (!isAuthenticated) {
-      navigate('/login');
-      return;
-    }
-
     const hint = challenge.hints[hintIndex];
-    const userPoints = user.points || 0;
-    const hasTeam = user.team && user.team._id;
-
-    // If user has a team, fetch the latest team points using the team ID
-    let teamPoints = 0;
-    if (hasTeam) {
+    if (window.confirm(`Decrypt hint for ${hint.cost} points?`)) {
       try {
-        const teamRes = await axios.get(`/api/teams/${user.team._id}`);
-        // Calculate team points from members (as backend does)
-        const calculatedPoints = teamRes.data.data.members.reduce((sum, member) => sum + (member.points || 0), 0);
-        teamPoints = calculatedPoints || teamRes.data.data.points || 0;
-        console.log('Fetched team points:', teamPoints);
+        setUnlockingHint(hintIndex);
+        await axios.post(`/api/challenges/${challenge._id}/unlock-hint`, { hintIndex });
+        setUnlockedHints([...unlockedHints, hintIndex]);
+        await updateUserData();
       } catch (err) {
-        console.error('Error fetching team points:', err);
-        // Fallback to user.team.points if fetch fails
-        teamPoints = user.team.points || 0;
+        alert(err.response?.data?.message || 'Decryption Failed');
+      } finally {
+        setUnlockingHint(null);
       }
-    }
-
-    // Use team points if in a team, otherwise use individual points
-    const availablePoints = hasTeam ? teamPoints : userPoints;
-    const pointsType = hasTeam ? 'team' : 'individual';
-
-    // Check if enough points available
-    if (availablePoints < hint.cost) {
-      alert(`Insufficient points! You need ${hint.cost} points but have ${availablePoints} ${pointsType} points.`);
-      return;
-    }
-
-    const confirmMessage = `Are you sure you want to unlock this hint for ${hint.cost} points?\n\nTeam points: ${teamPoints}\nAfter unlock: ${teamPoints - hint.cost} points`;
-
-    if (!window.confirm(confirmMessage)) {
-      return;
-    }
-
-    try {
-      setUnlockingHint(hintIndex);
-      const res = await axios.post(
-        `/api/challenges/${challenge._id}/unlock-hint`,
-        { hintIndex }
-      );
-
-      // Update unlocked hints
-      setUnlockedHints([...unlockedHints, hintIndex]);
-
-      // Update user data to reflect new points
-      await updateUserData();
-
-      alert(res.data.message);
-    } catch (err) {
-      alert(err.response?.data?.message || 'Failed to unlock hint');
-    } finally {
-      setUnlockingHint(null);
     }
   };
 
-  if (loading) {
-    return (
-      <div className="challenge-details-container">
-        <Loading size="medium" text="Loading challenge" />
-      </div>
-    );
-  }
-
-  if (error || !challenge) {
-    return (
-      <div className="challenge-details-container">
-        <div className="error">{error || 'Challenge not found'}</div>
-        <button onClick={() => navigate('/challenges')} className="back-button">
-          ← Back to Challenges
-        </button>
-      </div>
-    );
-  }
+  if (loading) return <Loading size="large" text="Establishing Uplink..." />;
+  if (error || !challenge) return <div className="text-center p-20 text-red-500">{error}</div>;
 
   const isSolved = user?.solvedChallenges?.includes(challenge._id);
 
   return (
-    <div className="challenge-details-container">
-      {isEnded && (
-        <div style={{
-          backgroundColor: 'rgba(139, 92, 246, 0.2)',
-          border: '2px solid #8b5cf6',
-          color: '#c4b5fd',
-          padding: '15px',
-          textAlign: 'center',
-          marginBottom: '20px',
-          borderRadius: '5px',
-          fontWeight: 'bold',
-          boxShadow: '0 0 15px rgba(139, 92, 246, 0.3)'
-        }}>
-          CTF Event Has Ended - Flag submissions are no longer accepted
-        </div>
-      )}
-      <div className="challenge-details-header">
-        <button onClick={() => navigate('/challenges')} className="back-button">
-          ← Back to Challenges
+    <div className="min-h-screen pt-4 pb-20 px-4 max-w-5xl mx-auto">
+      <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} className="mb-6">
+        <button onClick={() => navigate('/challenges')} className="flex items-center gap-2 text-[var(--text-secondary)] hover:text-[var(--neon-blue)] transition-colors">
+          <FaArrowLeft /> Abort Mission / Return
         </button>
-        <div className="header-content">
-          <h1>{challenge.title}</h1>
-        </div>
-      </div>
+      </motion.div>
 
-      <div className="challenges-main">
-        <div className="challenge-details-content">
-          <div className="challenge-meta">
-            <span className="points-badge">{challenge.points} pts</span>
-            <span className="category-badge">{challenge.category}</span>
-            <span
-              className="solved-count clickable"
-              onClick={() => setShowSolvesModal(true)}
-              style={{ cursor: 'pointer', textDecoration: 'underline' }}
-            >
-              {challenge.solvedBy?.length || 0} solves
-            </span>
-          </div>
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        {/* Left Column: Details */}
+        <div className="md:col-span-2">
+          <Card className="p-8 mb-6 relative overflow-hidden">
+            {isSolved && (
+              <div className="absolute top-0 right-0 bg-[var(--neon-green)] text-black font-bold px-4 py-1 skew-x-[-20deg] translate-x-4">
+                COMPLETED
+              </div>
+            )}
 
-          <div className="description">
-            <h3>Description</h3>
-            <p>{challenge.description}</p>
-          </div>
+            <div className="flex items-start justify-between mb-4">
+              <div>
+                <h1 className="text-3xl font-heading font-bold mb-2">{challenge.title}</h1>
+                <div className="flex gap-2">
+                  <span className="bg-[rgba(255,255,255,0.05)] border border-[rgba(255,255,255,0.1)] px-3 py-1 rounded-full text-sm font-mono text-[var(--neon-blue)]">
+                    {challenge.category}
+                  </span>
+                  <span className="bg-[rgba(255,255,255,0.05)] border border-[rgba(255,255,255,0.1)] px-3 py-1 rounded-full text-sm font-mono text-[var(--neon-purple)]">
+                    {challenge.points} PTS
+                  </span>
+                  <span className="bg-[rgba(255,255,255,0.05)] border border-[rgba(255,255,255,0.1)] px-3 py-1 rounded-full text-sm font-mono text-[var(--text-secondary)]">
+                    {challenge.derivedDifficulty || challenge.difficulty || 'Normal'}
+                  </span>
+                </div>
+              </div>
+            </div>
 
+            <div className="prose prose-invert max-w-none text-[var(--text-secondary)] font-body leading-relaxed border-t border-[rgba(255,255,255,0.05)] pt-4">
+              {challenge.description.split('\n').map((line, i) => <p key={i}>{line}</p>)}
+            </div>
+          </Card>
+
+          {/* Hints Section */}
           {challenge.hints && challenge.hints.length > 0 && (
-            <div className="hints">
-              <h3>Hints</h3>
+            <div className="space-y-4">
+              <h3 className="text-xl font-heading font-bold text-[var(--text-primary)]">Intelligence / Hints</h3>
               {challenge.hints.map((hint, index) => {
-                const isUnlocked = unlockedHints.includes(index);
-                const isFree = hint.cost === 0;
-                const showContent = isFree || isUnlocked;
-
+                const isUnlocked = unlockedHints.includes(index) || hint.cost === 0;
                 return (
-                  <div key={index} className={`hint-item ${showContent ? 'unlocked' : 'locked'}`}>
-                    {showContent ? (
-                      <p>{hint.content}</p>
+                  <Card key={index} className="p-4 border-l-4 border-l-[var(--neon-purple)]">
+                    {isUnlocked ? (
+                      <div className="text-[var(--text-primary)]">
+                        <span className="text-[var(--neon-purple)] font-bold text-sm uppercase mb-1 block">Decrypted Intelligence:</span>
+                        {hint.content}
+                      </div>
                     ) : (
-                      <div className="locked-hint">
-                        <button
-                          className="unlock-hint-button"
+                      <div className="flex justify-between items-center">
+                        <div className="flex items-center gap-2 text-[var(--text-dim)]">
+                          <FaLock />
+                          <span>Encrypted Intelligence (Cost: {hint.cost} PTS)</span>
+                        </div>
+                        <Button
+                          variant="secondary"
+                          size="sm"
                           onClick={() => unlockHint(index)}
-                          disabled={!isAuthenticated || unlockingHint === index}
+                          disabled={unlockingHint === index}
                         >
-                          {unlockingHint === index ? 'Unlocking...' : `Unlock Hint for ${hint.cost} points`}
-                        </button>
-                        {!isAuthenticated && (
-                          <p className="login-hint">Login to unlock this hint</p>
-                        )}
+                          {unlockingHint === index ? 'Decrypting...' : 'Decrypt'}
+                        </Button>
                       </div>
                     )}
-                  </div>
-                );
+                  </Card>
+                )
               })}
             </div>
           )}
+        </div>
 
-          <div className="challenge-actions">
-            {isEnded ? (
-              <div style={{
-                padding: '15px',
-                backgroundColor: 'rgba(139, 92, 246, 0.15)',
-                border: '2px solid #8b5cf6',
-                borderRadius: '5px',
-                textAlign: 'center',
-                color: '#c4b5fd',
-                fontWeight: 'bold',
-                boxShadow: '0 0 10px rgba(139, 92, 246, 0.2)'
-              }}>
-                CTF Event Has Ended - Flag submissions are no longer accepted
-              </div>
-            ) : (
-              <button
-                className={`solve-challenge-button ${!isAuthenticated ? 'login-required' : ''}`}
-                onClick={openModal}
-                disabled={isSolved}
+        {/* Right Column: Actions */}
+        <div className="md:col-span-1">
+          <Card className="p-6 sticky top-24">
+            <h3 className="text-lg font-bold mb-4 uppercase text-[var(--text-dim)]">Mission Status</h3>
+
+            <div className="mb-6 text-center">
+              {isSolved ? (
+                <div className="text-[var(--neon-green)] flex flex-col items-center">
+                  <FaCheckCircle className="text-5xl mb-2" />
+                  <span className="font-bold text-xl">MISSION ACCOMPLISHED</span>
+                </div>
+              ) : (
+                <div className="text-[var(--text-secondary)] flex flex-col items-center">
+                  <FaFlag className="text-5xl mb-2 opacity-50" />
+                  <span className="font-bold">PENDING SUBMISSION</span>
+                </div>
+              )}
+            </div>
+
+            {!isSolved && (
+              <Button
+                variant="primary"
+                className="w-full py-4 text-lg shadow-[0_0_20px_rgba(0,255,157,0.2)]"
+                onClick={() => isAuthenticated ? setShowModal(true) : navigate('/login')}
+                disabled={isEnded}
               >
-                {isSolved ? 'Solved ✓' : isAuthenticated ? 'Submit Flag' : 'Login to Solve'}
-              </button>
+                {isAuthenticated ? 'SUBMIT FLAG' : 'LOGIN TO SUBMIT'}
+              </Button>
             )}
-          </div>
+
+            <div className="mt-4 text-center">
+              <span className="text-sm text-[var(--text-dim)] font-mono">
+                {challenge.solvedBy?.length || 0} Successful Breaches
+              </span>
+            </div>
+          </Card>
         </div>
       </div>
 
-      {showSolvesModal && challenge && (
-        <SolvesModal
-          challenge={challenge}
-          onClose={() => setShowSolvesModal(false)}
-        />
-      )}
-
-      {showModal && challenge && (
+      {showModal && (
         <FlagSubmissionModal
           challenge={challenge}
-          onClose={closeModal}
+          onClose={() => setShowModal(false)}
           onSubmit={submitFlag}
+          isEnded={isEnded}
         />
       )}
     </div>
-  );
+  )
 }
 
 export default ChallengeDetails;

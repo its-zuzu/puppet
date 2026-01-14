@@ -1,30 +1,26 @@
 import React, { useState, useEffect, useContext } from 'react';
 import axios from 'axios';
+import { motion } from 'framer-motion';
+import { FaTrophy, FaUser, FaUsers, FaChartLine } from 'react-icons/fa';
 import AuthContext from '../context/AuthContext';
 import ScoreGraph from '../components/ScoreGraph';
 import Loading from '../components/Loading';
 import CustomMessageDisplay from '../components/CustomMessageDisplay';
-import CTFEndedDisplay from '../components/CTFEndedDisplay';
+import Card from '../components/ui/Card';
 import { useEventState } from '../hooks/useEventState';
-// No CSS file needed if we use inline or global styles for simplicity/consistency,
-// but for cleaner code we use standard layout classes which might exist or inline minimal styles.
-// CTFd style: Simple Bootstrap tables usually.
 
 function Scoreboard() {
-  const { eventState: ctfEventState, customMessage, isEnded } = useEventState();
+  const { eventState: ctfEventState, customMessage } = useEventState();
   const { isAuthenticated } = useContext(AuthContext);
   const [viewType, setViewType] = useState('teams'); // 'teams' or 'users'
   const [standings, setStandings] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  // Check for custom message
-  if (customMessage) {
-    return <CustomMessageDisplay message={customMessage} />;
-  }
+  if (customMessage) return <CustomMessageDisplay message={customMessage} />;
 
   useEffect(() => {
     fetchScoreboard();
-    const interval = setInterval(fetchScoreboard, 30000); // 30s auto-refresh
+    const interval = setInterval(fetchScoreboard, 30000);
     return () => clearInterval(interval);
   }, [viewType, isAuthenticated]);
 
@@ -42,91 +38,111 @@ function Scoreboard() {
   };
 
   return (
-    <div style={{ padding: '20px', maxWidth: '1200px', margin: '0 auto', color: '#e0e6ed' }}>
-      <h1 style={{ textAlign: 'center', marginBottom: '30px', color: '#ffffff', fontWeight: '700' }}>Scoreboard</h1>
+    <div className="min-h-screen pt-8 pb-20 px-4 max-w-6xl mx-auto">
+      <motion.div
+        initial={{ opacity: 0, y: -20 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="text-center mb-10"
+      >
+        <h1 className="text-4xl font-heading font-bold mb-6 text-transparent bg-clip-text bg-gradient-to-r from-[var(--neon-blue)] to-[var(--neon-green)] uppercase tracking-widest">
+          Live Intelligence Ranking
+        </h1>
 
-      {/* Tabs */}
-      <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '30px' }}>
-        <button
-          onClick={() => setViewType('teams')}
-          style={{
-            padding: '10px 20px',
-            background: viewType === 'teams' ? '#00ffaa' : 'transparent',
-            color: viewType === 'teams' ? '#000' : '#00ffaa',
-            border: '2px solid #00ffaa',
-            borderRadius: '5px 0 0 5px',
-            cursor: 'pointer',
-            fontWeight: 'bold',
-            transition: 'all 0.3s'
-          }}
-        >
-          Teams
-        </button>
-        <button
-          onClick={() => setViewType('users')}
-          style={{
-            padding: '10px 20px',
-            background: viewType === 'users' ? '#00ffaa' : 'transparent',
-            color: viewType === 'users' ? '#000' : '#00ffaa',
-            border: '2px solid #00ffaa',
-            borderLeft: 'none',
-            borderRadius: '0 5px 5px 0',
-            cursor: 'pointer',
-            fontWeight: 'bold',
-            transition: 'all 0.3s'
-          }}
-        >
-          Users
-        </button>
-      </div>
+        {/* View Switcher */}
+        <div className="inline-flex bg-[rgba(0,0,0,0.3)] p-1 rounded-lg border border-[rgba(255,255,255,0.1)]">
+          <button
+            onClick={() => setViewType('teams')}
+            className={`
+                flex items-center gap-2 px-6 py-2 rounded-md font-bold text-sm tracking-wider transition-all
+                ${viewType === 'teams'
+                ? 'bg-[var(--neon-blue)] text-black shadow-[0_0_15px_rgba(0,243,255,0.4)]'
+                : 'text-[var(--text-secondary)] hover:text-white'}
+              `}
+          >
+            <FaUsers /> SQUADS
+          </button>
+          <button
+            onClick={() => setViewType('users')}
+            className={`
+                flex items-center gap-2 px-6 py-2 rounded-md font-bold text-sm tracking-wider transition-all
+                ${viewType === 'users'
+                ? 'bg-[var(--neon-green)] text-black shadow-[0_0_15px_rgba(0,255,157,0.4)]'
+                : 'text-[var(--text-secondary)] hover:text-white'}
+              `}
+          >
+            <FaUser /> OPERATIVES
+          </button>
+        </div>
+      </motion.div>
 
-      {/* Graph */}
-      <div style={{ marginBottom: '40px', background: '#1a2634', padding: '20px', borderRadius: '10px', boxShadow: '0 4px 6px rgba(0,0,0,0.3)' }}>
-        <h3 style={{ textAlign: 'center', marginBottom: '15px' }}>Top 10 Trend</h3>
-        <ScoreGraph key={viewType} type={viewType} limit={10} />
-      </div>
+      {/* Graph Section */}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.2 }}
+        className="mb-8"
+      >
+        <Card className="p-6 border border-[var(--neon-purple)]/30 shadow-[0_0_30px_rgba(139,92,246,0.1)]">
+          <div className="flex items-center gap-2 mb-4 text-[var(--neon-purple)] font-bold">
+            <FaChartLine /> <span>TOP 10 TREND ANALYSIS</span>
+          </div>
+          <div className="h-[400px] w-full">
+            <ScoreGraph key={viewType} type={viewType} limit={10} />
+          </div>
+        </Card>
+      </motion.div>
 
-      {/* Table */}
-      <div style={{ background: '#1a2634', borderRadius: '10px', overflow: 'hidden', boxShadow: '0 4px 6px rgba(0,0,0,0.3)' }}>
-        <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
-          <thead>
-            <tr style={{ background: '#243447', color: '#b0c4de' }}>
-              <th style={{ padding: '15px', width: '80px', textAlign: 'center' }}>Place</th>
-              <th style={{ padding: '15px' }}>{viewType === 'teams' ? 'Team' : 'User'}</th>
-              <th style={{ padding: '15px', width: '120px', textAlign: 'center' }}>Score</th>
-            </tr>
-          </thead>
-          <tbody>
-            {loading ? (
-              <tr><td colSpan="3" style={{ padding: '30px', textAlign: 'center' }}><Loading size="small" inline text="Loading" /></td></tr>
-            ) : standings.length === 0 ? (
-              <tr><td colSpan="3" style={{ padding: '30px', textAlign: 'center' }}>No visible solves yet</td></tr>
-            ) : (
-              standings.map((entry, idx) => (
-                <tr
-                  key={entry.account_id}
-                  style={{
-                    borderBottom: '1px solid #2b3e50',
-                    background: idx < 3 ? 'rgba(0, 255, 170, 0.05)' : 'transparent'
-                  }}
-                >
-                  <td style={{ padding: '15px', textAlign: 'center', fontWeight: 'bold', fontSize: '1.1em', color: idx < 3 ? '#ffeb3b' : 'inherit' }}>
-                    {entry.pos}
-                  </td>
-                  <td style={{ padding: '15px' }}>
-                    <a href={entry.account_url} style={{ color: '#00ffaa', textDecoration: 'none', fontWeight: '500' }}>
-                      {entry.name}
-                    </a>
-                  </td>
-                  <td style={{ padding: '15px', textAlign: 'center', fontWeight: 'bold', fontSize: '1.2em' }}>
-                    {entry.score}
-                  </td>
-                </tr>
-              ))
-            )}
-          </tbody>
-        </table>
-      </div>
+      {/* Table Section */}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.4 }}
+      >
+        <Card className="overflow-hidden p-0 border border-[rgba(255,255,255,0.1)]">
+          <table className="w-full text-left">
+            <thead>
+              <tr className="bg-[rgba(255,255,255,0.02)] text-[var(--text-secondary)] uppercase text-xs tracking-wider border-b border-[rgba(255,255,255,0.05)]">
+                <th className="p-4 text-center w-24">Rank</th>
+                <th className="p-4">{viewType === 'teams' ? 'Squad Name' : 'Operative Name'}</th>
+                <th className="p-4 text-right w-32">Score</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-[rgba(255,255,255,0.02)]">
+              {loading ? (
+                <tr><td colSpan="3" className="p-8 text-center text-[var(--text-dim)]">Decrypting live data stream...</td></tr>
+              ) : standings.length === 0 ? (
+                <tr><td colSpan="3" className="p-8 text-center text-[var(--text-dim)]">No visible data signatures detected.</td></tr>
+              ) : (
+                standings.map((entry, idx) => (
+                  <tr
+                    key={entry.account_id}
+                    className={`
+                                    hover:bg-[rgba(255,255,255,0.02)] transition-colors
+                                    ${idx < 3 ? 'bg-[rgba(0,255,157,0.03)]' : ''}
+                                `}
+                  >
+                    <td className="p-4 text-center">
+                      {idx === 0 ? <FaTrophy className="mx-auto text-yellow-400 text-xl" /> :
+                        idx === 1 ? <FaTrophy className="mx-auto text-gray-300 text-lg" /> :
+                          idx === 2 ? <FaTrophy className="mx-auto text-amber-700 text-lg" /> :
+                            <span className="font-mono text-[var(--text-secondary)]">#{entry.pos}</span>
+                      }
+                    </td>
+                    <td className="p-4">
+                      <a href={entry.account_url} className="text-[var(--text-primary)] hover:text-[var(--neon-green)] font-bold transition-colors">
+                        {entry.name}
+                      </a>
+                    </td>
+                    <td className="p-4 text-right font-mono font-bold text-[var(--neon-blue)]">
+                      {entry.score}
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </Card>
+      </motion.div>
     </div>
   );
 }

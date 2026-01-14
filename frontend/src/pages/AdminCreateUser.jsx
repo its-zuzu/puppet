@@ -1,8 +1,11 @@
 import { useState, useContext, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
+import { FaUserPlus, FaArrowLeft } from 'react-icons/fa';
 import AuthContext from '../context/AuthContext';
-import './AdminCreateUser.css';
+import Card from '../components/ui/Card';
+import Input from '../components/ui/Input';
+import Button from '../components/ui/Button';
 
 function AdminCreateUser() {
   const { isAuthenticated, user } = useContext(AuthContext);
@@ -16,177 +19,96 @@ function AdminCreateUser() {
   });
 
   const [error, setError] = useState('');
-  const [successMessage, setSuccessMessage] = useState('');
+  const [success, setSuccess] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
-    if (!isAuthenticated) {
-      navigate('/login');
-    } else if (user && user.role !== 'admin') {
-      navigate('/');
-    }
+    if (!isAuthenticated || (user && user.role !== 'admin')) navigate('/login');
   }, [isAuthenticated, user, navigate]);
 
-  const handleChange = (e) => {
-    const { name, value } = e.target;
-    setFormData({
-      ...formData,
-      [name]: value
-    });
-    setError('');
-  };
-
-  const validateForm = () => {
-    if (!formData.username || !formData.email || !formData.password || !formData.confirmPassword) {
-      setError('All fields are required');
-      return false;
-    }
-
-    if (formData.username.length < 3) {
-      setError('Username must be at least 3 characters');
-      return false;
-    }
-
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(formData.email)) {
-      setError('Please enter a valid email address');
-      return false;
-    }
-
-    if (formData.password.length < 6) {
-      setError('Password must be at least 6 characters');
-      return false;
-    }
-
-    if (formData.password !== formData.confirmPassword) {
-      setError('Passwords do not match');
-      return false;
-    }
-
-    return true;
-  };
+  const handleChange = (e) => setFormData({ ...formData, [e.target.name]: e.target.value });
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-
-    if (!validateForm()) {
-      return;
-    }
+    if (formData.password !== formData.confirmPassword) { setError('Passwords do not match'); return; }
 
     setIsSubmitting(true);
-    setError('');
+    setError(''); setSuccess('');
 
     try {
-      const res = await axios.post(
-        '/api/auth/register-admin',
-        {
-          username: formData.username,
-          email: formData.email,
-          password: formData.password
-        }
-      );
-
-      setSuccessMessage('User created successfully!');
-      setFormData({
-        username: '',
-        email: '',
-        password: '',
-        confirmPassword: ''
+      await axios.post('/api/auth/register-admin', {
+        username: formData.username,
+        email: formData.email,
+        password: formData.password
       });
-
-      setTimeout(() => {
-        navigate('/admin');
-      }, 2000);
+      setSuccess('Operative profile created successfully.');
+      setTimeout(() => navigate('/admin'), 1500);
     } catch (err) {
-      setError(err.response?.data?.message || 'Failed to create user');
+      setError(err.response?.data?.message || 'Creation failed');
     } finally {
       setIsSubmitting(false);
     }
   };
 
   return (
-    <div className="admin-create-user">
-      <div className="create-user-container">
-        <div className="create-user-header">
-          <h1>Create New <span className="highlight">User</span></h1>
-          <p>Add a new user to the platform</p>
-        </div>
+    <div className="min-h-screen pt-8 pb-20 px-4 flex justify-center items-start">
+      <div className="w-full max-w-lg">
+        <button onClick={() => navigate('/admin')} className="mb-6 flex items-center gap-2 text-[var(--text-secondary)] hover:text-white transition-colors">
+          <FaArrowLeft /> Return to Command
+        </button>
 
-        {error && <div className="error-message">{error}</div>}
-        {successMessage && <div className="success-message">{successMessage}</div>}
+        <Card className="p-8">
+          <div className="flex items-center gap-3 mb-6 border-b border-[rgba(255,255,255,0.1)] pb-4">
+            <FaUserPlus className="text-2xl text-[var(--neon-blue)]" />
+            <h1 className="text-2xl font-heading font-bold text-white uppercase tracking-wider">Initialize Operative</h1>
+          </div>
 
-        <form onSubmit={handleSubmit} className="create-user-form">
-          <div className="form-group">
-            <label htmlFor="username">Username</label>
-            <input
-              type="text"
-              id="username"
+          {error && <div className="p-3 mb-4 bg-red-900/30 border border-red-500 rounded text-red-300 text-sm font-bold text-center">{error}</div>}
+          {success && <div className="p-3 mb-4 bg-green-900/30 border border-green-500 rounded text-green-300 text-sm font-bold text-center">{success}</div>}
+
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <Input
+              label="Username"
               name="username"
               value={formData.username}
               onChange={handleChange}
-              placeholder="Enter username (min 3 characters)"
               required
             />
-          </div>
-
-          <div className="form-group">
-            <label htmlFor="email">Email</label>
-            <input
+            <Input
+              label="Email Address"
               type="email"
-              id="email"
               name="email"
               value={formData.email}
               onChange={handleChange}
-              placeholder="Enter email address"
               required
             />
-          </div>
+            <Input
+              label="Password"
+              type="password"
+              name="password"
+              value={formData.password}
+              onChange={handleChange}
+              required
+            />
+            <Input
+              label="Confirm Password"
+              type="password"
+              name="confirmPassword"
+              value={formData.confirmPassword}
+              onChange={handleChange}
+              required
+            />
 
-          <div className="form-row">
-            <div className="form-group">
-              <label htmlFor="password">Password</label>
-              <input
-                type="password"
-                id="password"
-                name="password"
-                value={formData.password}
-                onChange={handleChange}
-                placeholder="Enter password (min 6 characters)"
-                required
-              />
+            <div className="pt-4 flex gap-4">
+              <Button type="button" variant="secondary" onClick={() => navigate('/admin')} className="w-1/3">
+                Cancel
+              </Button>
+              <Button type="submit" variant="primary" disabled={isSubmitting} className="w-2/3">
+                {isSubmitting ? 'Initializing...' : 'Create Profile'}
+              </Button>
             </div>
-
-            <div className="form-group">
-              <label htmlFor="confirmPassword">Confirm Password</label>
-              <input
-                type="password"
-                id="confirmPassword"
-                name="confirmPassword"
-                value={formData.confirmPassword}
-                onChange={handleChange}
-                placeholder="Confirm password"
-                required
-              />
-            </div>
-          </div>
-
-          <div className="form-actions">
-            <button
-              type="button"
-              className="btn-secondary"
-              onClick={() => navigate('/admin')}
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              className="btn-primary"
-              disabled={isSubmitting}
-            >
-              {isSubmitting ? 'Creating...' : 'Create User'}
-            </button>
-          </div>
-        </form>
+          </form>
+        </Card>
       </div>
     </div>
   );

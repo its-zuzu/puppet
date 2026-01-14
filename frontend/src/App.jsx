@@ -15,6 +15,7 @@ import ScrollToTop from './components/ScrollToTop'
 import BackToTopButton from './components/BackToTopButton'
 
 import Loading from './components/Loading';
+import Background from './components/Background';
 
 const PageLoader = () => <Loading text="INITIALIZING..." />;
 
@@ -85,6 +86,7 @@ function App() {
       <Router>
         <ScrollToTop />
         <div className="app-container">
+          <Background />
           <Navbar />
           <main className="main-content">
             <Suspense fallback={<PageLoader />}>

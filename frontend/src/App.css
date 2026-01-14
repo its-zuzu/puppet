@@ -10,7 +10,7 @@
   min-height: 100vh;
   display: flex;
   flex-direction: column;
-  background-color: #0f1923;
+  /* background-color: #0f1923; handled by Background component */
   color: #e0e0e0;
 }
 
@@ -222,6 +222,7 @@
     padding: 0 1rem;
   }
 }
+
 /* Comprehensive Responsive Design */
 @media (min-width: 1920px) {
   .main-content {
@@ -288,7 +289,8 @@
 }
 
 /* High DPI displays */
-@media (-webkit-min-device-pixel-ratio: 2), (min-resolution: 192dpi) {
+@media (-webkit-min-device-pixel-ratio: 2),
+(min-resolution: 192dpi) {
   * {
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
