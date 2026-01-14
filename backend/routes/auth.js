@@ -134,8 +134,7 @@ const clearTokenCookie = (res) => {
 router.post('/register', async (req, res) => {
   return res.status(403).json({
     success: false,
-    message: 'Public registration is currently disabled. Please contact the administrator for account creation.',
-    adminContact: 'ctfquest@gmail.com',
+    message: 'Public registration is currently disabled.',
     registrationDisabled: true
   });
 });

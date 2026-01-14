@@ -25,6 +25,11 @@ const logActivity = (action, details = {}) => {
 
 const config = require('../config');
 
+// Helper function to validate MongoDB ObjectId
+const isValidObjectId = (id) => {
+  return id && /^[0-9a-fA-F]{24}$/.test(id);
+};
+
 // ... (other imports)
 
 // Redis-based Rate limiting for flag submissions
@@ -198,6 +203,14 @@ router.get('/', sanitizeInput, async (req, res) => {
 // @access  Private
 router.get('/:id/solves', protect, async (req, res) => {
   try {
+    // Validate ObjectId format
+    if (!isValidObjectId(req.params.id)) {
+      return res.status(404).json({
+        success: false,
+        message: 'Challenge not found'
+      });
+    }
+
     const challenge = await Challenge.findById(req.params.id);
 
     if (!challenge) {
@@ -239,7 +252,7 @@ router.get('/:id/solves', protect, async (req, res) => {
     console.error('Error fetching solves:', error);
     res.status(500).json({
       success: false,
-      message: error.message
+      message: 'Error fetching challenge solves'
     });
   }
 });
@@ -253,6 +266,14 @@ router.post('/:id/unlock-hint', protect, checkEventNotEnded, async (req, res) =>
     const userId = req.user._id || req.user.id;
 
     console.log('Unlock hint request:', { userId, hintIndex, challengeId: req.params.id });
+
+    // Validate ObjectId format
+    if (!isValidObjectId(req.params.id)) {
+      return res.status(404).json({
+        success: false,
+        message: 'Challenge not found'
+      });
+    }
 
     // Validate hint index
     if (hintIndex === undefined || hintIndex < 0) {
@@ -395,7 +416,7 @@ router.post('/:id/unlock-hint', protect, checkEventNotEnded, async (req, res) =>
     console.error('Error unlocking hint:', error);
     res.status(500).json({
       success: false,
-      message: error.message
+      message: 'Error unlocking hint'
     });
   }
 });
@@ -405,6 +426,14 @@ router.post('/:id/unlock-hint', protect, checkEventNotEnded, async (req, res) =>
 // @access  Public
 router.get('/:id', async (req, res) => {
   try {
+    // Validate ObjectId format
+    if (!req.params.id.match(/^[0-9a-fA-F]{24}$/)) {
+      return res.status(404).json({
+        success: false,
+        message: 'Challenge not found'
+      });
+    }
+
     const challenge = await Challenge.findById(req.params.id).select('-flag');
 
     if (!challenge) {
@@ -438,9 +467,10 @@ router.get('/:id', async (req, res) => {
       unlockedHints
     });
   } catch (error) {
+    console.error('Error fetching challenge:', error);
     res.status(500).json({
       success: false,
-      message: error.message
+      message: 'Error fetching challenge'
     });
   }
 });
@@ -486,6 +516,14 @@ router.post('/:id/submit', protect, sanitizeInput, checkEventNotEnded, async (re
       return res.status(400).json({
         success: false,
         message: error.message
+      });
+    }
+
+    // Validate ObjectId format
+    if (!isValidObjectId(req.params.id)) {
+      return res.status(404).json({
+        success: false,
+        message: 'Challenge not found'
       });
     }
 
@@ -800,6 +838,14 @@ router.post('/:id/submit', protect, sanitizeInput, checkEventNotEnded, async (re
 // @access  Private/Admin
 router.delete('/:id', protect, authorize('admin', 'superadmin'), async (req, res) => {
   try {
+    // Validate ObjectId format
+    if (!isValidObjectId(req.params.id)) {
+      return res.status(404).json({
+        success: false,
+        message: 'Challenge not found'
+      });
+    }
+
     const challenge = await Challenge.findById(req.params.id);
 
     if (!challenge) {
@@ -823,9 +869,10 @@ router.delete('/:id', protect, authorize('admin', 'superadmin'), async (req, res
       message: 'Challenge deleted successfully'
     });
   } catch (error) {
+    console.error('Error deleting challenge:', error);
     res.status(500).json({
       success: false,
-      message: error.message
+      message: 'Error deleting challenge'
     });
   }
 });
@@ -839,6 +886,14 @@ router.put('/:id', protect, authorize('admin', 'superadmin'), async (req, res) =
       id: req.params.id,
       body: req.body
     });
+
+    // Validate ObjectId format
+    if (!isValidObjectId(req.params.id)) {
+      return res.status(404).json({
+        success: false,
+        message: 'Challenge not found'
+      });
+    }
 
     const challenge = await Challenge.findById(req.params.id);
 
@@ -887,7 +942,7 @@ router.put('/:id', protect, authorize('admin', 'superadmin'), async (req, res) =
     console.error('Error updating challenge:', error);
     res.status(500).json({
       success: false,
-      message: error.message
+      message: 'Error updating challenge'
     });
   }
 });
