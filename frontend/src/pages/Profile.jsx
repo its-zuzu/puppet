@@ -36,20 +36,12 @@ function Profile() {
       try {
         if (user && user.solvedChallenges && user.solvedChallenges.length > 0) {
           const solved = [];
-          let easy = 0, medium = 0, hard = 0, insane = 0;
           
           for (const challengeId of user.solvedChallenges) {
             try {
               const res = await axios.get(`/api/challenges/${challengeId}`);
               const challenge = res.data.data;
               solved.push(challenge);
-              
-              // Count by difficulty
-              const diff = challenge.difficulty?.toLowerCase();
-              if (diff === 'easy') easy++;
-              else if (diff === 'medium') medium++;
-              else if (diff === 'hard') hard++;
-              else if (diff === 'insane') insane++;
             } catch (err) {
               console.error(`Error fetching challenge ${challengeId}:`, err);
             }
@@ -59,21 +51,13 @@ function Profile() {
           setStats({
             totalPoints: user.points || 0,
             totalSolves: solved.length,
-            rank: user.rank || 0,
-            easyCount: easy,
-            mediumCount: medium,
-            hardCount: hard,
-            insaneCount: insane
+            rank: user.rank || 0
           });
         } else {
           setStats({
             totalPoints: user?.points || 0,
             totalSolves: 0,
-            rank: user?.rank || 0,
-            easyCount: 0,
-            mediumCount: 0,
-            hardCount: 0,
-            insaneCount: 0
+            rank: user?.rank || 0
           });
         }
       } catch (err) {
@@ -206,54 +190,6 @@ function Profile() {
             </CardBody>
           </Card>
         </motion.div>
-      </motion.div>
-
-      {/* Difficulty Breakdown */}
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.4 }}
-      >
-        <Card className="difficulty-card">
-          <CardHeader>
-            <h2 className="section-title">
-              <Target size={20} />
-              Difficulty Breakdown
-            </h2>
-          </CardHeader>
-          <CardBody>
-            <div className="difficulty-stats">
-              <div className="difficulty-stat difficulty-stat--easy">
-                <div className="difficulty-stat-bar" style={{ width: `${stats.totalSolves > 0 ? (stats.easyCount / stats.totalSolves) * 100 : 0}%` }}></div>
-                <div className="difficulty-stat-info">
-                  <span className="difficulty-stat-label">Easy</span>
-                  <span className="difficulty-stat-value">{stats.easyCount}</span>
-                </div>
-              </div>
-              <div className="difficulty-stat difficulty-stat--medium">
-                <div className="difficulty-stat-bar" style={{ width: `${stats.totalSolves > 0 ? (stats.mediumCount / stats.totalSolves) * 100 : 0}%` }}></div>
-                <div className="difficulty-stat-info">
-                  <span className="difficulty-stat-label">Medium</span>
-                  <span className="difficulty-stat-value">{stats.mediumCount}</span>
-                </div>
-              </div>
-              <div className="difficulty-stat difficulty-stat--hard">
-                <div className="difficulty-stat-bar" style={{ width: `${stats.totalSolves > 0 ? (stats.hardCount / stats.totalSolves) * 100 : 0}%` }}></div>
-                <div className="difficulty-stat-info">
-                  <span className="difficulty-stat-label">Hard</span>
-                  <span className="difficulty-stat-value">{stats.hardCount}</span>
-                </div>
-              </div>
-              <div className="difficulty-stat difficulty-stat--insane">
-                <div className="difficulty-stat-bar" style={{ width: `${stats.totalSolves > 0 ? (stats.insaneCount / stats.totalSolves) * 100 : 0}%` }}></div>
-                <div className="difficulty-stat-info">
-                  <span className="difficulty-stat-label">Insane</span>
-                  <span className="difficulty-stat-value">{stats.insaneCount}</span>
-                </div>
-              </div>
-            </div>
-          </CardBody>
-        </Card>
       </motion.div>
 
       {/* Solved Challenges */}

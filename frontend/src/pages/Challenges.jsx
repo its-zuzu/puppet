@@ -20,13 +20,6 @@ const CATEGORIES = [
   { id: 'misc', name: 'Miscellaneous', icon: null },
 ];
 
-const DIFFICULTIES = {
-  easy: { label: 'Easy', color: 'success' },
-  medium: { label: 'Medium', color: 'warning' },
-  hard: { label: 'Hard', color: 'danger' },
-  insane: { label: 'Insane', color: 'info' },
-};
-
 function Challenges() {
   const { user, isAuthenticated } = useContext(AuthContext);
   const navigate = useNavigate();
@@ -36,7 +29,6 @@ function Challenges() {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('all');
-  const [selectedDifficulty, setSelectedDifficulty] = useState('all');
   const [sortBy, setSortBy] = useState('points'); // points, solves, title
   
   useEffect(() => {
@@ -45,7 +37,7 @@ function Challenges() {
 
   useEffect(() => {
     filterChallenges();
-  }, [challenges, searchTerm, selectedCategory, selectedDifficulty, sortBy]);
+  }, [challenges, searchTerm, selectedCategory, sortBy]);
 
   const fetchChallenges = async () => {
     try {
@@ -74,13 +66,6 @@ function Challenges() {
     if (selectedCategory !== 'all') {
       filtered = filtered.filter(c =>
         c.category?.toLowerCase() === selectedCategory.toLowerCase()
-      );
-    }
-
-    // Difficulty filter
-    if (selectedDifficulty !== 'all') {
-      filtered = filtered.filter(c =>
-        c.difficulty?.toLowerCase() === selectedDifficulty.toLowerCase()
       );
     }
 
@@ -211,22 +196,8 @@ function Challenges() {
               </div>
             </div>
 
-            {/* Difficulty & Sort */}
+            {/* Sort */}
             <div className="filter-row">
-              <div className="filter-group">
-                <label className="filter-label">Difficulty</label>
-                <select
-                  className="filter-select"
-                  value={selectedDifficulty}
-                  onChange={(e) => setSelectedDifficulty(e.target.value)}
-                >
-                  <option value="all">All</option>
-                  {Object.entries(DIFFICULTIES).map(([key, val]) => (
-                    <option key={key} value={key}>{val.label}</option>
-                  ))}
-                </select>
-              </div>
-
               <div className="filter-group">
                 <label className="filter-label">Sort By</label>
                 <select
@@ -291,9 +262,6 @@ function Challenges() {
                         )}
                       </div>
                       <div className="challenge-meta">
-                        <Badge variant={DIFFICULTIES[challenge.difficulty?.toLowerCase()]?.color || 'primary'}>
-                          {DIFFICULTIES[challenge.difficulty?.toLowerCase()]?.label || challenge.difficulty}
-                        </Badge>
                         <span className="challenge-category">
                           {challenge.category}
                         </span>

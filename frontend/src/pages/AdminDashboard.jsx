@@ -668,7 +668,6 @@ function AdminDashboard() {
                   <th>Title</th>
                   <th>Category</th>
                   <th>Points</th>
-                  <th>Difficulty</th>
                   <th>Visible</th>
                   <th>Actions</th>
                 </tr>
@@ -679,7 +678,6 @@ function AdminDashboard() {
                     <td>{c.title}</td>
                     <td>{c.category}</td>
                     <td>{c.points}</td>
-                    <td>{c.difficulty}</td>
                     <td>
                       <button
                         className={`visibility-btn ${c.isVisible ? 'visible' : 'hidden'}`}
