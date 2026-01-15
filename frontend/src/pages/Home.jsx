@@ -1,9 +1,10 @@
 import { useContext, useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { motion } from 'framer-motion';
+import { motion, useAnimation, useScroll, useTransform } from 'framer-motion';
 import { 
   Trophy, Target, Shield, Zap, Users, Award, 
-  TrendingUp, ChevronRight, Code, Lock, Search 
+  TrendingUp, ChevronRight, Code, Lock, Search,
+  Terminal, Flag, Cpu, Database, Network, ChevronDown
 } from 'lucide-react';
 import AuthContext from '../context/AuthContext';
 import { Button } from '../components/ui';
@@ -13,267 +14,409 @@ import './Home.css';
 function Home() {
   const { isAuthenticated, user } = useContext(AuthContext);
   const navigate = useNavigate();
-  const [stats, setStats] = useState({ challenges: 0, users: 0, solves: 0 });
+  const [terminalText, setTerminalText] = useState('');
+  const [terminalLine, setTerminalLine] = useState(0);
+  
+  // Scroll progress
+  const { scrollYProgress } = useScroll();
+  
+  // Parallax effects
+  const y1 = useTransform(scrollYProgress, [0, 1], [0, -100]);
+  const y2 = useTransform(scrollYProgress, [0, 1], [0, -200]);
+  const opacity = useTransform(scrollYProgress, [0, 0.5], [1, 0]);
+
+  const terminalCommands = [
+    '$ sudo ./ctfquest --init',
+    '[✓] System initialized...',
+    '[✓] Connecting to challenge matrix...',
+    '[✓] Loading exploit frameworks...',
+    '[✓] Scanning for vulnerabilities...',
+    '[!] Access granted. Ready to hack.',
+    '$ exploit --start_',
+  ];
 
   useEffect(() => {
-    // Set dynamic stats if available from user context
-    if (user) {
-      setStats({
-        challenges: user.solvedChallenges?.length || 0,
-        users: user.points || 0,
-        solves: user.solvedChallenges?.length || 0
-      });
+    if (terminalLine < terminalCommands.length) {
+      const command = terminalCommands[terminalLine];
+      let charIndex = 0;
+      
+      const typeInterval = setInterval(() => {
+        if (charIndex <= command.length) {
+          setTerminalText(prev => {
+            const lines = prev.split('\n');
+            lines[terminalLine] = command.substring(0, charIndex);
+            return lines.join('\n');
+          });
+          charIndex++;
+        } else {
+          clearInterval(typeInterval);
+          setTimeout(() => {
+            setTerminalLine(prev => prev + 1);
+            setTerminalText(prev => prev + '\n');
+          }, 500);
+        }
+      }, 50);
+
+      return () => clearInterval(typeInterval);
     }
-  }, [user]);
+  }, [terminalLine]);
 
   const features = [
     {
-      icon: <Code className="feature-icon" />,
+      icon: <Code size={28} />,
       title: "Web Exploitation",
-      description: "Master XSS, SQL injection, CSRF, and advanced web vulnerabilities",
-      color: "primary"
+      description: "Master XSS, SQL injection, and advanced web vulnerabilities",
+      color: "#00ff88",
+      bgColor: "rgba(0, 255, 136, 0.1)"
     },
     {
-      icon: <Lock className="feature-icon" />,
+      icon: <Lock size={28} />,
       title: "Cryptography",
-      description: "Break ciphers, analyze encryption, and understand cryptographic protocols",
-      color: "success"
+      description: "Break ciphers and understand cryptographic protocols",
+      color: "#00b4ff",
+      bgColor: "rgba(0, 180, 255, 0.1)"
     },
     {
-      icon: <Search className="feature-icon" />,
+      icon: <Search size={28} />,
       title: "Forensics",
-      description: "Investigate digital artifacts, analyze memory dumps, and recover hidden data",
-      color: "warning"
+      description: "Investigate artifacts and recover hidden data",
+      color: "#ff00ff",
+      bgColor: "rgba(255, 0, 255, 0.1)"
     },
     {
-      icon: <Shield className="feature-icon" />,
-      title: "Binary Exploitation",
-      description: "Buffer overflows, ROP chains, and reverse engineering challenges",
-      color: "danger"
+      icon: <Cpu size={28} />,
+      title: "Reverse Engineering",
+      description: "Disassemble binaries, analyze code, and break protections",
+      color: "#ff0055",
+      bgColor: "rgba(255, 0, 85, 0.1)"
+    },
+    {
+      icon: <Database size={28} />,
+      title: "OSINT",
+      description: "Open source intelligence and reconnaissance",
+      color: "#ffc107",
+      bgColor: "rgba(255, 193, 7, 0.1)"
+    },
+    {
+      icon: <Network size={28} />,
+      title: "Miscellaneous",
+      description: "Unique challenges that don't fit traditional categories",
+      color: "#bd00ff",
+      bgColor: "rgba(189, 0, 255, 0.1)"
     }
   ];
 
-  const containerVariants = {
-    hidden: { opacity: 0 },
-    visible: {
-      opacity: 1,
-      transition: { staggerChildren: 0.1 }
-    }
-  };
-
-  const itemVariants = {
-    hidden: { opacity: 0, y: 20 },
-    visible: { opacity: 1, y: 0 }
-  };
-
   return (
-    <div className="home-page">
-      {/* Hero Section */}
-      <section className="hero-section">
-        <motion.div 
-          className="hero-content"
-          initial={{ opacity: 0, y: 30 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.8 }}
-        >
-          <motion.div 
-            className="hero-badge"
-            initial={{ opacity: 0, scale: 0.8 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ delay: 0.2 }}
+    <div className="htb-home-container">
+      {/* Scroll Progress Bar */}
+      <motion.div 
+        className="htb-scroll-progress"
+        style={{ scaleX: scrollYProgress }}
+      />
+      
+      {/* Animated Grid Background */}
+      <motion.div 
+        className="htb-home-grid-bg"
+        style={{ y: y1 }}
+      />
+      
+      {/* Hero Section with Floating Terminal */}
+      <section className="htb-hero-section">
+        <div className="htb-hero-content">
+          <motion.div
+            initial={{ opacity: 0, y: 30 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8 }}
+            className="htb-hero-text"
           >
-            <Shield size={16} />
-            <span>Professional CTF Platform</span>
+            <motion.div 
+              className="htb-hero-badge"
+              initial={{ opacity: 0, scale: 0.8 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ delay: 0.3 }}
+            >
+              <Shield size={16} />
+              <span>CTFQUEST 2026</span>
+            </motion.div>
+
+            <h1 className="htb-hero-title">
+              HACK THE
+              <br />
+              <span className="htb-gradient-text">IMPOSSIBLE</span>
+            </h1>
+
+            <p className="htb-hero-description">
+              Challenge yourself with cutting-edge cybersecurity puzzles.
+              Compete with elite hackers. Dominate the leaderboard.
+            </p>
+
+            <div className="htb-hero-actions">
+              {isAuthenticated ? (
+                <Button 
+                  variant="primary" 
+                  size="lg"
+                  onClick={() => navigate('/challenges')}
+                >
+                  START HACKING
+                </Button>
+              ) : (
+                <>
+                  <Button 
+                    variant="primary" 
+                    size="lg"
+                    onClick={() => navigate('/register')}
+                  >
+                    REGISTER NOW
+                  </Button>
+                  <Button 
+                    variant="outline" 
+                    size="lg"
+                    onClick={() => navigate('/login')}
+                  >
+                    SIGN IN
+                  </Button>
+                </>
+              )}
+              <Button 
+                variant="ghost" 
+                size="lg"
+                onClick={() => navigate('/scoreboard')}
+              >
+                LEADERBOARD
+              </Button>
+            </div>
+
+            {isAuthenticated && user && (
+              <motion.div 
+                className="htb-user-quick-stats"
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.8 }}
+              >
+                <div className="htb-quick-stat">
+                  <Trophy size={20} />
+                  <div>
+                    <span className="htb-stat-value">{user.points || 0}</span>
+                    <span className="htb-stat-label">Points</span>
+                  </div>
+                </div>
+                <div className="htb-quick-stat">
+                  <Flag size={20} />
+                  <div>
+                    <span className="htb-stat-value">{user.solvedChallenges?.length || 0}</span>
+                    <span className="htb-stat-label">Flags</span>
+                  </div>
+                </div>
+                <div className="htb-quick-stat">
+                  <TrendingUp size={20} />
+                  <div>
+                    <span className="htb-stat-value">#{user.rank || '—'}</span>
+                    <span className="htb-stat-label">Rank</span>
+                  </div>
+                </div>
+              </motion.div>
+            )}
           </motion.div>
 
-          <h1 className="hero-title">
-            Master <span className="gradient-text">Cybersecurity</span>
-            <br />
-            Through Competition
-          </h1>
-
-          <p className="hero-description">
-            Join thousands of hackers worldwide in solving real-world security challenges. 
-            Practice your skills, compete on leaderboards, and level up your expertise.
-          </p>
-
-          <div className="hero-actions">
-            <Button 
-              variant="primary" 
-              size="lg"
-              icon={<Target size={20} />}
-              onClick={() => navigate('/challenges')}
-            >
-              Explore Challenges
-            </Button>
-            <Button 
-              variant="outline" 
-              size="lg"
-              icon={<Trophy size={20} />}
-              onClick={() => navigate('/scoreboard')}
-            >
-              View Leaderboard
-            </Button>
-          </div>
-
-          {isAuthenticated && user && (
-            <motion.div 
-              className="user-quick-stats"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ delay: 0.5 }}
-            >
-              <div className="quick-stat">
-                <Trophy size={18} />
-                <div>
-                  <span className="stat-value">{user.points || 0}</span>
-                  <span className="stat-label">Points</span>
-                </div>
+          {/* Floating Terminal */}
+          <motion.div
+            className="htb-floating-terminal"
+            initial={{ opacity: 0, x: 50, rotateY: -15 }}
+            animate={{ opacity: 1, x: 0, rotateY: 0 }}
+            transition={{ duration: 1, delay: 0.5 }}
+          >
+            <div className="htb-terminal-header">
+              <div className="htb-terminal-buttons">
+                <span className="htb-terminal-btn htb-terminal-close"></span>
+                <span className="htb-terminal-btn htb-terminal-minimize"></span>
+                <span className="htb-terminal-btn htb-terminal-maximize"></span>
               </div>
-              <div className="quick-stat">
-                <Award size={18} />
-                <div>
-                  <span className="stat-value">{user.solvedChallenges?.length || 0}</span>
-                  <span className="stat-label">Solves</span>
-                </div>
+              <div className="htb-terminal-title">
+                <Terminal size={14} />
+                <span>root@ctfquest:~#</span>
               </div>
-              <div className="quick-stat">
-                <TrendingUp size={18} />
-                <div>
-                  <span className="stat-value">#{user.rank || '—'}</span>
-                  <span className="stat-label">Rank</span>
-                </div>
-              </div>
-            </motion.div>
-          )}
+            </div>
+            <div className="htb-terminal-body">
+              <pre className="htb-terminal-text">{terminalText}<span className="htb-terminal-cursor">|</span></pre>
+            </div>
+          </motion.div>
+        </div>
+
+        {/* Floating Elements */}
+        <motion.div 
+          className="htb-floating-element htb-float-1"
+          animate={{
+            y: [0, -20, 0],
+            rotate: [0, 5, 0]
+          }}
+          transition={{
+            duration: 4,
+            repeat: Infinity,
+            ease: "easeInOut"
+          }}
+        >
+          <Lock size={24} />
+        </motion.div>
+        <motion.div 
+          className="htb-floating-element htb-float-2"
+          animate={{
+            y: [0, 20, 0],
+            rotate: [0, -5, 0]
+          }}
+          transition={{
+            duration: 5,
+            repeat: Infinity,
+            ease: "easeInOut"
+          }}
+        >
+          <Code size={24} />
+        </motion.div>
+        <motion.div 
+          className="htb-floating-element htb-float-3"
+          animate={{
+            y: [0, -15, 0],
+            rotate: [0, 10, 0]
+          }}
+          transition={{
+            duration: 6,
+            repeat: Infinity,
+            ease: "easeInOut"
+          }}
+        >
+          <Shield size={24} />
         </motion.div>
 
-        <div className="hero-decoration">
-          <div className="grid-overlay"></div>
-          <div className="glow-orb glow-orb-1"></div>
-          <div className="glow-orb glow-orb-2"></div>
-        </div>
+        {/* Scroll Indicator */}
+        <motion.div 
+          className="htb-scroll-indicator"
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ 
+            opacity: 1, 
+            y: 0,
+          }}
+          transition={{ delay: 1.5 }}
+          onClick={() => {
+            document.querySelector('.htb-categories-section')?.scrollIntoView({ behavior: 'smooth' });
+          }}
+        >
+          <motion.div
+            className="htb-scroll-icon"
+            animate={{ 
+              y: [0, 10, 0],
+            }}
+            transition={{
+              duration: 2,
+              repeat: Infinity,
+              ease: "easeInOut"
+            }}
+          >
+            <ChevronDown size={28} />
+            <ChevronDown size={28} />
+          </motion.div>
+          <span className="htb-scroll-text">Scroll to explore</span>
+        </motion.div>
       </section>
 
-      {/* Features Section */}
-      <section className="features-section">
+      {/* Challenge Categories */}
+      <section className="htb-categories-section">
         <motion.div 
-          className="section-header"
-          initial={{ opacity: 0 }}
-          whileInView={{ opacity: 1 }}
+          className="htb-section-header"
+          initial={{ opacity: 0, y: 30 }}
+          whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
+          transition={{ duration: 0.6 }}
         >
-          <h2 className="section-title">Challenge Categories</h2>
-          <p className="section-subtitle">
-            Sharpen your skills across multiple cybersecurity domains
-          </p>
+          <div className="htb-section-header-content">
+            <span className="htb-section-tag">PLATFORM</span>
+            <h2 className="htb-section-title">CHALLENGE CATEGORIES</h2>
+            <p className="htb-section-subtitle">
+              Master multiple domains of cybersecurity
+            </p>
+          </div>
         </motion.div>
 
         <motion.div 
-          className="features-grid"
-          variants={containerVariants}
+          className="htb-categories-grid"
           initial="hidden"
           whileInView="visible"
           viewport={{ once: true }}
+          variants={{
+            hidden: {},
+            visible: {
+              transition: { staggerChildren: 0.08 }
+            }
+          }}
         >
           {features.map((feature, index) => (
-            <motion.div key={index} variants={itemVariants}>
-              <Card className={`feature-card feature-card--${feature.color}`} hover>
-                <CardBody>
-                  <div className={`feature-icon-wrapper feature-icon--${feature.color}`}>
-                    {feature.icon}
-                  </div>
-                  <h3 className="feature-title">{feature.title}</h3>
-                  <p className="feature-description">{feature.description}</p>
-                </CardBody>
-              </Card>
+            <motion.div
+              key={index}
+              variants={{
+                hidden: { opacity: 0, y: 20 },
+                visible: { opacity: 1, y: 0 }
+              }}
+              className="htb-category-card"
+              style={{ 
+                '--card-color': feature.color,
+                '--card-bg': feature.bgColor
+              }}
+              onClick={() => navigate('/challenges')}
+            >
+              <div className="htb-category-header">
+                <div className="htb-category-icon" style={{ 
+                  color: feature.color,
+                  borderColor: feature.color 
+                }}>
+                  {feature.icon}
+                </div>
+                <div className="htb-category-arrow">
+                  <ChevronRight size={20} style={{ color: feature.color }} />
+                </div>
+              </div>
+              <h3 className="htb-category-title">{feature.title}</h3>
+              <p className="htb-category-description">{feature.description}</p>
+              <div className="htb-category-glow" style={{ background: `radial-gradient(circle at center, ${feature.color}15 0%, transparent 70%)` }}></div>
             </motion.div>
           ))}
         </motion.div>
       </section>
 
       {/* CTA Section */}
-      <section className="cta-section">
-        <Card className="cta-card" glow>
-          <CardBody>
-            <motion.div 
-              className="cta-content"
-              initial={{ opacity: 0, scale: 0.95 }}
-              whileInView={{ opacity: 1, scale: 1 }}
-              viewport={{ once: true }}
-            >
-              <div className="cta-text">
-                <h2 className="cta-title">Ready to Start Hacking?</h2>
-                <p className="cta-description">
-                  {isAuthenticated 
-                    ? "Your next challenge awaits. Continue your journey to the top."
-                    : "Join our community and start solving challenges today."}
-                </p>
-              </div>
-              <div className="cta-actions">
-                {isAuthenticated ? (
-                  <Button 
-                    variant="primary" 
-                    size="lg"
-                    icon={<ChevronRight size={20} />}
-                    onClick={() => navigate('/challenges')}
-                  >
-                    Continue Learning
-                  </Button>
-                ) : (
-                  <>
-                    <Button 
-                      variant="primary" 
-                      size="lg"
-                      onClick={() => navigate('/register')}
-                    >
-                      Get Started
-                    </Button>
-                    <Button 
-                      variant="ghost" 
-                      size="lg"
-                      onClick={() => navigate('/login')}
-                    >
-                      Sign In
-                    </Button>
-                  </>
-                )}
-              </div>
-            </motion.div>
-          </CardBody>
-        </Card>
-      </section>
-
-      {/* Platform Stats Section */}
-      <section className="stats-section">
+      <section className="htb-cta-section">
         <motion.div 
-          className="stats-container"
-          variants={containerVariants}
-          initial="hidden"
-          whileInView="visible"
+          className="htb-cta-card"
+          initial={{ opacity: 0, y: 30 }}
+          whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
+          transition={{ duration: 0.6 }}
         >
-          <motion.div className="stat-item" variants={itemVariants}>
-            <Zap className="stat-icon" />
-            <div className="stat-content">
-              <span className="stat-number">100+</span>
-              <span className="stat-label">Challenges</span>
+          <div className="htb-cta-content">
+            <h2 className="htb-cta-title">READY TO COMPETE?</h2>
+            <p className="htb-cta-description">
+              {isAuthenticated 
+                ? "Your next challenge awaits. Start solving and climb the leaderboard."
+                : "Join thousands of hackers and prove your skills in the arena."}
+            </p>
+            <div className="htb-cta-actions">
+              {isAuthenticated ? (
+                <Button 
+                  variant="primary" 
+                  size="lg"
+                  onClick={() => navigate('/challenges')}
+                >
+                  GO TO CHALLENGES
+                </Button>
+              ) : (
+                <Button 
+                  variant="primary" 
+                  size="lg"
+                  onClick={() => navigate('/register')}
+                >
+                  JOIN NOW
+                </Button>
+              )}
             </div>
-          </motion.div>
-          <motion.div className="stat-item" variants={itemVariants}>
-            <Users className="stat-icon" />
-            <div className="stat-content">
-              <span className="stat-number">1K+</span>
-              <span className="stat-label">Active Users</span>
-            </div>
-          </motion.div>
-          <motion.div className="stat-item" variants={itemVariants}>
-            <Trophy className="stat-icon" />
-            <div className="stat-content">
-              <span className="stat-number">10K+</span>
-              <span className="stat-label">Flags Captured</span>
-            </div>
-          </motion.div>
+          </div>
+          <div className="htb-cta-glow"></div>
         </motion.div>
       </section>
     </div>

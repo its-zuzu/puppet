@@ -88,13 +88,13 @@
 
 .cyber-navbar-link--active {
   color: var(--primary);
-  background: var(--primary-glow);
+  background: transparent;
 }
 
 .cyber-navbar-link--active::after {
   content: '';
   position: absolute;
-  bottom: -1px;
+  bottom: 0;
   left: 16px;
   right: 16px;
   height: 2px;

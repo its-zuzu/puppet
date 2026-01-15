@@ -1,119 +1,119 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Mail, User, Users, FileText, ArrowLeft } from 'lucide-react';
-import { Card, CardHeader, CardBody, Button, Terminal, TerminalLine } from '../components/ui';
+import { Mail, User, Users, FileText, ArrowLeft, UserPlus, Shield } from 'lucide-react';
+import { Button } from '../components/ui';
 import './Auth.css';
 
 function Register() {
   return (
-    <div className="cyber-auth-container">
-      <div className="cyber-auth-background">
-        <div className="cyber-auth-grid"></div>
-      </div>
+    <div className="htb-auth-container">
+      {/* Animated Grid Background */}
+      <div className="htb-auth-grid-bg"></div>
       
-      <div className="cyber-auth-content">
+      {/* Main Content */}
+      <div className="htb-auth-content">
+        {/* Left Side - Branding */}
         <motion.div
-          className="cyber-auth-card cyber-auth-card--wide"
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5 }}
+          className="htb-auth-brand"
+          initial={{ opacity: 0, x: -30 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ duration: 0.6 }}
         >
-          <div className="cyber-auth-header">
-            <h1 className="cyber-auth-title">
-              <span className="text-gradient">REGISTRATION</span>
-            </h1>
-            <p className="cyber-auth-subtitle">
-              Account creation is managed by administrators
-            </p>
+          <div className="htb-auth-brand-icon">
+            <UserPlus size={48} />
+          </div>
+          <h1 className="htb-auth-brand-title">
+            Join the<br />
+            <span className="htb-gradient-text">Competition</span>
+          </h1>
+          <p className="htb-auth-brand-subtitle">
+            Registration is managed by administrators to ensure platform security and quality
+          </p>
+        </motion.div>
+
+        {/* Right Side - Registration Info */}
+        <motion.div
+          className="htb-auth-card"
+          initial={{ opacity: 0, x: 30 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ duration: 0.6, delay: 0.2 }}
+        >
+          <div className="htb-auth-card-header">
+            <h2>Request Access</h2>
+            <p>Contact an administrator to create your account</p>
           </div>
 
-          <Terminal title="REGISTRATION_PROTOCOL" className="cyber-auth-terminal">
-            <TerminalLine command="system.registration.check()" output="[INFO] Direct registration disabled" />
-            <TerminalLine command="system.contact.admin()" output="[OK] Contact protocol initialized" />
-          </Terminal>
+          <div className="htb-register-info">
+            <h3 className="htb-register-title">Required Information</h3>
+            <p className="htb-register-description">
+              Provide the following details when contacting us:
+            </p>
 
-          <Card className="cyber-registration-info">
-            <CardHeader>
-              <h3>How to Request Access</h3>
-            </CardHeader>
-            <CardBody>
-              <p className="cyber-registration-description">
-                New accounts are created by platform administrators. To request access, 
-                please contact us with the following information:
-              </p>
-
-              <div className="cyber-registration-requirements">
-                <div className="cyber-registration-requirement">
-                  <div className="cyber-registration-requirement-icon">
-                    <User size={20} />
-                  </div>
-                  <div>
-                    <strong>Full Name</strong>
-                    <p>Your complete name for account identification</p>
-                  </div>
+            <div className="htb-register-requirements">
+              <div className="htb-register-item">
+                <div className="htb-register-icon">
+                  <User size={18} />
                 </div>
-
-                <div className="cyber-registration-requirement">
-                  <div className="cyber-registration-requirement-icon">
-                    <Mail size={20} />
-                  </div>
-                  <div>
-                    <strong>Email Address</strong>
-                    <p>Valid email for account access and notifications</p>
-                  </div>
-                </div>
-
-                <div className="cyber-registration-requirement">
-                  <div className="cyber-registration-requirement-icon">
-                    <User size={20} />
-                  </div>
-                  <div>
-                    <strong>Preferred Username</strong>
-                    <p>Display name for the platform</p>
-                  </div>
-                </div>
-
-                <div className="cyber-registration-requirement">
-                  <div className="cyber-registration-requirement-icon">
-                    <Users size={20} />
-                  </div>
-                  <div>
-                    <strong>Team Name</strong>
-                    <p>Preferred team for participation</p>
-                  </div>
-                </div>
-
-                <div className="cyber-registration-requirement">
-                  <div className="cyber-registration-requirement-icon">
-                    <FileText size={20} />
-                  </div>
-                  <div>
-                    <strong>Purpose</strong>
-                    <p>Brief reason for joining the platform</p>
-                  </div>
+                <div className="htb-register-details">
+                  <strong>Full Name</strong>
+                  <span>Your complete name</span>
                 </div>
               </div>
 
-              <div className="cyber-registration-contact">
-                <h4>Contact Administrator</h4>
-                <a href="mailto:ctfquest@gmail.com" className="cyber-registration-email">
+              <div className="htb-register-item">
+                <div className="htb-register-icon">
                   <Mail size={18} />
-                  <span>ctfquest@gmail.com</span>
-                </a>
+                </div>
+                <div className="htb-register-details">
+                  <strong>Email Address</strong>
+                  <span>Valid email for account access</span>
+                </div>
               </div>
-            </CardBody>
-          </Card>
 
-          <div className="cyber-auth-footer">
-            <div className="cyber-auth-divider">
-              <span>ALREADY HAVE ACCESS?</span>
+              <div className="htb-register-item">
+                <div className="htb-register-icon">
+                  <User size={18} />
+                </div>
+                <div className="htb-register-details">
+                  <strong>Username</strong>
+                  <span>Preferred display name</span>
+                </div>
+              </div>
+
+              <div className="htb-register-item">
+                <div className="htb-register-icon">
+                  <Users size={18} />
+                </div>
+                <div className="htb-register-details">
+                  <strong>Team Name</strong>
+                  <span>Team for participation</span>
+                </div>
+              </div>
+
+              <div className="htb-register-item">
+                <div className="htb-register-icon">
+                  <FileText size={18} />
+                </div>
+                <div className="htb-register-details">
+                  <strong>Purpose</strong>
+                  <span>Reason for joining</span>
+                </div>
+              </div>
             </div>
-            <Link to="/login">
-              <Button variant="primary" fullWidth icon={<ArrowLeft size={18} />}>
-                Return to Login
-              </Button>
-            </Link>
+
+            <div className="htb-register-contact">
+              <a href="mailto:ctfquest@gmail.com" className="htb-register-email-button">
+                <Mail size={20} />
+                <span>ctfquest@gmail.com</span>
+              </a>
+            </div>
+          </div>
+
+          <div className="htb-auth-footer">
+            <p className="htb-auth-footer-text">
+              Already have an account? <Link to="/login" className="htb-auth-link">Sign In</Link>
+            </p>
           </div>
         </motion.div>
       </div>

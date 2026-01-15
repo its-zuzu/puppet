@@ -1,7 +1,7 @@
 import { useState, useEffect, useContext } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { ChevronLeft, Users, Award, Trophy, Zap, Crown, Lock } from 'lucide-react';
+import { ChevronLeft, Users, Award, Trophy, Zap, Crown, Lock, Shield } from 'lucide-react';
 import axios from 'axios';
 import AuthContext from '../context/AuthContext';
 import { Loading } from '../components/ui';
@@ -253,7 +253,7 @@ function TeamDetails() {
                 whileHover={{ scale: 1.01 }}
               >
                 <div className="htb-member-rank">
-                  #{sortedMembers.findIndex(sm => sm._id === member._id) + 1}
+                  <Shield size={18} />
                 </div>
                 <div 
                   className="htb-member-info"
