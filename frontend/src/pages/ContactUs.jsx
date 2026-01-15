@@ -74,11 +74,8 @@ function ContactUs() {
               whileHover={{ scale: 1.02 }}
               transition={{ duration: 0.3 }}
             >
-              <div className="htb-info-icon">
-                <MapPin size={24} />
-              </div>
               <div className="htb-info-content">
-                <h3>Location</h3>
+                <h3><MapPin size={18} /> Location</h3>
                 <p>Sri Eshwar College of Engineering</p>
                 <p>Kinathukadavu, Coimbatore</p>
                 <p>Tamil Nadu, India</p>
@@ -90,11 +87,8 @@ function ContactUs() {
               whileHover={{ scale: 1.02 }}
               transition={{ duration: 0.3, delay: 0.05 }}
             >
-              <div className="htb-info-icon">
-                <Mail size={24} />
-              </div>
               <div className="htb-info-content">
-                <h3>Email</h3>
+                <h3><Mail size={18} /> Email</h3>
                 <p>ctfquest@gmail.com</p>
                 <p className="htb-info-note">We'll respond within 24 hours</p>
               </div>
@@ -105,11 +99,8 @@ function ContactUs() {
               whileHover={{ scale: 1.02 }}
               transition={{ duration: 0.3, delay: 0.1 }}
             >
-              <div className="htb-info-icon">
-                <Phone size={24} />
-              </div>
               <div className="htb-info-content">
-                <h3>Phone</h3>
+                <h3><Phone size={18} /> Phone</h3>
                 <p>+91 63819 26572</p>
                 <p className="htb-info-note">Mon-Fri, 9AM - 6PM IST</p>
               </div>
@@ -120,11 +111,8 @@ function ContactUs() {
               whileHover={{ scale: 1.02 }}
               transition={{ duration: 0.3, delay: 0.15 }}
             >
-              <div className="htb-info-icon">
-                <MessageSquare size={24} />
-              </div>
               <div className="htb-info-content">
-                <h3>Community</h3>
+                <h3><MessageSquare size={18} /> Community</h3>
                 <p>Discord: CTFQuest</p>
                 <p className="htb-info-note">Join our active community</p>
               </div>

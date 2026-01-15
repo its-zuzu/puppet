@@ -84,39 +84,54 @@
 }
 
 .htb-info-card {
-  display: flex;
-  gap: 20px;
-  padding: 24px;
+  padding: 28px;
   background: var(--bg-secondary);
   border: 1px solid var(--border-primary);
+  border-left: 3px solid var(--primary);
   border-radius: var(--radius-lg);
   transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.htb-info-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(135deg, rgba(0, 180, 255, 0.03) 0%, transparent 100%);
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.htb-info-card:hover::before {
+  opacity: 1;
 }
 
 .htb-info-card:hover {
-  border-color: var(--primary);
-  box-shadow: 0 4px 20px rgba(0, 180, 255, 0.1);
-}
-
-.htb-info-icon {
-  flex-shrink: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 56px;
-  height: 56px;
-  background: var(--bg-tertiary);
-  border: 1px solid var(--border-primary);
-  border-radius: var(--radius-md);
-  color: var(--primary);
+  border-left-color: #00d4ff;
+  box-shadow: 0 8px 32px rgba(0, 180, 255, 0.15);
+  transform: translateX(4px);
 }
 
 .htb-info-content h3 {
+  display: flex;
+  align-items: center;
+  gap: 10px;
   font-family: var(--font-heading);
   font-size: 1.125rem;
   font-weight: 700;
   color: var(--text-primary);
-  margin-bottom: 8px;
+  margin-bottom: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.htb-info-content h3 svg {
+  color: var(--primary);
+  stroke-width: 2.5;
 }
 
 .htb-info-content p {
@@ -356,11 +371,6 @@
 
   .htb-contact-header h1 {
     font-size: 1.875rem;
-  }
-
-  .htb-info-card {
-    flex-direction: column;
-    text-align: center;
   }
 
   .htb-submit-btn {
