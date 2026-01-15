@@ -299,6 +299,106 @@
   margin: 0;
 }
 
+/* Hint Unlock Confirmation Modal */
+.htb-confirm-modal {
+  max-width: 500px;
+}
+
+.htb-unlock-confirm-content {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.htb-unlock-message {
+  font-size: 1.125rem;
+  color: var(--text-primary);
+  margin: 0;
+  text-align: center;
+}
+
+.htb-unlock-stats {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 24px;
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border-primary);
+  border-radius: var(--radius-lg);
+}
+
+.htb-unlock-stat {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--border-primary);
+}
+
+.htb-unlock-stat:last-child {
+  padding-bottom: 0;
+  border-bottom: none;
+}
+
+.htb-unlock-label {
+  font-size: 0.938rem;
+  color: var(--text-secondary);
+  font-weight: 500;
+}
+
+.htb-unlock-value {
+  font-size: 1rem;
+  color: var(--text-primary);
+  font-weight: 600;
+}
+
+.htb-unlock-value.htb-cost {
+  color: var(--primary);
+}
+
+.htb-unlock-value.htb-after {
+  color: var(--success);
+}
+
+.htb-unlock-actions {
+  display: flex;
+  gap: 12px;
+  justify-content: flex-end;
+}
+
+.htb-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 24px;
+  border: none;
+  border-radius: var(--radius-md);
+  font-weight: 600;
+  font-size: 0.938rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.htb-btn-secondary {
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+  border: 1px solid var(--border-primary);
+}
+
+.htb-btn-secondary:hover {
+  border-color: var(--text-tertiary);
+}
+
+.htb-btn-primary {
+  background: var(--primary);
+  color: var(--bg-primary);
+}
+
+.htb-btn-primary:hover {
+  background: #00d4ff;
+  box-shadow: 0 0 20px var(--primary-glow);
+}
+
 /* Challenge Actions */
 .htb-challenge-actions {
   margin-top: 48px;

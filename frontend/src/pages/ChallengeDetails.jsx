@@ -245,6 +245,87 @@ const FlagSubmissionModal = ({ challenge, onClose, onSubmit }) => {
   );
 };
 
+const HintUnlockModal = ({ hint, hintIndex, teamPoints, onClose, onConfirm }) => {
+  const pointsAfter = teamPoints - hint.cost;
+
+  return (
+    <AnimatePresence>
+      <motion.div 
+        className="htb-modal-overlay" 
+        onClick={onClose}
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+      >
+        <motion.div 
+          className="htb-modal-content htb-confirm-modal" 
+          onClick={(e) => e.stopPropagation()}
+          initial={{ scale: 0.9, opacity: 0, y: 20 }}
+          animate={{ scale: 1, opacity: 1, y: 0 }}
+          exit={{ scale: 0.9, opacity: 0, y: 20 }}
+          transition={{ type: 'spring', damping: 25 }}
+        >
+          <div className="htb-modal-header">
+            <div className="htb-modal-title">
+              <Lock size={24} />
+              <h3>Unlock Hint</h3>
+            </div>
+            <motion.button 
+              className="htb-modal-close" 
+              onClick={onClose}
+              whileHover={{ scale: 1.1, rotate: 90 }}
+              whileTap={{ scale: 0.9 }}
+            >
+              <X size={24} />
+            </motion.button>
+          </div>
+
+          <div className="htb-modal-body">
+            <div className="htb-unlock-confirm-content">
+              <p className="htb-unlock-message">Are you sure you want to unlock this hint?</p>
+              
+              <div className="htb-unlock-stats">
+                <div className="htb-unlock-stat">
+                  <span className="htb-unlock-label">Hint Cost:</span>
+                  <span className="htb-unlock-value htb-cost">{hint.cost} points</span>
+                </div>
+                <div className="htb-unlock-stat">
+                  <span className="htb-unlock-label">Current Points:</span>
+                  <span className="htb-unlock-value">{teamPoints} points</span>
+                </div>
+                <div className="htb-unlock-stat">
+                  <span className="htb-unlock-label">After Unlock:</span>
+                  <span className="htb-unlock-value htb-after">{pointsAfter} points</span>
+                </div>
+              </div>
+
+              <div className="htb-unlock-actions">
+                <motion.button
+                  className="htb-btn htb-btn-secondary"
+                  onClick={onClose}
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                >
+                  Cancel
+                </motion.button>
+                <motion.button
+                  className="htb-btn htb-btn-primary"
+                  onClick={onConfirm}
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                >
+                  <Unlock size={18} />
+                  Unlock Hint
+                </motion.button>
+              </div>
+            </div>
+          </div>
+        </motion.div>
+      </motion.div>
+    </AnimatePresence>
+  );
+};
+
 function ChallengeDetails() {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -255,6 +336,8 @@ function ChallengeDetails() {
   const [unlockedHints, setUnlockedHints] = useState([]);
   const [unlockingHint, setUnlockingHint] = useState(null);
   const [showSolvesModal, setShowSolvesModal] = useState(false);
+  const [showHintConfirm, setShowHintConfirm] = useState(false);
+  const [pendingHintUnlock, setPendingHintUnlock] = useState(null);
   const { user, isAuthenticated, updateUserData } = useContext(AuthContext);
   const { eventState, isEnded } = useEventState();
 
@@ -342,11 +425,16 @@ function ChallengeDetails() {
       return;
     }
 
-    const confirmMessage = `Are you sure you want to unlock this hint for ${hint.cost} points?\n\nTeam points: ${teamPoints}\nAfter unlock: ${teamPoints - hint.cost} points`;
+    // Show custom confirmation modal
+    setPendingHintUnlock({ hint, hintIndex, teamPoints });
+    setShowHintConfirm(true);
+  };
 
-    if (!window.confirm(confirmMessage)) {
-      return;
-    }
+  const confirmHintUnlock = async () => {
+    if (!pendingHintUnlock) return;
+
+    const { hintIndex } = pendingHintUnlock;
+    setShowHintConfirm(false);
 
     try {
       setUnlockingHint(hintIndex);
@@ -366,7 +454,13 @@ function ChallengeDetails() {
       alert(err.response?.data?.message || 'Failed to unlock hint');
     } finally {
       setUnlockingHint(null);
+      setPendingHintUnlock(null);
     }
+  };
+
+  const cancelHintUnlock = () => {
+    setShowHintConfirm(false);
+    setPendingHintUnlock(null);
   };
 
   if (loading) {
@@ -575,6 +669,16 @@ function ChallengeDetails() {
           challenge={challenge}
           onClose={closeModal}
           onSubmit={submitFlag}
+        />
+      )}
+
+      {showHintConfirm && pendingHintUnlock && (
+        <HintUnlockModal
+          hint={pendingHintUnlock.hint}
+          hintIndex={pendingHintUnlock.hintIndex}
+          teamPoints={pendingHintUnlock.teamPoints}
+          onClose={cancelHintUnlock}
+          onConfirm={confirmHintUnlock}
         />
       )}
     </div>
