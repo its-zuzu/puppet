@@ -255,169 +255,11 @@ router.get('/:id/solves', protect, async (req, res) => {
   }
 });
 
-// @route   POST /api/challenges/:id/unlock-hint
-// @desc    Unlock a hint for a challenge by spending points
-// @access  Private
-router.post('/:id/unlock-hint', protect, checkEventNotEnded, async (req, res) => {
-  try {
-    const { hintIndex } = req.body;
-    const userId = req.user._id || req.user.id;
-
-    console.log('Unlock hint request:', { userId, hintIndex, challengeId: req.params.id });
-
-    // Validate ObjectId format
-    if (!isValidObjectId(req.params.id)) {
-      return res.status(404).json({
-        success: false,
-        message: 'Challenge not found'
-      });
-    }
-
-    // Validate hint index
-    if (hintIndex === undefined || hintIndex < 0) {
-      return res.status(400).json({
-        success: false,
-        message: 'Invalid hint index'
-      });
-    }
-
-    // Get challenge
-    const challenge = await Challenge.findById(req.params.id);
-    if (!challenge) {
-      return res.status(404).json({
-        success: false,
-        message: 'Challenge not found'
-      });
-    }
-
-    // Check if hint exists
-    if (!challenge.hints || !challenge.hints[hintIndex]) {
-      return res.status(404).json({
-        success: false,
-        message: 'Hint not found'
-      });
-    }
-
-    const hint = challenge.hints[hintIndex];
-
-    // Get user with team info
-    const user = await User.findById(userId).populate('team');
-    if (!user) {
-      console.error('User not found:', userId);
-      return res.status(404).json({
-        success: false,
-        message: 'User not found'
-      });
-    }
-
-    console.log('User found:', { username: user.username, points: user.points, hasTeam: !!user.team });
-
-    // Check if hint is already unlocked by user
-    const alreadyUnlocked = user.unlockedHints.some(
-      h => h.challengeId.toString() === req.params.id && h.hintIndex === hintIndex
-    );
-
-    if (alreadyUnlocked) {
-      return res.status(400).json({
-        success: false,
-        message: 'Hint already unlocked'
-      });
-    }
-
-    // Check if user has a team, use team points; otherwise use individual points
-    const Team = require('../models/Team');
-    let team = null;
-    let availablePoints = user.points;
-
-    if (user.team) {
-      team = await Team.findById(user.team._id).populate('members', 'points');
-      if (team) {
-        // Calculate team points from members (same as GET endpoint)
-        availablePoints = team.members.reduce((sum, member) => sum + (member.points || 0), 0);
-        console.log('Team points calculated:', { teamName: team.name, points: availablePoints });
-      }
-    }
-
-    console.log('Available points for unlock:', { availablePoints, hintCost: hint.cost, hasTeam: !!team });
-
-    // Check if enough points available
-    if (availablePoints < hint.cost) {
-      const pointsType = team ? 'team' : 'individual';
-      return res.status(400).json({
-        success: false,
-        message: `Insufficient points. You need ${hint.cost} points but have ${availablePoints} ${pointsType} points`
-      });
-    }
-
-    // Save hint unlock to user
-    user.unlockedHints.push({
-      challengeId: req.params.id,
-      challengeTitle: challenge.title,
-      hintIndex: hintIndex,
-      hintCost: hint.cost
-    });
-
-    // Deduct points from user (team points are calculated from members)
-    user.points = Math.max(0, user.points - hint.cost);
-    await user.save();
-
-    // --- NEW: Update Redis ZSET after point deduction ---
-    try {
-      const weight = Math.pow(10, 10);
-      const nowSeconds = user.lastSolveTime ? Math.floor(new Date(user.lastSolveTime).getTime() / 1000) : 0;
-      const zscore = user.points * weight + (weight - nowSeconds);
-
-      await redisClient.zadd('scoreboard:users:zset', zscore, user._id.toString());
-
-      if (user.team) {
-        const teamZsetKey = 'scoreboard:teams:zset';
-        const team = await Team.findById(user.team._id).populate('members', 'points');
-        if (team) {
-          const teamTotalPoints = team.members.reduce((sum, member) => sum + (member.points || 0), 0);
-          const teamLastSolve = team.members.reduce((max, m) => (m.lastSolveTime > max ? m.lastSolveTime : max), new Date(0));
-          const teamNowSeconds = teamLastSolve ? Math.floor(new Date(teamLastSolve).getTime() / 1000) : 0;
-          await redisClient.zadd(teamZsetKey, teamTotalPoints * weight + (weight - teamNowSeconds), team._id.toString());
-        }
-      }
-    } catch (redisError) {
-      console.error('[Hint Unlock] Redis ZSET update failed:', redisError.message);
-    }
-    // --- END NEW LOGIC ---
-
-    if (team) {
-      console.log(`Hint unlocked for user ${user.username}, team ${team.name} points reduced (calculated from members)`);
-    } else {
-      console.log(`Hint unlocked for user ${user.username}, individual points deducted`);
-    }
-
-    logActivity('HINT_UNLOCKED', {
-      userId,
-      username: user.username,
-      challengeId: req.params.id,
-      challengeTitle: challenge.title,
-      hintIndex,
-      cost: hint.cost,
-      remainingPoints: user.points,
-      teamId: user.team?._id,
-      teamName: user.team?.name
-    });
-
-    res.json({
-      success: true,
-      message: 'Hint unlocked successfully',
-      data: {
-        hint: hint.content,
-        remainingPoints: user.points
-      }
-    });
-  } catch (error) {
-    console.error('Error unlocking hint:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Error unlocking hint'
-    });
-  }
-});
+// NOTE: Hint unlocking has been moved to /api/unlocks endpoint (CTFd-style)
+// The old POST /api/challenges/:id/unlock-hint endpoint has been removed to prevent
+// incorrect individual user.points deduction. Hint costs should be deducted from
+// team scores via negative awards, NOT from individual user scores.
+// Use POST /api/unlocks instead for hint unlocking.
 
 // @route   GET /api/challenges/:id
 // @desc    Get single challenge (CTFd-style with hint views)
@@ -759,11 +601,11 @@ router.post('/:id/submit', protect, sanitizeInput, checkEventNotEnded, async (re
           throw new Error('CTF event has ended. Submissions are no longer accepted.');
         }
         
-        // CTFd-style: Only update solvedBy arrays, NO points fields
-        // Scores are calculated dynamically by JOINing submissions with challenges
+        // CTFd-style: Update solvedBy arrays + user.points for display
+        // Scoreboard calculations use dynamic JOIN queries for accurate ranking
         
-        // Update user with solve time and track personal solve
-        await User.findByIdAndUpdate(
+        // Update user with solve time, track personal solve, and update points
+        const userUpdate = await User.findByIdAndUpdate(
           req.user._id,
           {
             $addToSet: {
@@ -776,6 +618,35 @@ router.post('/:id/submit', protect, sanitizeInput, checkEventNotEnded, async (re
             },
             $set: { lastSolveTime: new Date() }
           },
+          { session, new: true }
+        );
+
+        // Calculate user's total points from all solved challenges
+        const userSubmissions = await Submission.aggregate([
+          { $match: { user: req.user._id, isCorrect: true } },
+          {
+            $lookup: {
+              from: 'challenges',
+              localField: 'challenge',
+              foreignField: '_id',
+              as: 'challengeData'
+            }
+          },
+          { $unwind: '$challengeData' },
+          {
+            $group: {
+              _id: null,
+              totalPoints: { $sum: '$challengeData.points' }
+            }
+          }
+        ]);
+
+        const totalPoints = userSubmissions.length > 0 ? userSubmissions[0].totalPoints : 0;
+        
+        // Update user.points field for display in profile pages
+        await User.findByIdAndUpdate(
+          req.user._id,
+          { $set: { points: totalPoints } },
           { session }
         );
 

@@ -414,21 +414,23 @@ function ChallengeDetails() {
 
     const hint = challenge.hints[hintIndex];
     const userPoints = user.points || 0;
-    const hasTeam = user.team && user.team._id;
+    
+    // Extract team ID properly (handle both string and object cases)
+    const teamId = user.team?._id || user.team;
+    const hasTeam = !!teamId;
 
     // If user has a team, fetch the latest team points using the team ID
     let teamPoints = 0;
     if (hasTeam) {
       try {
-        const teamRes = await axios.get(`/api/teams/${user.team._id}`);
-        // Calculate team points from members (as backend does)
-        const calculatedPoints = teamRes.data.data.members.reduce((sum, member) => sum + (member.points || 0), 0);
-        teamPoints = calculatedPoints || teamRes.data.data.points || 0;
-        console.log('Fetched team points:', teamPoints);
+        const teamRes = await axios.get(`/api/teams/${teamId}`);
+        // Backend calculates: member points + team awards (includes hint deductions)
+        teamPoints = teamRes.data.data.totalPoints || 0;
+        console.log('[CTFd-style] Team total points (with awards):', teamPoints);
       } catch (err) {
-        console.error('Error fetching team points:', err);
+        console.error('[CTFd-style] Error fetching team points:', err);
         // Fallback to user.team.points if fetch fails
-        teamPoints = user.team.points || 0;
+        teamPoints = user.team?.points || 0;
       }
     }
 
@@ -455,22 +457,28 @@ function ChallengeDetails() {
 
     try {
       setUnlockingHint(hintIndex);
+      
+      // CTFd-style unlock: POST to /api/unlocks with target, type, challenge
       const res = await axios.post(
-        `/api/challenges/${challenge._id}/unlock-hint`,
-        { hintIndex },
+        `/api/unlocks`,
+        { 
+          target: hintIndex,
+          type: 'hints',
+          challenge: challenge._id
+        },
         { timeout: 10000 }
       );
 
-      console.log('Hint unlock response:', res.data);
+      console.log('[CTFd-style] Hint unlock response:', res.data);
 
-      // Refetch challenge data to get updated unlocked hints
+      // Refetch challenge data to get updated hints with unlocked property
       const challengeRes = await axios.get(`/api/challenges/${challenge._id}`, {
         timeout: 10000
       });
       
-      console.log('Challenge refetch response:', {
-        unlockedHints: challengeRes.data.unlockedHints,
-        challengeData: challengeRes.data.data
+      console.log('[CTFd-style] Challenge refetch response:', {
+        hints: challengeRes.data.data.hints,
+        unlockedHints: challengeRes.data.unlockedHints
       });
       
       setChallenge(challengeRes.data.data);
@@ -479,10 +487,14 @@ function ChallengeDetails() {
       // Update user data to reflect new points
       await updateUserData();
 
-      alert(res.data.message || 'Hint unlocked successfully!');
+      alert('Hint unlocked successfully!');
     } catch (err) {
-      console.error('Hint unlock error:', err);
-      alert(err.response?.data?.message || 'Failed to unlock hint');
+      console.error('[CTFd-style] Hint unlock error:', err);
+      const errorMsg = err.response?.data?.errors?.target || 
+                       err.response?.data?.errors?.score ||
+                       err.response?.data?.message || 
+                       'Failed to unlock hint';
+      alert(errorMsg);
     } finally {
       setUnlockingHint(null);
       setPendingHintUnlock(null);
@@ -609,13 +621,14 @@ function ChallengeDetails() {
               </h3>
               <div className="htb-hints-list">
                 {challenge.hints.map((hint, index) => {
-                  const isUnlocked = unlockedHints.includes(index);
+                  // CTFd-style: backend returns hints with 'unlocked' property
+                  const isUnlocked = hint.unlocked === true;
                   const isFree = hint.cost === 0;
-                  const showContent = isFree || isUnlocked;
+                  const showContent = isUnlocked || isFree;
 
                   return (
                     <motion.div 
-                      key={index} 
+                      key={hint.id || index} 
                       className={`htb-hint-card ${showContent ? 'unlocked' : 'locked'}`}
                       initial={{ opacity: 0, x: -20 }}
                       animate={{ opacity: 1, x: 0 }}
@@ -631,12 +644,12 @@ function ChallengeDetails() {
                         <div className="htb-hint-locked">
                           <motion.button
                             className="htb-unlock-btn"
-                            onClick={() => unlockHint(index)}
-                            disabled={!isAuthenticated || unlockingHint === index}
+                            onClick={() => unlockHint(hint.id || index)}
+                            disabled={!isAuthenticated || unlockingHint === (hint.id || index)}
                             whileHover={{ scale: 1.05 }}
                             whileTap={{ scale: 0.95 }}
                           >
-                            {unlockingHint === index ? 'Unlocking...' : `Unlock for ${hint.cost} points`}
+                            {unlockingHint === (hint.id || index) ? 'Unlocking...' : `Unlock for ${hint.cost} points`}
                           </motion.button>
                           {!isAuthenticated && (
                             <p className="htb-login-hint">Login to unlock this hint</p>

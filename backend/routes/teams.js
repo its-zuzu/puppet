@@ -191,20 +191,33 @@ router.get('/:id', protect, async (req, res) => {
       });
     }
 
-    // Calculate team points from members
-    const calculatedPoints = team.members.reduce((sum, member) => sum + (member.points || 0), 0);
+    // Calculate team points from members + team awards
+    const memberPoints = team.members.reduce((sum, member) => sum + (member.points || 0), 0);
+    
+    // Get team awards (includes negative awards for hint unlocks)
+    const Award = require('../models/Award');
+    const awards = await Award.find({ team: team._id }).select('value');
+    const awardPoints = awards.reduce((sum, award) => sum + (award.value || 0), 0);
+    
+    const calculatedPoints = Math.max(0, memberPoints + awardPoints);
 
     // Calculate team rank
     const teamsWithHigherPoints = await Team.countDocuments({
       _id: { $ne: team._id }
     });
     
-    // Get all teams to calculate rank properly
+    // Get all teams to calculate rank properly (include awards in calculations)
     const allTeams = await Team.find().populate('members', 'points').lean();
-    const teamsWithPoints = allTeams.map(t => ({
-      _id: t._id,
-      totalPoints: t.members.reduce((sum, m) => sum + (m.points || 0), 0)
-    })).sort((a, b) => b.totalPoints - a.totalPoints);
+    const teamsWithPoints = await Promise.all(allTeams.map(async (t) => {
+      const tMemberPoints = t.members.reduce((sum, m) => sum + (m.points || 0), 0);
+      const tAwards = await Award.find({ team: t._id }).select('value').lean();
+      const tAwardPoints = tAwards.reduce((sum, a) => sum + (a.value || 0), 0);
+      return {
+        _id: t._id,
+        totalPoints: Math.max(0, tMemberPoints + tAwardPoints)
+      };
+    }));
+    teamsWithPoints.sort((a, b) => b.totalPoints - a.totalPoints);
     
     const rank = teamsWithPoints.findIndex(t => t._id.toString() === team._id.toString()) + 1;
     

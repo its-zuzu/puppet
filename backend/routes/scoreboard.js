@@ -238,25 +238,8 @@ async function aggregateUserStandings(isAdmin, freezeTime, limit = null) {
     }
   ]);
 
-  // 2. Aggregate Awards
-  const awardMatch = { value: { $ne: 0 } };
-  if (freezeTime) {
-    awardMatch.date = { $lt: new Date(freezeTime) };
-  }
-
-  // Awards can be given to user directly
-  const awardAgg = await Award.aggregate([
-    { $match: { ...awardMatch, user: { $exists: true, $ne: null } } },
-    {
-      $group: {
-        _id: "$user",
-        score: { $sum: "$value" },
-        lastAward: { $max: "$date" }
-      }
-    }
-  ]);
-
-  // 3. Merge and Fetch User Details
+  // 2. Build User Map (Challenge points only - no awards)
+  // Individual user rankings should only reflect challenge solves, not team deductions
   const userMap = new Map();
 
   // Process Submissions
@@ -265,18 +248,6 @@ async function aggregateUserStandings(isAdmin, freezeTime, limit = null) {
       score: sub.score,
       lastDate: new Date(sub.lastSolve)
     });
-  }
-
-  // Process Awards
-  for (const aw of awardAgg) {
-    const uid = aw._id.toString();
-    const current = userMap.get(uid) || { score: 0, lastDate: new Date(0) };
-
-    current.score += aw.score;
-    if (new Date(aw.lastAward) > current.lastDate) {
-      current.lastDate = new Date(aw.lastAward);
-    }
-    userMap.set(uid, current);
   }
 
   // Filter Users (Hidden/Banned/Admin)

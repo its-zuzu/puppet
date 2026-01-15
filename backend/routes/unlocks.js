@@ -106,8 +106,22 @@ router.post('/', protect, checkEventNotEnded, async (req, res) => {
       const team = await Team.findById(user.team._id).populate('members', 'points');
       if (team) {
         teamData = team;
-        // Team points = sum of all member points
-        availablePoints = team.members.reduce((sum, member) => sum + (member.points || 0), 0);
+        
+        // Team points = sum of member points + team awards (includes negative values)
+        const memberPoints = team.members.reduce((sum, member) => sum + (member.points || 0), 0);
+        
+        // Get team awards (includes hint unlock deductions as negative awards)
+        const Award = require('../models/Award');
+        const awards = await Award.find({ team: team._id }).select('value');
+        const awardPoints = awards.reduce((sum, award) => sum + (award.value || 0), 0);
+        
+        availablePoints = Math.max(0, memberPoints + awardPoints);
+        
+        console.log('[Unlock] Team points calculation:', {
+          memberPoints,
+          awardPoints,
+          totalAvailable: availablePoints
+        });
       }
     }
 
@@ -127,7 +141,7 @@ router.post('/', protect, checkEventNotEnded, async (req, res) => {
       });
     }
 
-    // Create unlock record
+    // Create unlock record (logs who unlocked and when)
     const unlock = new Unlock({
       user: userId,
       team: user.team ? user.team._id : null,
@@ -138,14 +152,33 @@ router.post('/', protect, checkEventNotEnded, async (req, res) => {
 
     await unlock.save();
 
-    // Deduct points from user (team points are calculated from members)
-    user.points = Math.max(0, user.points - hint.cost);
-    await user.save();
+    // Deduct cost from TEAM score (not individual user)
+    // CTFd-style: Create negative award for the team
+    if (hint.cost > 0 && teamData) {
+      const Award = require('../models/Award');
+      
+      await Award.create({
+        team: teamData._id,
+        user: null, // Team award, not user award
+        name: `Hint Unlock: ${challenge.title}`,
+        description: `Hint #${target + 1} unlocked by ${user.username}`,
+        value: -hint.cost, // NEGATIVE value to deduct points
+        category: 'hints',
+        icon: 'hint'
+      });
+
+      console.log('[Unlock] Team award created:', { 
+        team: teamData.name,
+        cost: hint.cost,
+        unlockedBy: user.username
+      });
+    }
 
     console.log('[Unlock] Success:', { 
       hintIndex: target, 
-      cost: hint.cost, 
-      newPoints: user.points 
+      cost: hint.cost,
+      teamMode: !!teamData,
+      unlockedBy: user.username
     });
 
     // Return CTFd-style response
