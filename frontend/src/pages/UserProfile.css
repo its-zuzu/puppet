@@ -6,9 +6,9 @@
   overflow: hidden;
 }
 
-/* 4-Column Stats Grid */
+/* 5-Column Stats Grid */
 .htb-user-stats {
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(5, 1fr);
 }
 
 /* Challenge Cards */

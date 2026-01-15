@@ -1,7 +1,7 @@
 import { useState, useEffect, useContext } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { ChevronLeft, Award, Trophy, Lock, Users, Flag } from 'lucide-react';
+import { ChevronLeft, Award, Trophy, Lock, Users, Flag, Medal } from 'lucide-react';
 import axios from 'axios';
 import AuthContext from '../context/AuthContext';
 import { Loading } from '../components/ui';
@@ -134,6 +134,19 @@ function UserProfile() {
             <div className="htb-stat-content">
               <div className="htb-stat-label">Challenges Solved</div>
               <div className="htb-stat-value">{user.solvedChallenges?.length || 0}</div>
+            </div>
+          </motion.div>
+
+          <motion.div 
+            className="htb-stat-card"
+            whileHover={{ scale: 1.02, y: -4 }}
+          >
+            <div className="htb-stat-icon">
+              <Medal size={24} />
+            </div>
+            <div className="htb-stat-content">
+              <div className="htb-stat-label">Rank</div>
+              <div className="htb-stat-value">#{user.rank || '-'}</div>
             </div>
           </motion.div>
 

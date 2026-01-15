@@ -734,9 +734,17 @@ router.get('/user/:id', protect, async (req, res) => {
       });
     }
 
+    // Calculate user rank
+    const rank = await User.countDocuments({
+      points: { $gt: user.points }
+    }) + 1;
+
     res.json({
       success: true,
-      user
+      user: {
+        ...user.toObject(),
+        rank
+      }
     });
   } catch (error) {
     res.status(500).json({
