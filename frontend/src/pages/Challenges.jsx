@@ -30,6 +30,7 @@ function Challenges() {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [sortBy, setSortBy] = useState('points'); // points, solves, title
+  const [stats, setStats] = useState({ solved: 0, remaining: 0, total: 0 });
   
   useEffect(() => {
     fetchChallenges();
@@ -44,6 +45,10 @@ function Challenges() {
       setLoading(true);
       const res = await axios.get('/api/challenges?page=1&limit=1000');
       setChallenges(res.data.data || []);
+      // Use stats from backend if available
+      if (res.data.stats) {
+        setStats(res.data.stats);
+      }
     } catch (err) {
       console.error('Error fetching challenges:', err);
     } finally {
@@ -87,6 +92,12 @@ function Challenges() {
   };
 
   const isSolved = (challengeId) => {
+    // Use isSolved flag from backend if available
+    const challenge = challenges.find(c => c._id === challengeId);
+    if (challenge && typeof challenge.isSolved !== 'undefined') {
+      return challenge.isSolved;
+    }
+    // Fallback to user data
     return user?.solvedChallenges?.includes(challengeId);
   };
 
@@ -135,18 +146,14 @@ function Challenges() {
             <div className="stat-box">
               <Award className="stat-icon" />
               <div>
-                <span className="stat-number">{user?.solvedChallenges?.filter(solvedId => 
-                  challenges.find(c => c._id === solvedId && c.isVisible !== false)
-                ).length || 0}</span>
+                <span className="stat-number">{stats.solved}</span>
                 <span className="stat-label">Solved</span>
               </div>
             </div>
             <div className="stat-box">
               <Clock className="stat-icon" />
               <div>
-                <span className="stat-number">{challenges.filter(c => c.isVisible !== false).length - (user?.solvedChallenges?.filter(solvedId => 
-                  challenges.find(c => c._id === solvedId && c.isVisible !== false)
-                ).length || 0)}</span>
+                <span className="stat-number">{stats.remaining}</span>
                 <span className="stat-label">Remaining</span>
               </div>
             </div>

@@ -130,34 +130,46 @@ router.get('/', protect, sanitizeInput, async (req, res) => {
 
     if (!isAdmin) {
       query.isVisible = true;
-
-      // Try cache for public users
-      const cacheKey = 'challenges:list:public';
-      try {
-        const cachedData = await redisClient.get(cacheKey);
-        if (cachedData) {
-          // Add cache hit header for debugging
-          res.setHeader('X-Cache', 'HIT');
-          return res.json(JSON.parse(cachedData));
-        }
-      } catch (err) {
-        console.error('Redis cache error:', err);
-      }
     }
+
+    // Get user's solved challenges for stats calculation
+    const fullUser = await User.findById(user._id).select('solvedChallenges').lean();
+    const userSolvedIds = fullUser?.solvedChallenges || [];
 
     const total = await Challenge.countDocuments(query);
     const challenges = await Challenge.find(query)
       .select('-flag')
       .limit(limit)
       .skip(skip)
-      .sort({ createdAt: -1 });
+      .sort({ createdAt: -1 })
+      .lean(); // Use lean for better performance
 
-    // Add current dynamic value to each challenge
+    // Add current dynamic value and solved status to each challenge
     const enrichedChallenges = challenges.map(challenge => {
-      const challengeObj = challenge.toObject();
-      challengeObj.currentValue = challenge.getCurrentValue();
-      return challengeObj;
+      // Calculate current value based on function
+      let currentValue = challenge.points;
+      if (challenge.function && (challenge.function === 'linear' || challenge.function === 'logarithmic')) {
+        const solveCount = challenge.solvedBy?.length || 0;
+        if (challenge.function === 'linear') {
+          const decay = challenge.decay || 0;
+          currentValue = Math.max(challenge.minimum || 1, challenge.initial - (decay * solveCount));
+        } else if (challenge.function === 'logarithmic') {
+          const decay = challenge.decay || 0;
+          currentValue = Math.max(
+            challenge.minimum || 1,
+            Math.round(challenge.initial - decay * Math.log2(solveCount + 1))
+          );
+        }
+      }
+      
+      challenge.currentValue = currentValue;
+      challenge.isSolved = userSolvedIds.some(id => id.toString() === challenge._id.toString());
+      return challenge;
     });
+
+    // Calculate stats
+    const solvedCount = enrichedChallenges.filter(c => c.isSolved).length;
+    const remainingCount = enrichedChallenges.length - solvedCount;
 
     const response = {
       success: true,
@@ -165,21 +177,17 @@ router.get('/', protect, sanitizeInput, async (req, res) => {
       total,
       page,
       pages: Math.ceil(total / limit),
-      data: enrichedChallenges
-    };
-
-    // Cache public response (30 seconds for dynamic scoring)
-    if (!isAdmin) {
-      try {
-        await redisClient.setex('challenges:list:public', 30, JSON.stringify(response));
-        res.setHeader('X-Cache', 'MISS');
-      } catch (err) {
-        console.error('Redis set error:', err);
+      data: enrichedChallenges,
+      stats: {
+        solved: solvedCount,
+        remaining: remainingCount,
+        total: enrichedChallenges.length
       }
-    }
+    };
 
     res.json(response);
   } catch (error) {
+    console.error('Error fetching challenges:', error);
     // Only return error message in development or generic in production
     res.status(500).json({
       success: false,
