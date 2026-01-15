@@ -61,7 +61,7 @@ const SolvesModal = ({ challenge, onClose }) => {
 
           <div className="htb-modal-body">
             {loading ? (
-              <Loading size=\"small\" inline text=\"Loading solves\" />
+              <Loading size="small" inline text="Loading solves" />
             ) : solves.length === 0 ? (
               <div className="htb-no-solves">No one has solved this challenge yet!</div>
             ) : (
