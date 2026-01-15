@@ -43,8 +43,9 @@ function Home() {
       if (isAuthenticated && user?.team) {
         try {
           const response = await axios.get(`/api/teams/${user.team}`);
-          if (response.data) {
-            setTeamStats(response.data);
+          if (response.data && response.data.data) {
+            setTeamStats(response.data.data);
+            console.log('Team stats loaded:', response.data.data);
           }
         } catch (error) {
           console.error('Error fetching team stats:', error);

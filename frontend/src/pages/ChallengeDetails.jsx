@@ -8,6 +8,9 @@ import { useEventState } from '../hooks/useEventState'
 import Loading from '../components/Loading'
 import './ChallengeDetails.css'
 
+// Set default axios timeout for this component
+axios.defaults.timeout = 15000; // 15 seconds
+
 const SolvesModal = ({ challenge, onClose }) => {
   const [solves, setSolves] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -162,24 +165,25 @@ const FlagSubmissionModal = ({ challenge, onClose, onSubmit }) => {
           </div>
 
           <div className="htb-modal-body">
-            {isEnded && (
-              <motion.div 
-                className="htb-alert htb-alert-warning"
-                initial={{ opacity: 0, y: -10 }}
-                animate={{ opacity: 1, y: 0 }}
-              >
-                <AlertCircle size={20} />
-                CTF Event Has Ended - Submissions are no longer accepted
-              </motion.div>
-            )}
-            
             <AnimatePresence>
-              {error && (
+              {isEnded && (
                 <motion.div 
-                  className="htb-alert htb-alert-error"
+                  className="htb-alert htb-alert-warning"
                   initial={{ opacity: 0, y: -10 }}
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: -10 }}
+                >
+                  <AlertCircle size={20} />
+                  CTF Event Has Ended - Submissions are no longer accepted
+                </motion.div>
+              )}
+              {error && (
+                <motion.div 
+                  className="htb-alert htb-alert-error"
+                  initial={{ opacity: 0, x: -10 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: 10 }}
+                  transition={{ duration: 0.3 }}
                 >
                   <AlertCircle size={20} />
                   {error}
@@ -188,9 +192,10 @@ const FlagSubmissionModal = ({ challenge, onClose, onSubmit }) => {
               {success && (
                 <motion.div 
                   className="htb-alert htb-alert-success"
-                  initial={{ opacity: 0, y: -10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -10 }}
+                  initial={{ opacity: 0, x: -10 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: 10 }}
+                  transition={{ duration: 0.3 }}
                 >
                   <CheckCircle2 size={20} />
                   {success}
@@ -379,12 +384,20 @@ function ChallengeDetails() {
     try {
       const res = await axios.post(
         `/api/challenges/${challenge._id}/submit`,
-        { flag }
+        { flag },
+        { timeout: 10000 } // 10 second timeout
       );
 
+      // Refetch challenge data to update solved status
+      const challengeRes = await axios.get(`/api/challenges/${challenge._id}`);
+      setChallenge(challengeRes.data.data);
+      
       await updateUserData();
       return res.data;
     } catch (err) {
+      if (err.code === 'ECONNABORTED') {
+        throw new Error('Request timeout. Please try again.');
+      }
       throw new Error(err.response?.data?.message || 'Failed to submit flag');
     }
   };
@@ -443,14 +456,17 @@ function ChallengeDetails() {
         { hintIndex }
       );
 
-      // Update unlocked hints
-      setUnlockedHints([...unlockedHints, hintIndex]);
+      // Refetch challenge data to get updated unlocked hints
+      const challengeRes = await axios.get(`/api/challenges/${challenge._id}`);
+      setChallenge(challengeRes.data.data);
+      setUnlockedHints(challengeRes.data.unlockedHints || []);
 
       // Update user data to reflect new points
       await updateUserData();
 
-      alert(res.data.message);
+      alert(res.data.message || 'Hint unlocked successfully!');
     } catch (err) {
+      console.error('Hint unlock error:', err);
       alert(err.response?.data?.message || 'Failed to unlock hint');
     } finally {
       setUnlockingHint(null);
