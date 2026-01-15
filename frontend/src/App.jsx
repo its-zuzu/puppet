@@ -34,7 +34,6 @@ const AdminCreateTeam = lazy(() => import('./pages/AdminCreateTeam'))
 const TeamDetails = lazy(() => import('./pages/TeamDetails'))
 const PrivacyPolicy = lazy(() => import('./pages/PrivacyPolicy'))
 const TermsOfService = lazy(() => import('./pages/TermsOfService'))
-const Documentation = lazy(() => import('./pages/Documentation'))
 const AdminUserProfile = lazy(() => import('./pages/AdminUserProfile'))
 const ContactUs = lazy(() => import('./pages/ContactUs'))
 const AdminContactMessages = lazy(() => import('./pages/AdminContactMessages'))
@@ -211,7 +210,6 @@ function App() {
                 <Route path="/blocked" element={<UserBlocked />} />
                 <Route path="/privacy-policy" element={<PrivacyPolicy />} />
                 <Route path="/terms-of-service" element={<TermsOfService />} />
-                <Route path="/documentation" element={<Documentation />} />
               </Routes>
             </Suspense>
           </main>

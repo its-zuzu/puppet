@@ -76,7 +76,6 @@ function Navbar() {
     { path: '/challenges', label: 'Challenges', icon: Flag, auth: true },
     { path: '/scoreboard', label: 'Leaderboard', icon: Trophy, auth: true },
     { path: '/my-team', label: 'Team', icon: Users, auth: true },
-    { path: '/documentation', label: 'Docs', icon: FileText, auth: false },
     { path: '/contact', label: 'Contact', icon: Mail, auth: false },
   ];
 

@@ -86,10 +86,6 @@ const Footer = () => {
               <ChevronRight size={16} />
               <span>Challenges</span>
             </Link>
-            <Link to="/documentation" className="htb-footer-link">
-              <ChevronRight size={16} />
-              <span>Documentation</span>
-            </Link>
             <Link to="/scoreboard" className="htb-footer-link">
               <ChevronRight size={16} />
               <span>Scoreboard</span>
