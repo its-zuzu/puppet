@@ -12,12 +12,12 @@ import './Challenges.css';
 
 const CATEGORIES = [
   { id: 'all', name: 'All Categories', icon: null },
-  { id: 'web', name: 'Web', icon: '????' },
-  { id: 'crypto', name: 'Cryptography', icon: '????' },
-  { id: 'forensics', name: 'Forensics', icon: '????' },
-  { id: 'pwn', name: 'Binary', icon: '????' },
-  { id: 'reverse', name: 'Reverse Engineering', icon: '????' },
-  { id: 'misc', name: 'Miscellaneous', icon: '????' },
+  { id: 'web', name: 'Web', icon: null },
+  { id: 'crypto', name: 'Cryptography', icon: null },
+  { id: 'forensics', name: 'Forensics', icon: null },
+  { id: 'pwn', name: 'Binary', icon: null },
+  { id: 'reverse', name: 'Reverse Engineering', icon: null },
+  { id: 'misc', name: 'Miscellaneous', icon: null },
 ];
 
 const DIFFICULTIES = {
@@ -295,7 +295,6 @@ function Challenges() {
                           {DIFFICULTIES[challenge.difficulty?.toLowerCase()]?.label || challenge.difficulty}
                         </Badge>
                         <span className="challenge-category">
-                          {CATEGORIES.find(c => c.id === challenge.category?.toLowerCase())?.icon || '????'}
                           {challenge.category}
                         </span>
                       </div>

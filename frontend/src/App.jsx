@@ -48,6 +48,7 @@ const AdminSubmissions = lazy(() => import('./pages/AdminSubmissions'))
 const UserProfile = lazy(() => import('./pages/UserProfile'))
 const AdminLiveMonitor = lazy(() => import('./pages/AdminLiveMonitor'))
 const MyTeam = lazy(() => import('./pages/MyTeam'))
+const AdminCategories = lazy(() => import('./pages/AdminCategories'))
 
 function App() {
   useEffect(() => {
@@ -200,6 +201,11 @@ function App() {
                 <Route path="/admin/submissions" element={
                   <ProtectedRoute adminOnly={true}>
                     <AdminSubmissions />
+                  </ProtectedRoute>
+                } />
+                <Route path="/admin/categories" element={
+                  <ProtectedRoute adminOnly={true}>
+                    <AdminCategories />
                   </ProtectedRoute>
                 } />
                 <Route path="/admin/live-monitor" element={

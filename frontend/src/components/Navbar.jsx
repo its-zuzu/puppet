@@ -83,6 +83,7 @@ function Navbar() {
     { path: '/admin', label: 'Dashboard' },
     { path: '/admin/create-user', label: 'Create User' },
     { path: '/admin/create-team', label: 'Create Team' },
+    { path: '/admin/categories', label: 'Categories' },
     { path: '/admin/messages', label: 'Messages' },
     { path: '/admin/login-logs', label: 'Login Logs' },
     { path: '/admin/platform-control', label: 'Platform Control' },
