@@ -17,8 +17,17 @@ export default defineConfig(({ mode }) => {
           manualChunks: (id) => {
             // Vendor libraries in separate chunk
             if (id.includes('node_modules')) {
-              if (id.includes('react') || id.includes('react-dom') || id.includes('react-router')) {
+              // React must be in its own chunk and loaded first
+              if (id.includes('react') || id.includes('react-dom')) {
                 return 'vendor-react';
+              }
+              // React Router after React
+              if (id.includes('react-router')) {
+                return 'vendor-router';
+              }
+              // Framer Motion depends on React
+              if (id.includes('framer-motion')) {
+                return 'vendor-motion';
               }
               if (id.includes('axios')) {
                 return 'vendor-axios';
