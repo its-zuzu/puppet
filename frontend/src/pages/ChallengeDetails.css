@@ -71,7 +71,7 @@
   font-size: 0.938rem;
   cursor: pointer;
   transition: all 0.3s ease;
-  z-index: 1;
+  z-index: 10;
 }
 
 .htb-back-btn:hover {
