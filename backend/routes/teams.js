@@ -171,13 +171,13 @@ router.get('/:id', protect, async (req, res) => {
   try {
     const isAdmin = req.user.role === 'admin' || req.user.role === 'superadmin';
     
-    // Hide emails only, show solvedChallenges for transparency
+    // Hide emails only, show solvedChallenges and unlockedHints for transparency
     const memberFields = isAdmin 
       ? 'username email points solvedChallenges personallySolvedChallenges unlockedHints'
-      : 'username points solvedChallenges personallySolvedChallenges';
+      : 'username points solvedChallenges personallySolvedChallenges unlockedHints';
     const captainFields = isAdmin 
       ? 'username email points solvedChallenges personallySolvedChallenges unlockedHints'
-      : 'username points solvedChallenges personallySolvedChallenges';
+      : 'username points solvedChallenges personallySolvedChallenges unlockedHints';
     
     const team = await Team.findById(req.params.id)
       .populate('members', memberFields)

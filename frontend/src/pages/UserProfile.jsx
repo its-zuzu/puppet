@@ -33,9 +33,9 @@ function UserProfile() {
 
       setUser(userRes.data.user);
       setChallenges(challengesRes.data.data || []);
-      setLoading(false);
     } catch (err) {
       setError('Failed to fetch user profile');
+    } finally {
       setLoading(false);
     }
   };

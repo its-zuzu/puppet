@@ -37,10 +37,10 @@ function TeamDetails() {
           username: m.username,
           unlockedHints: m.unlockedHints
         })));
-        setLoading(false);
       } catch (err) {
         console.error('Error fetching team details:', err);
         setError(err.response?.data?.message || 'Failed to load team details');
+      } finally {
         setLoading(false);
       }
     };
@@ -48,7 +48,8 @@ function TeamDetails() {
     fetchTeamDetails();
   }, [id, isAuthenticated, authLoading, navigate]);
 
-  if (loading) {
+  // Show loading only after auth is done
+  if (authLoading || loading) {
     return (
       <div className="htb-team-container">
         <div className="htb-team-grid-bg"></div>
