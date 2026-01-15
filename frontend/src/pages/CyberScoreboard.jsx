@@ -16,6 +16,7 @@ function Scoreboard() {
   const [standings, setStandings] = useState([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [graphKey, setGraphKey] = useState(0);
 
   if (customMessage) {
     return <CustomMessageDisplay message={customMessage} />;
@@ -40,6 +41,10 @@ function Scoreboard() {
     } finally {
       setLoading(false);
       setRefreshing(false);
+      if (manual) {
+        // Force graph refresh by changing key
+        setGraphKey(prev => prev + 1);
+      }
     }
   };
 
@@ -113,7 +118,7 @@ function Scoreboard() {
           </div>
         </CardHeader>
         <CardBody>
-          <ScoreGraph key={viewType} type={viewType} limit={10} />
+          <ScoreGraph key={`${viewType}-${graphKey}`} type={viewType} limit={10} />
         </CardBody>
       </Card>
 
