@@ -282,7 +282,7 @@ function Challenges() {
                         </div>
                         <div className="stat">
                           <Users size={16} />
-                          <span>{challenge.solves?.length || 0} solves</span>
+                          <span>{challenge.solvedBy?.length || 0} solves</span>
                         </div>
                       </div>
                       <ChevronRight className="arrow-icon" size={20} />
