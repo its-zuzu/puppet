@@ -44,13 +44,13 @@ const SolvesModal = ({ challenge, onClose }) => {
           exit={{ scale: 0.9, opacity: 0, y: 20 }}
           transition={{ type: 'spring', damping: 25 }}
         >
-          <div className=\"htb-modal-header\">
-            <div className=\"htb-modal-title\">
+          <div className="htb-modal-header">
+            <div className="htb-modal-title">
               <Users size={24} />
               <h3>{challenge.title} - Solves ({solves.length})</h3>
             </div>
             <motion.button 
-              className=\"htb-modal-close\" 
+              className="htb-modal-close" 
               onClick={onClose}
               whileHover={{ scale: 1.1, rotate: 90 }}
               whileTap={{ scale: 0.9 }}
@@ -59,14 +59,14 @@ const SolvesModal = ({ challenge, onClose }) => {
             </motion.button>
           </div>
 
-          <div className=\"htb-modal-body\">
+          <div className="htb-modal-body">
             {loading ? (
               <Loading size=\"small\" inline text=\"Loading solves\" />
             ) : solves.length === 0 ? (
-              <div className=\"htb-no-solves\">No one has solved this challenge yet!</div>
+              <div className="htb-no-solves">No one has solved this challenge yet!</div>
             ) : (
-              <div className=\"htb-solves-list\">
-                <table className=\"htb-solves-table\">
+              <div className="htb-solves-list">
+                <table className="htb-solves-table">
                   <thead>
                     <tr>
                       <th>#</th>
