@@ -194,15 +194,43 @@ router.get('/:id', protect, async (req, res) => {
     // Calculate team points from members
     const calculatedPoints = team.members.reduce((sum, member) => sum + (member.points || 0), 0);
 
-    // Update team object with calculated points
+    // Calculate team rank
+    const teamsWithHigherPoints = await Team.countDocuments({
+      _id: { $ne: team._id }
+    });
+    
+    // Get all teams to calculate rank properly
+    const allTeams = await Team.find().populate('members', 'points').lean();
+    const teamsWithPoints = allTeams.map(t => ({
+      _id: t._id,
+      totalPoints: t.members.reduce((sum, m) => sum + (m.points || 0), 0)
+    })).sort((a, b) => b.totalPoints - a.totalPoints);
+    
+    const rank = teamsWithPoints.findIndex(t => t._id.toString() === team._id.toString()) + 1;
+    
+    // Calculate total solved challenges (unique challenges across team)
+    const allSolvedChallenges = new Set();
+    team.members.forEach(member => {
+      if (member.solvedChallenges && Array.isArray(member.solvedChallenges)) {
+        member.solvedChallenges.forEach(challenge => {
+          allSolvedChallenges.add(challenge.toString());
+        });
+      }
+    });
+
+    // Update team object with calculated values
     const teamData = team.toObject();
-    teamData.points = calculatedPoints;
+    teamData.totalPoints = calculatedPoints;
+    teamData.points = calculatedPoints; // Keep for backward compatibility
+    teamData.rank = rank;
+    teamData.solvedChallenges = allSolvedChallenges.size;
 
     res.json({
       success: true,
       data: teamData
     });
   } catch (error) {
+    console.error('Error fetching team:', error);
     res.status(500).json({
       success: false,
       message: 'Error fetching team'

@@ -9,6 +9,7 @@ import {
 import AuthContext from '../context/AuthContext';
 import { Button } from '../components/ui';
 import { Card, CardBody } from '../components/ui';
+import axios from 'axios';
 import './Home.css';
 
 function Home() {
@@ -16,6 +17,7 @@ function Home() {
   const navigate = useNavigate();
   const [terminalText, setTerminalText] = useState('');
   const [terminalLine, setTerminalLine] = useState(0);
+  const [teamStats, setTeamStats] = useState(null);
   
   // Scroll progress
   const { scrollYProgress } = useScroll();
@@ -34,6 +36,23 @@ function Home() {
     '[!] Access granted. Ready to hack.',
     '$ exploit --start_',
   ];
+
+  // Fetch team stats
+  useEffect(() => {
+    const fetchTeamStats = async () => {
+      if (isAuthenticated && user?.team) {
+        try {
+          const response = await axios.get(`/api/teams/${user.team}`);
+          if (response.data) {
+            setTeamStats(response.data);
+          }
+        } catch (error) {
+          console.error('Error fetching team stats:', error);
+        }
+      }
+    };
+    fetchTeamStats();
+  }, [isAuthenticated, user]);
 
   useEffect(() => {
     if (terminalLine < terminalCommands.length) {
@@ -196,21 +215,21 @@ function Home() {
                 <div className="htb-quick-stat">
                   <Trophy size={20} />
                   <div>
-                    <span className="htb-stat-value">{user.points || 0}</span>
+                    <span className="htb-stat-value">{teamStats?.totalPoints || 0}</span>
                     <span className="htb-stat-label">Points</span>
                   </div>
                 </div>
                 <div className="htb-quick-stat">
                   <Flag size={20} />
                   <div>
-                    <span className="htb-stat-value">{user.solvedChallenges?.length || 0}</span>
+                    <span className="htb-stat-value">{teamStats?.solvedChallenges || 0}</span>
                     <span className="htb-stat-label">Flags</span>
                   </div>
                 </div>
                 <div className="htb-quick-stat">
                   <TrendingUp size={20} />
                   <div>
-                    <span className="htb-stat-value">#{user.rank || '—'}</span>
+                    <span className="htb-stat-value">#{teamStats?.rank || '—'}</span>
                     <span className="htb-stat-label">Rank</span>
                   </div>
                 </div>
