@@ -351,6 +351,10 @@ function ChallengeDetails() {
       try {
         setLoading(true);
         const res = await axios.get(`/api/challenges/${id}`);
+        console.log('Initial challenge fetch:', {
+          unlockedHints: res.data.unlockedHints,
+          challengeTitle: res.data.data.title
+        });
         setChallenge(res.data.data);
         setUnlockedHints(res.data.unlockedHints || []);
         setLoading(false);
@@ -453,11 +457,22 @@ function ChallengeDetails() {
       setUnlockingHint(hintIndex);
       const res = await axios.post(
         `/api/challenges/${challenge._id}/unlock-hint`,
-        { hintIndex }
+        { hintIndex },
+        { timeout: 10000 }
       );
 
+      console.log('Hint unlock response:', res.data);
+
       // Refetch challenge data to get updated unlocked hints
-      const challengeRes = await axios.get(`/api/challenges/${challenge._id}`);
+      const challengeRes = await axios.get(`/api/challenges/${challenge._id}`, {
+        timeout: 10000
+      });
+      
+      console.log('Challenge refetch response:', {
+        unlockedHints: challengeRes.data.unlockedHints,
+        challengeData: challengeRes.data.data
+      });
+      
       setChallenge(challengeRes.data.data);
       setUnlockedHints(challengeRes.data.unlockedHints || []);
 
