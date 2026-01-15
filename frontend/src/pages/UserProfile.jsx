@@ -189,13 +189,10 @@ function UserProfile() {
                 >
                   <h3 className="htb-challenge-title">{challenge.title}</h3>
                   <div className="htb-challenge-meta">
-                    <span className={`htb-difficulty htb-${challenge.difficulty.toLowerCase()}`}>
-                      {challenge.difficulty}
-                    </span>
                     <span className="htb-category">{challenge.category}</span>
                     <span className="htb-points">
                       <Award size={14} />
-                      {challenge.points}
+                      {challenge.points} pts
                     </span>
                   </div>
                 </motion.div>

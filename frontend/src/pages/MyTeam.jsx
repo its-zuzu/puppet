@@ -2,7 +2,7 @@ import { useEffect, useState, useContext } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import AuthContext from '../context/AuthContext';
-import Loading from '../components/Loading';
+import { Loading } from '../components/ui';
 import './MyTeam.css';
 
 function MyTeam() {
@@ -47,10 +47,10 @@ function MyTeam() {
     fetchMyTeam();
   }, [isAuthenticated, loading, navigate]);
 
-  if (pageLoading) {
+  if (loading || pageLoading) {
     return (
       <div className="my-team-container">
-        <Loading size="medium" text="Loading team" />
+        <Loading text="Loading team" />
       </div>
     );
   }
