@@ -6,9 +6,10 @@ const { protect, authorize } = require('../middleware/auth');
 
 // @route   POST /api/contact
 // @desc    Submit a contact form message
-// @access  Public
+// @access  Private
 router.post(
   '/',
+  protect,
   [
     check('name', 'Name is required').not().isEmpty().trim(),
     check('email', 'Please include a valid email').isEmail().normalizeEmail(),

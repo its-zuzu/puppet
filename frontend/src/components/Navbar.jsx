@@ -76,7 +76,7 @@ function Navbar() {
     { path: '/challenges', label: 'Challenges', icon: Flag, auth: true },
     { path: '/scoreboard', label: 'Leaderboard', icon: Trophy, auth: true },
     { path: '/my-team', label: 'Team', icon: Users, auth: true },
-    { path: '/contact', label: 'Contact', icon: Mail, auth: false },
+    { path: '/contact', label: 'Contact', icon: Mail, auth: true },
   ];
 
   const adminLinks = [
