@@ -117,7 +117,7 @@ function Profile() {
           {user.team && (
             <p className="profile-team">
               <Shield size={16} />
-              Team: {user.team}
+              Team: {user.team.name || user.team}
             </p>
           )}
         </div>
