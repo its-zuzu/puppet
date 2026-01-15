@@ -129,23 +129,24 @@ function Challenges() {
               <Flag className="title-icon" />
               Challenges
             </h1>
-            <p className="page-description">
-              Test your skills across {challenges.length} cybersecurity challenges
-            </p>
           </div>
 
           <div className="header-stats">
             <div className="stat-box">
               <Award className="stat-icon" />
               <div>
-                <span className="stat-number">{user?.solvedChallenges?.length || 0}</span>
+                <span className="stat-number">{user?.solvedChallenges?.filter(solvedId => 
+                  challenges.find(c => c._id === solvedId && c.isVisible !== false)
+                ).length || 0}</span>
                 <span className="stat-label">Solved</span>
               </div>
             </div>
             <div className="stat-box">
               <Clock className="stat-icon" />
               <div>
-                <span className="stat-number">{challenges.length - (user?.solvedChallenges?.length || 0)}</span>
+                <span className="stat-number">{challenges.filter(c => c.isVisible !== false).length - (user?.solvedChallenges?.filter(solvedId => 
+                  challenges.find(c => c._id === solvedId && c.isVisible !== false)
+                ).length || 0)}</span>
                 <span className="stat-label">Remaining</span>
               </div>
             </div>
