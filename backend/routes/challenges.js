@@ -420,7 +420,7 @@ router.post('/:id/unlock-hint', protect, checkEventNotEnded, async (req, res) =>
 });
 
 // @route   GET /api/challenges/:id
-// @desc    Get single challenge
+// @desc    Get single challenge (CTFd-style with hint views)
 // @access  Public
 router.get('/:id', async (req, res) => {
   try {
@@ -432,7 +432,7 @@ router.get('/:id', async (req, res) => {
       });
     }
 
-    const challenge = await Challenge.findById(req.params.id).select('-flag');
+    const challenge = await Challenge.findById(req.params.id).select('-flag').lean();
 
     if (!challenge) {
       return res.status(404).json({
@@ -441,28 +441,75 @@ router.get('/:id', async (req, res) => {
       });
     }
 
-    // If user is authenticated, include their unlocked hints info
+    // CTFd-style: Get user's unlocked hints from Unlocks table
     let unlockedHints = [];
+    let userId = null;
+    let teamId = null;
+
     if (req.headers.authorization) {
       try {
+        const Unlock = require('../models/Unlock');
         const token = req.headers.authorization.split(' ')[1];
         const decoded = jwt.verify(token, process.env.JWT_SECRET);
-        const user = await User.findById(decoded.id);
+        const user = await User.findById(decoded.id).populate('team');
 
-        if (user && user.unlockedHints) {
-          unlockedHints = user.unlockedHints
-            .filter(h => h.challengeId.toString() === req.params.id)
-            .map(h => h.hintIndex);
+        if (user) {
+          userId = user._id;
+          teamId = user.team ? user.team._id : null;
+
+          // Get all unlocks for this challenge
+          const query = {
+            challenge: req.params.id,
+            type: 'hints'
+          };
+
+          if (teamId) {
+            query.$or = [
+              { user: userId },
+              { team: teamId }
+            ];
+          } else {
+            query.user = userId;
+          }
+
+          const unlocks = await Unlock.find(query).select('target');
+          unlockedHints = unlocks.map(u => u.target);
         }
       } catch (err) {
+        console.error('[Challenge GET] Auth error:', err.message);
         // Token invalid or user not found, continue without unlocked hints
       }
+    }
+
+    // CTFd-style: Transform hints based on unlock status
+    if (challenge.hints && challenge.hints.length > 0) {
+      challenge.hints = challenge.hints.map((hint, index) => {
+        const isUnlocked = unlockedHints.includes(index);
+        const isFree = hint.cost === 0;
+
+        // Return "unlocked" view (with content) or "locked" view (without content)
+        if (isUnlocked || isFree) {
+          return {
+            id: index,
+            content: hint.content,
+            cost: hint.cost,
+            unlocked: true
+          };
+        } else {
+          return {
+            id: index,
+            cost: hint.cost,
+            unlocked: false
+            // content intentionally omitted for locked hints
+          };
+        }
+      });
     }
 
     res.json({
       success: true,
       data: challenge,
-      unlockedHints
+      unlockedHints // Still include this for backward compatibility
     });
   } catch (error) {
     console.error('Error fetching challenge:', error);
