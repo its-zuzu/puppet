@@ -1,5 +1,7 @@
 import { useState, useEffect, useContext } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
+import { motion, AnimatePresence } from 'framer-motion'
+import { ChevronLeft, Award, Users, Lock, Unlock, Flag, AlertCircle, CheckCircle2, Send, X } from 'lucide-react'
 import axios from 'axios'
 import AuthContext from '../context/AuthContext'
 import { useEventState } from '../hooks/useEventState'
@@ -26,43 +28,75 @@ const SolvesModal = ({ challenge, onClose }) => {
   }, [challenge._id]);
 
   return (
-    <div className="modal-overlay" onClick={onClose}>
-      <div className="modal-content solves-modal" onClick={(e) => e.stopPropagation()}>
-        <div className="modal-header">
-          <h3>{challenge.title} - Solves ({solves.length})</h3>
-          <button className="modal-close" onClick={onClose}>×</button>
-        </div>
-
-        {loading ? (
-          <Loading size="small" inline text="Loading solves" />
-        ) : solves.length === 0 ? (
-          <div className="no-solves">No one has solved this challenge yet!</div>
-        ) : (
-          <div className="solves-list">
-            <table className="solves-table">
-              <thead>
-                <tr>
-                  <th>#</th>
-                  <th>User</th>
-                  <th>Team</th>
-                  <th>Solved At</th>
-                </tr>
-              </thead>
-              <tbody>
-                {solves.map((solve, index) => (
-                  <tr key={index}>
-                    <td>{index + 1}</td>
-                    <td>{solve.username}</td>
-                    <td>{solve.team}</td>
-                    <td>{new Date(solve.solvedAt).toLocaleString()}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+    <AnimatePresence>
+      <motion.div 
+        className="htb-modal-overlay" 
+        onClick={onClose}
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+      >
+        <motion.div 
+          className="htb-modal-content" 
+          onClick={(e) => e.stopPropagation()}
+          initial={{ scale: 0.9, opacity: 0, y: 20 }}
+          animate={{ scale: 1, opacity: 1, y: 0 }}
+          exit={{ scale: 0.9, opacity: 0, y: 20 }}
+          transition={{ type: 'spring', damping: 25 }}
+        >
+          <div className=\"htb-modal-header\">
+            <div className=\"htb-modal-title\">
+              <Users size={24} />
+              <h3>{challenge.title} - Solves ({solves.length})</h3>
+            </div>
+            <motion.button 
+              className=\"htb-modal-close\" 
+              onClick={onClose}
+              whileHover={{ scale: 1.1, rotate: 90 }}
+              whileTap={{ scale: 0.9 }}
+            >
+              <X size={24} />
+            </motion.button>
           </div>
-        )}
-      </div>
-    </div>
+
+          <div className=\"htb-modal-body\">
+            {loading ? (
+              <Loading size=\"small\" inline text=\"Loading solves\" />
+            ) : solves.length === 0 ? (
+              <div className=\"htb-no-solves\">No one has solved this challenge yet!</div>
+            ) : (
+              <div className=\"htb-solves-list\">
+                <table className=\"htb-solves-table\">
+                  <thead>
+                    <tr>
+                      <th>#</th>
+                      <th>User</th>
+                      <th>Team</th>
+                      <th>Solved At</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {solves.map((solve, index) => (
+                      <motion.tr 
+                        key={index}
+                        initial={{ opacity: 0, x: -20 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{ delay: index * 0.05 }}
+                      >
+                        <td>{index + 1}</td>
+                        <td>{solve.username}</td>
+                        <td>{solve.team}</td>
+                        <td>{new Date(solve.solvedAt).toLocaleString()}</td>
+                      </motion.tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+        </motion.div>
+      </motion.div>
+    </AnimatePresence>
   );
 };
 
@@ -96,52 +130,118 @@ const FlagSubmissionModal = ({ challenge, onClose, onSubmit }) => {
   };
 
   return (
-    <div className="modal-overlay" onClick={onClose}>
-      <div className="modal-content" onClick={(e) => e.stopPropagation()}>
-        <div className="modal-header">
-          <h3>Submit Flag: {challenge.title}</h3>
-          <button className="modal-close" onClick={onClose}>×</button>
-        </div>
-
-        {isEnded && (
-          <div className="modal-error" style={{
-            backgroundColor: 'rgba(139, 92, 246, 0.2)',
-            border: '2px solid #8b5cf6',
-            color: '#c4b5fd',
-            padding: '15px',
-            marginBottom: '15px',
-            boxShadow: '0 0 10px rgba(139, 92, 246, 0.3)'
-          }}>
-            CTF Event Has Ended - Submissions are no longer accepted
-          </div>
-        )}
-        {error && <div className="modal-error">{error}</div>}
-        {success && <div className="modal-success">{success}</div>}
-
-        <form onSubmit={handleSubmit} className="flag-form">
-          <div className="form-group">
-            <label htmlFor="flag">Flag</label>
-            <input
-              type="text"
-              id="flag"
-              value={flag}
-              onChange={(e) => setFlag(e.target.value)}
-              placeholder="Enter the flag SECE{flag_here}"
-              autoComplete="off"
-              disabled={isSubmitting || success || isEnded}
-            />
+    <AnimatePresence>
+      <motion.div 
+        className="htb-modal-overlay" 
+        onClick={onClose}
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+      >
+        <motion.div 
+          className="htb-modal-content" 
+          onClick={(e) => e.stopPropagation()}
+          initial={{ scale: 0.9, opacity: 0, y: 20 }}
+          animate={{ scale: 1, opacity: 1, y: 0 }}
+          exit={{ scale: 0.9, opacity: 0, y: 20 }}
+          transition={{ type: 'spring', damping: 25 }}
+        >
+          <div className="htb-modal-header">
+            <div className="htb-modal-title">
+              <Flag size={24} />
+              <h3>Submit Flag: {challenge.title}</h3>
+            </div>
+            <motion.button 
+              className="htb-modal-close" 
+              onClick={onClose}
+              whileHover={{ scale: 1.1, rotate: 90 }}
+              whileTap={{ scale: 0.9 }}
+            >
+              <X size={24} />
+            </motion.button>
           </div>
 
-          <button
-            type="submit"
-            className="submit-flag-button"
-            disabled={isSubmitting || success || isEnded}
-          >
-            {isEnded ? 'Event Ended' : isSubmitting ? 'Submitting...' : 'Submit Flag'}
-          </button>
-        </form>
-      </div>
-    </div>
+          <div className="htb-modal-body">
+            {isEnded && (
+              <motion.div 
+                className="htb-alert htb-alert-warning"
+                initial={{ opacity: 0, y: -10 }}
+                animate={{ opacity: 1, y: 0 }}
+              >
+                <AlertCircle size={20} />
+                CTF Event Has Ended - Submissions are no longer accepted
+              </motion.div>
+            )}
+            
+            <AnimatePresence>
+              {error && (
+                <motion.div 
+                  className="htb-alert htb-alert-error"
+                  initial={{ opacity: 0, y: -10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -10 }}
+                >
+                  <AlertCircle size={20} />
+                  {error}
+                </motion.div>
+              )}
+              {success && (
+                <motion.div 
+                  className="htb-alert htb-alert-success"
+                  initial={{ opacity: 0, y: -10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -10 }}
+                >
+                  <CheckCircle2 size={20} />
+                  {success}
+                </motion.div>
+              )}
+            </AnimatePresence>
+
+            <form onSubmit={handleSubmit} className="htb-flag-form">
+              <div className="htb-form-group">
+                <label htmlFor="flag">Flag</label>
+                <div className="htb-input-wrapper">
+                  <input
+                    type="text"
+                    id="flag"
+                    value={flag}
+                    onChange={(e) => setFlag(e.target.value)}
+                    placeholder="SECE{flag_here}"
+                    autoComplete="off"
+                    disabled={isSubmitting || success || isEnded}
+                    className="htb-flag-input"
+                  />
+                  <div className="htb-input-border"></div>
+                </div>
+              </div>
+
+              <motion.button
+                type="submit"
+                className="htb-submit-flag-btn"
+                disabled={isSubmitting || success || isEnded}
+                whileHover={!isSubmitting && !success && !isEnded ? { scale: 1.05 } : {}}
+                whileTap={!isSubmitting && !success && !isEnded ? { scale: 0.95 } : {}}
+              >
+                {isEnded ? (
+                  'Event Ended'
+                ) : isSubmitting ? (
+                  <>
+                    <span className="htb-spinner"></span>
+                    Submitting...
+                  </>
+                ) : (
+                  <>
+                    <Send size={18} />
+                    Submit Flag
+                  </>
+                )}
+              </motion.button>
+            </form>
+          </div>
+        </motion.div>
+      </motion.div>
+    </AnimatePresence>
   );
 };
 
@@ -291,107 +391,176 @@ function ChallengeDetails() {
   const isSolved = user?.solvedChallenges?.includes(challenge._id);
 
   return (
-    <div className="challenge-details-container">
+    <div className="htb-challenge-container">
+      <div className="htb-challenge-grid-bg"></div>
+      
       {isEnded && (
-        <div style={{
-          backgroundColor: 'rgba(139, 92, 246, 0.2)',
-          border: '2px solid #8b5cf6',
-          color: '#c4b5fd',
-          padding: '15px',
-          textAlign: 'center',
-          marginBottom: '20px',
-          borderRadius: '5px',
-          fontWeight: 'bold',
-          boxShadow: '0 0 15px rgba(139, 92, 246, 0.3)'
-        }}>
+        <motion.div 
+          className="htb-event-ended-banner"
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+        >
+          <AlertCircle size={20} />
           CTF Event Has Ended - Flag submissions are no longer accepted
-        </div>
+        </motion.div>
       )}
-      <div className="challenge-details-header">
-        <button onClick={() => navigate('/challenges')} className="back-button">
-          ← Back to Challenges
-        </button>
-        <div className="header-content">
-          <h1>{challenge.title}</h1>
-        </div>
-      </div>
 
-      <div className="challenges-main">
-        <div className="challenge-details-content">
-          <div className="challenge-meta">
-            <span className="points-badge">{challenge.points} pts</span>
-            <span className="category-badge">{challenge.category}</span>
-            <span
-              className="solved-count clickable"
-              onClick={() => setShowSolvesModal(true)}
-              style={{ cursor: 'pointer', textDecoration: 'underline' }}
+      <motion.div 
+        className="htb-challenge-header"
+        initial={{ opacity: 0, y: -20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5 }}
+      >
+        <motion.button 
+          onClick={() => navigate('/challenges')} 
+          className="htb-back-btn"
+          whileHover={{ scale: 1.05, x: -5 }}
+          whileTap={{ scale: 0.95 }}
+        >
+          <ChevronLeft size={20} />
+          Back
+        </motion.button>
+        <h1 className="htb-challenge-title">
+          {challenge.title}
+        </h1>
+      </motion.div>
+
+      <div className="htb-challenge-main">
+        <motion.div 
+          className="htb-challenge-content"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6, delay: 0.2 }}
+        >
+          <div className="htb-challenge-meta">
+            <motion.div 
+              className="htb-meta-badge htb-points"
+              whileHover={{ scale: 1.05 }}
             >
-              {challenge.solvedBy?.length || 0} solves
-            </span>
+              <Award size={16} />
+              <span>{challenge.points} pts</span>
+            </motion.div>
+            <motion.div 
+              className="htb-meta-badge htb-category"
+              whileHover={{ scale: 1.05 }}
+            >
+              <span>{challenge.category}</span>
+            </motion.div>
+            <motion.div
+              className="htb-meta-badge htb-solves"
+              onClick={() => setShowSolvesModal(true)}
+              whileHover={{ scale: 1.05 }}
+            >
+              <Users size={16} />
+              <span>{challenge.solvedBy?.length || 0} solves</span>
+            </motion.div>
           </div>
 
-          <div className="description">
-            <h3>Description</h3>
-            <p>{challenge.description}</p>
-          </div>
+          <motion.div 
+            className="htb-section htb-description"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.3 }}
+          >
+            <h3 className="htb-section-title">
+              <span className="htb-title-line"></span>
+              Description
+            </h3>
+            <div className="htb-description-content">
+              <p>{challenge.description}</p>
+            </div>
+          </motion.div>
 
           {challenge.hints && challenge.hints.length > 0 && (
-            <div className="hints">
-              <h3>Hints</h3>
-              {challenge.hints.map((hint, index) => {
-                const isUnlocked = unlockedHints.includes(index);
-                const isFree = hint.cost === 0;
-                const showContent = isFree || isUnlocked;
+            <motion.div 
+              className="htb-section htb-hints"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.4 }}
+            >
+              <h3 className="htb-section-title">
+                <span className="htb-title-line"></span>
+                Hints
+              </h3>
+              <div className="htb-hints-list">
+                {challenge.hints.map((hint, index) => {
+                  const isUnlocked = unlockedHints.includes(index);
+                  const isFree = hint.cost === 0;
+                  const showContent = isFree || isUnlocked;
 
-                return (
-                  <div key={index} className={`hint-item ${showContent ? 'unlocked' : 'locked'}`}>
-                    {showContent ? (
-                      <p>{hint.content}</p>
-                    ) : (
-                      <div className="locked-hint">
-                        <button
-                          className="unlock-hint-button"
-                          onClick={() => unlockHint(index)}
-                          disabled={!isAuthenticated || unlockingHint === index}
-                        >
-                          {unlockingHint === index ? 'Unlocking...' : `Unlock Hint for ${hint.cost} points`}
-                        </button>
-                        {!isAuthenticated && (
-                          <p className="login-hint">Login to unlock this hint</p>
-                        )}
+                  return (
+                    <motion.div 
+                      key={index} 
+                      className={`htb-hint-card ${showContent ? 'unlocked' : 'locked'}`}
+                      initial={{ opacity: 0, x: -20 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ delay: 0.5 + index * 0.1 }}
+                      whileHover={{ scale: 1.02 }}
+                    >
+                      <div className="htb-hint-icon">
+                        {showContent ? <Unlock size={20} /> : <Lock size={20} />}
                       </div>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
+                      {showContent ? (
+                        <p className="htb-hint-text">{hint.content}</p>
+                      ) : (
+                        <div className="htb-hint-locked">
+                          <motion.button
+                            className="htb-unlock-btn"
+                            onClick={() => unlockHint(index)}
+                            disabled={!isAuthenticated || unlockingHint === index}
+                            whileHover={{ scale: 1.05 }}
+                            whileTap={{ scale: 0.95 }}
+                          >
+                            {unlockingHint === index ? 'Unlocking...' : `Unlock for ${hint.cost} points`}
+                          </motion.button>
+                          {!isAuthenticated && (
+                            <p className="htb-login-hint">Login to unlock this hint</p>
+                          )}
+                        </div>
+                      )}
+                    </motion.div>
+                  );
+                })}
+              </div>
+            </motion.div>
           )}
 
-          <div className="challenge-actions">
+          <motion.div 
+            className="htb-challenge-actions"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.6 }}
+          >
             {isEnded ? (
-              <div style={{
-                padding: '15px',
-                backgroundColor: 'rgba(139, 92, 246, 0.15)',
-                border: '2px solid #8b5cf6',
-                borderRadius: '5px',
-                textAlign: 'center',
-                color: '#c4b5fd',
-                fontWeight: 'bold',
-                boxShadow: '0 0 10px rgba(139, 92, 246, 0.2)'
-              }}>
+              <div className="htb-event-ended-notice">
+                <AlertCircle size={20} />
                 CTF Event Has Ended - Flag submissions are no longer accepted
               </div>
             ) : (
-              <button
-                className={`solve-challenge-button ${!isAuthenticated ? 'login-required' : ''}`}
+              <motion.button
+                className={`htb-submit-btn ${isSolved ? 'solved' : ''} ${!isAuthenticated ? 'disabled' : ''}`}
                 onClick={openModal}
                 disabled={isSolved}
+                whileHover={!isSolved ? { scale: 1.05, boxShadow: '0 0 30px var(--primary-glow)' } : {}}
+                whileTap={!isSolved ? { scale: 0.95 } : {}}
               >
-                {isSolved ? 'Solved ✓' : isAuthenticated ? 'Submit Flag' : 'Login to Solve'}
-              </button>
+                {isSolved ? (
+                  <>
+                    <CheckCircle2 size={20} />
+                    Solved
+                  </>
+                ) : isAuthenticated ? (
+                  <>
+                    <Flag size={20} />
+                    Submit Flag
+                  </>
+                ) : (
+                  'Login to Solve'
+                )}
+              </motion.button>
             )}
-          </div>
-        </div>
+          </motion.div>
+        </motion.div>
       </div>
 
       {showSolvesModal && challenge && (
