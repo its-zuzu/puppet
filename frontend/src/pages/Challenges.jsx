@@ -166,7 +166,6 @@ function Challenges() {
             {/* Search */}
             <div className="filter-section">
               <div className="search-box">
-                <Search className="search-icon" size={20} />
                 <Input
                   type="text"
                   placeholder="Search challenges..."
