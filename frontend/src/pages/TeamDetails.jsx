@@ -1,8 +1,10 @@
 import { useState, useEffect, useContext } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import { motion } from 'framer-motion';
+import { ChevronLeft, Users, Award, Trophy, Zap, Crown, Lock } from 'lucide-react';
 import axios from 'axios';
 import AuthContext from '../context/AuthContext';
-import Loading from '../components/Loading';
+import { Loading } from '../components/ui';
 import './TeamDetails.css';
 
 function TeamDetails() {
@@ -48,30 +50,57 @@ function TeamDetails() {
 
   if (loading) {
     return (
-      <div className="team-details-container">
-        <Loading size="large" text="Loading team details" />
+      <div className="htb-team-container">
+        <div className="htb-team-grid-bg"></div>
+        <Loading />
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className="team-details-container">
-        <div className="error-message">{error}</div>
-        <button className="btn-back" onClick={() => navigate('/scoreboard')}>
-          Back to Scoreboard
-        </button>
+      <div className="htb-team-container">
+        <div className="htb-team-grid-bg"></div>
+        <motion.div 
+          className="htb-error-state"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+        >
+          <p>{error}</p>
+          <motion.button 
+            className="htb-back-btn"
+            onClick={() => navigate('/scoreboard')}
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+          >
+            <ChevronLeft size={20} />
+            Back to Scoreboard
+          </motion.button>
+        </motion.div>
       </div>
     );
   }
 
   if (!team) {
     return (
-      <div className="team-details-container">
-        <div className="error-message">Team not found</div>
-        <button className="btn-back" onClick={() => navigate('/scoreboard')}>
-          Back to Scoreboard
-        </button>
+      <div className="htb-team-container">
+        <div className="htb-team-grid-bg"></div>
+        <motion.div 
+          className="htb-error-state"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+        >
+          <p>Team not found</p>
+          <motion.button 
+            className="htb-back-btn"
+            onClick={() => navigate('/scoreboard')}
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+          >
+            <ChevronLeft size={20} />
+            Back to Scoreboard
+          </motion.button>
+        </motion.div>
       </div>
     );
   }
@@ -96,113 +125,217 @@ function TeamDetails() {
   }
 
   return (
-    <div className="team-details-container">
-      <button className="btn-back" onClick={() => navigate('/scoreboard')}>
-        ← Back to Scoreboard
-      </button>
+    <div className="htb-team-container">
+      <div className="htb-team-grid-bg"></div>
+      
+      <motion.div 
+        className="htb-team-header"
+        initial={{ opacity: 0, y: -20 }}
+        animate={{ opacity: 1, y: 0 }}
+      >
+        <motion.button 
+          className="htb-back-btn"
+          onClick={() => navigate('/scoreboard')}
+          whileHover={{ scale: 1.05, x: -5 }}
+          whileTap={{ scale: 0.95 }}
+        >
+          <ChevronLeft size={20} />
+          Back
+        </motion.button>
+        <h1 className="htb-team-name">{team.name}</h1>
+      </motion.div>
 
-      <div className="team-details-header">
-        <h1 className="team-name">{team.name}</h1>
-      </div>
+      <div className="htb-team-main">
+        <motion.div 
+          className="htb-team-stats"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.2 }}
+        >
+          <motion.div 
+            className="htb-stat-card htb-stat-points"
+            whileHover={{ scale: 1.02, y: -4 }}
+          >
+            <div className="htb-stat-icon">
+              <Trophy size={24} />
+            </div>
+            <div className="htb-stat-content">
+              <div className="htb-stat-label">Total Points</div>
+              <div className="htb-stat-value">{team.points || 0}</div>
+            </div>
+          </motion.div>
 
-      <div className="team-stats">
-        <div className="stat-card points-card">
-          <div className="stat-label">Total Points</div>
-          <div className="stat-value points">{team.points || 0}</div>
-        </div>
-        <div className="stat-card members-card">
-          <div className="stat-label">Team Members</div>
-          <div className="stat-value">{team.members.length}</div>
-        </div>
-        <div className="stat-card challenges-card">
-          <div className="stat-label">Challenges Solved</div>
-          <div className="stat-value">
-            {team.members.reduce((sum, member) => sum + (member.personallySolvedChallenges?.length || 0), 0)}
-          </div>
-        </div>
-      </div>
+          <motion.div 
+            className="htb-stat-card htb-stat-members"
+            whileHover={{ scale: 1.02, y: -4 }}
+          >
+            <div className="htb-stat-icon">
+              <Users size={24} />
+            </div>
+            <div className="htb-stat-content">
+              <div className="htb-stat-label">Team Members</div>
+              <div className="htb-stat-value">{team.members.length}</div>
+            </div>
+          </motion.div>
 
-      <div className="team-members-section">
-        <h2>Team Members</h2>
+          <motion.div 
+            className="htb-stat-card htb-stat-challenges"
+            whileHover={{ scale: 1.02, y: -4 }}
+          >
+            <div className="htb-stat-icon">
+              <Award size={24} />
+            </div>
+            <div className="htb-stat-content">
+              <div className="htb-stat-label">Challenges Solved</div>
+              <div className="htb-stat-value">
+                {team.members.reduce((sum, member) => sum + (member.personallySolvedChallenges?.length || 0), 0)}
+              </div>
+            </div>
+          </motion.div>
+        </motion.div>
 
-        {captain && (
-          <div className="member-card captain">
-            <div className="member-badge">CAPTAIN</div>
-            <div className="member-info">
-              <div
-                className="member-name clickable"
+        <motion.div 
+          className="htb-team-section"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.3 }}
+        >
+          <h2 className="htb-section-title">
+            <span className="htb-title-line"></span>
+            Team Members
+          </h2>
+
+          {captain && (
+            <motion.div 
+              className="htb-member-card htb-captain"
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: 0.4 }}
+              whileHover={{ scale: 1.01 }}
+            >
+              <div className="htb-captain-badge">
+                <Crown size={16} />
+                <span>Captain</span>
+              </div>
+              <div 
+                className="htb-member-info"
                 onClick={() => navigate(`/user/${captain._id}`)}
-                style={{ cursor: 'pointer' }}
               >
-                {captain.username}
+                <div className="htb-member-name">{captain.username}</div>
+                <div className="htb-member-email">{captain.email}</div>
               </div>
-              <div className="member-email">{captain.email}</div>
-            </div>
-            <div className="member-stats">
-              <div className="member-points">{captain.points || 0} pts</div>
-              <div className="member-challenges">{captain.personallySolvedChallenges?.length || 0} solved</div>
-              <div className="member-hints">{captain.unlockedHints?.length || 0} hints unlocked</div>
-            </div>
-          </div>
-        )}
+              <div className="htb-member-stats">
+                <div className="htb-member-stat">
+                  <Zap size={16} />
+                  <span>{captain.points || 0} pts</span>
+                </div>
+                <div className="htb-member-stat">
+                  <Award size={16} />
+                  <span>{captain.personallySolvedChallenges?.length || 0} solved</span>
+                </div>
+                <div className="htb-member-stat">
+                  <Lock size={16} />
+                  <span>{captain.unlockedHints?.length || 0} hints</span>
+                </div>
+              </div>
+            </motion.div>
+          )}
 
-        <div className="members-list">
-          {sortedMembers.filter(m => m._id !== captain?._id).map((member, index) => (
-            <div key={member._id} className="member-card">
-              <div className="member-rank">#{sortedMembers.findIndex(sm => sm._id === member._id) + 1}</div>
-              <div className="member-info">
-                <div
-                  className="member-name clickable"
+          <div className="htb-members-grid">
+            {sortedMembers.filter(m => m._id !== captain?._id).map((member, index) => (
+              <motion.div 
+                key={member._id}
+                className="htb-member-card"
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.5 + index * 0.05 }}
+                whileHover={{ scale: 1.01 }}
+              >
+                <div className="htb-member-rank">
+                  #{sortedMembers.findIndex(sm => sm._id === member._id) + 1}
+                </div>
+                <div 
+                  className="htb-member-info"
                   onClick={() => navigate(`/user/${member._id}`)}
-                  style={{ cursor: 'pointer' }}
                 >
-                  {member.username}
+                  <div className="htb-member-name">{member.username}</div>
+                  <div className="htb-member-email">{member.email}</div>
                 </div>
-                <div className="member-email">{member.email}</div>
-              </div>
-              <div className="member-stats">
-                <div className="member-points">{member.points || 0} pts</div>
-                <div className="member-challenges">{member.personallySolvedChallenges?.length || 0} solved</div>
-                <div className="member-hints">{member.unlockedHints?.length || 0} hints unlocked</div>
-              </div>
-            </div>
-          ))}
-        </div>
-
-        {team.members.length === 0 && (
-          <div className="no-members">
-            <p>No members in this team yet</p>
-          </div>
-        )}
-      </div>
-
-      {/* Unlocked Hints Section */}
-      <div className="team-hints-section">
-        <h2>Unlocked Hints</h2>
-        {team.members.some(m => m.unlockedHints && m.unlockedHints.length > 0) ? (
-          <div className="hints-list">
-            {team.members.map(member => (
-              member.unlockedHints && member.unlockedHints.length > 0 && (
-                <div key={member._id} className="member-hints-group">
-                  <h3 className="member-hints-header">
-                    <span className="member-name-badge">{member.username}</span>
-                  </h3>
-                  {member.unlockedHints.map((hint, idx) => (
-                    <div key={idx} className="hint-detail-card">
-                      <div className="hint-info">
-                        <span className="hint-challenge">{hint.challengeTitle || 'Unknown Challenge'}</span>
-                      </div>
-                      <div className="hint-cost-badge">{hint.hintCost} pts</div>
-                    </div>
-                  ))}
+                <div className="htb-member-stats">
+                  <div className="htb-member-stat">
+                    <Zap size={16} />
+                    <span>{member.points || 0} pts</span>
+                  </div>
+                  <div className="htb-member-stat">
+                    <Award size={16} />
+                    <span>{member.personallySolvedChallenges?.length || 0} solved</span>
+                  </div>
+                  <div className="htb-member-stat">
+                    <Lock size={16} />
+                    <span>{member.unlockedHints?.length || 0} hints</span>
+                  </div>
                 </div>
-              )
+              </motion.div>
             ))}
           </div>
-        ) : (
-          <div className="no-hints">
-            <p>No hints unlocked yet</p>
-          </div>
+
+          {team.members.length === 0 && (
+            <div className="htb-empty-state">
+              <Users size={48} />
+              <p>No members in this team yet</p>
+            </div>
+          )}
+        </motion.div>
+
+        {team.members.some(m => m.unlockedHints && m.unlockedHints.length > 0) && (
+          <motion.div 
+            className="htb-team-section"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.6 }}
+          >
+            <h2 className="htb-section-title">
+              <span className="htb-title-line"></span>
+              Unlocked Hints
+            </h2>
+            <div className="htb-hints-list">
+              {team.members.map((member, memberIndex) => (
+                member.unlockedHints && member.unlockedHints.length > 0 && (
+                  <motion.div 
+                    key={member._id}
+                    className="htb-member-hints-group"
+                    initial={{ opacity: 0, x: -20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: 0.7 + memberIndex * 0.1 }}
+                  >
+                    <div className="htb-member-hints-header">
+                      <Users size={18} />
+                      <span>{member.username}</span>
+                    </div>
+                    <div className="htb-hints-grid">
+                      {member.unlockedHints.map((hint, idx) => (
+                        <motion.div 
+                          key={idx}
+                          className="htb-hint-card"
+                          initial={{ opacity: 0, scale: 0.9 }}
+                          animate={{ opacity: 1, scale: 1 }}
+                          transition={{ delay: 0.8 + idx * 0.05 }}
+                          whileHover={{ scale: 1.02 }}
+                        >
+                          <div className="htb-hint-challenge">
+                            {hint.challengeTitle || 'Unknown Challenge'}
+                          </div>
+                          <div className="htb-hint-cost">
+                            -{hint.hintCost} pts
+                          </div>
+                        </motion.div>
+                      ))}
+                    </div>
+                  </motion.div>
+                )
+              ))}
+            </div>
+          </motion.div>
         )}
       </div>
     </div>
