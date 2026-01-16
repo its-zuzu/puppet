@@ -46,6 +46,7 @@ function Login() {
 
     Logger.info('LOGIN_ATTEMPT_START', { email });
     setIsSubmitting(true);
+    setFormError(''); // Clear previous errors
 
     try {
       await login({ email, password });
@@ -67,7 +68,8 @@ function Login() {
       if (err.message?.includes('blocked')) {
         setIsBlocked(true);
       }
-      
+    } finally {
+      // Always reset submitting state
       setIsSubmitting(false);
     }
   };

@@ -290,13 +290,11 @@ export const AuthProvider = ({ children }) => {
       // Cookie is set automatically by backend
       setUser(res.data.user);
       setIsAuthenticated(true);
-      setLoading(false);
-
+      
       return res.data;
     } catch (err) {
       console.error('Login error:', err);
-      setLoading(false);
-
+      
       // Handle network errors
       if (err.isNetworkError || !err.response) {
         const errorMsg = 'Network connection failed. Please check your internet connection and try again.';
@@ -334,7 +332,7 @@ export const AuthProvider = ({ children }) => {
 
       // Handle invalid credentials (401)
       if (err.response?.status === 401) {
-        const errorMsg = 'Invalid credentials. Please check your email and password.';
+        const errorMsg = err.response?.data?.message || 'Invalid credentials. Please check your email and password.';
         setError(errorMsg);
         throw new Error(errorMsg);
       }
@@ -343,6 +341,8 @@ export const AuthProvider = ({ children }) => {
       const errorMsg = err.response?.data?.message || 'Login failed. Please try again.';
       setError(errorMsg);
       throw new Error(errorMsg);
+    } finally {
+      setLoading(false);
     }
   };
 
