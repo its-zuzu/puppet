@@ -1134,13 +1134,6 @@ router.get('/user/:id', protect, async (req, res) => {
     ]);
 
     const rank = (allUsersPoints.length > 0 ? allUsersPoints[0].count : 0) + 1;
-    
-    // Get unlocked hints count from Unlock model
-    const Unlock = require('../models/Unlock');
-    const unlockedHintsCount = await Unlock.countDocuments({
-      user: user._id,
-      type: 'hints'
-    });
 
     res.json({
       success: true,
