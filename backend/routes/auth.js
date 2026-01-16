@@ -495,13 +495,18 @@ router.post('/login', sanitizeInput, async (req, res) => {
     // Ensure team is properly formatted
     let teamData = null;
     if (user.team) {
+      console.log('[Debug] user.team type:', typeof user.team);
+      console.log('[Debug] user.team:', user.team);
+      
       teamData = {
         _id: user.team._id ? user.team._id.toString() : user.team.toString(),
         name: user.team.name || 'Team'
       };
+      
+      console.log('[Debug] Formatted teamData:', teamData);
     }
 
-    res.json({
+    const responseData = {
       success: true,
       // Token NOT sent in response body (httpOnly cookie only)
       user: {
@@ -512,7 +517,11 @@ router.post('/login', sanitizeInput, async (req, res) => {
         points: user.points,
         team: teamData
       }
-    });
+    };
+
+    console.log('[Debug] Sending login response with team:', responseData.user.team);
+
+    res.json(responseData);
   } catch (error) {
     console.error('[Login Error]', error.message, error.stack);
     res.status(500).json({
