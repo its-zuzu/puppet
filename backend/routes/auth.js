@@ -110,11 +110,23 @@ const generateToken = (id) => {
 const setTokenCookie = (res, token) => {
   const isProduction = process.env.NODE_ENV === 'production';
   
+  // Calculate maxAge from JWT_ACCESS_EXPIRE (e.g., '15m' -> 15 * 60 * 1000)
+  const accessExpire = config.jwt.accessTokenExpiresIn || '15m';
+  let maxAge = 15 * 60 * 1000; // Default 15 minutes
+  
+  if (accessExpire.endsWith('m')) {
+    maxAge = parseInt(accessExpire) * 60 * 1000;
+  } else if (accessExpire.endsWith('h')) {
+    maxAge = parseInt(accessExpire) * 60 * 60 * 1000;
+  } else if (accessExpire.endsWith('d')) {
+    maxAge = parseInt(accessExpire) * 24 * 60 * 60 * 1000;
+  }
+  
   res.cookie('token', token, {
     httpOnly: true,        // Cannot be accessed by JavaScript (XSS protection)
     secure: isProduction,  // Only sent over HTTPS in production
     sameSite: 'lax',       // CSRF protection while allowing same-site navigation
-    maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
+    maxAge: maxAge,        // Match JWT expiry from config
     path: '/'
   });
 };
@@ -124,8 +136,8 @@ const clearTokenCookie = (res) => {
   res.cookie('token', '', {
     httpOnly: true,
     secure: process.env.NODE_ENV === 'production',
-    sameSite: 'strict',
-    expires: new Date(0),
+    sameSite: 'lax',  // Must match setTokenCookie setting
+    maxAge: 0,        // Use maxAge: 0 instead of expires for reliable clearing
     path: '/'
   });
 };
@@ -455,31 +467,53 @@ router.post('/login', sanitizeInput, async (req, res) => {
       userAgentParsed
     );
 
-    // Set access token cookie (short-lived, 15min)
+    // Set access token cookie (short-lived, configurable via .env)
     const isProduction = process.env.NODE_ENV === 'production';
+    
+    // Calculate maxAge from JWT_ACCESS_EXPIRE
+    const accessExpire = config.jwt.accessTokenExpiresIn || '15m';
+    let accessMaxAge = 15 * 60 * 1000; // Default 15 minutes
+    if (accessExpire.endsWith('m')) {
+      accessMaxAge = parseInt(accessExpire) * 60 * 1000;
+    } else if (accessExpire.endsWith('h')) {
+      accessMaxAge = parseInt(accessExpire) * 60 * 60 * 1000;
+    } else if (accessExpire.endsWith('d')) {
+      accessMaxAge = parseInt(accessExpire) * 24 * 60 * 60 * 1000;
+    }
+    
     res.cookie('access_token', tokens.accessToken, {
       httpOnly: true,
       secure: isProduction,
       sameSite: 'lax',
-      maxAge: 15 * 60 * 1000, // 15 minutes
+      maxAge: accessMaxAge,
       path: '/'
     });
 
-    // Set refresh token cookie (long-lived, 7 days)
+    // Set refresh token cookie (long-lived, configurable via .env)
+    const refreshExpire = config.jwt.refreshTokenExpiresIn || '7d';
+    let refreshMaxAge = 7 * 24 * 60 * 60 * 1000; // Default 7 days
+    if (refreshExpire.endsWith('d')) {
+      refreshMaxAge = parseInt(refreshExpire) * 24 * 60 * 60 * 1000;
+    } else if (refreshExpire.endsWith('h')) {
+      refreshMaxAge = parseInt(refreshExpire) * 60 * 60 * 1000;
+    } else if (refreshExpire.endsWith('m')) {
+      refreshMaxAge = parseInt(refreshExpire) * 60 * 1000;
+    }
+    
     res.cookie('refresh_token', tokens.refreshToken, {
       httpOnly: true,
       secure: isProduction,
       sameSite: 'lax',
-      maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+      maxAge: refreshMaxAge,
       path: '/'
     });
 
-    // Legacy: Also set old 'token' cookie for backward compatibility (15min)
+    // Legacy: Also set old 'token' cookie for backward compatibility
     res.cookie('token', tokens.accessToken, {
       httpOnly: true,
       secure: isProduction,
       sameSite: 'lax',
-      maxAge: 15 * 60 * 1000, // Match access token lifetime
+      maxAge: accessMaxAge,  // Match access token expiry from config
       path: '/'
     });
 
@@ -549,12 +583,21 @@ router.post('/logout', protect, async (req, res) => {
     // Clear both access and refresh token cookies
     clearTokenCookie(res);
     
-    // NEW: Clear refresh token cookie
+    // Clear refresh token cookie
     res.cookie('refresh_token', '', {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
-      sameSite: 'strict',
-      expires: new Date(0),
+      sameSite: 'lax',  // Must match login setting
+      maxAge: 0,        // Use maxAge: 0 for reliable clearing
+      path: '/'
+    });
+    
+    // Clear access_token cookie (if using new token structure)
+    res.cookie('access_token', '', {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      maxAge: 0,
       path: '/'
     });
     
@@ -848,7 +891,6 @@ router.get('/me', protect, async (req, res) => {
         points: user.points,
         team: teamData,
         solvedChallenges: user.solvedChallenges,
-        createdAt: user.createdAt,
         isBlocked: user.isBlocked
       }
     });
@@ -1085,7 +1127,6 @@ router.get('/user/:id', protect, async (req, res) => {
         _id: user._id,
         username: user.username,
         team: user.team,
-        createdAt: user.createdAt,
         points: calculatedPoints,
         rank,
         solvedChallenges: solvedChallengesWithDetails,

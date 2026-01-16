@@ -141,10 +141,10 @@ router.get('/', protect, sanitizeInput, async (req, res) => {
 
     const total = await Challenge.countDocuments(query);
     const challenges = await Challenge.find(query)
-      .select('-flag')
+      .select('-flag -createdAt -updatedAt')
       .limit(limit)
       .skip(skip)
-      .sort({ createdAt: -1 })
+      .sort({ _id: -1 })
       .lean(); // Use lean for better performance
 
     // Add current dynamic value and solved status to each challenge
@@ -277,7 +277,7 @@ router.get('/:id', async (req, res) => {
       });
     }
 
-    const challenge = await Challenge.findById(req.params.id).select('-flag').lean();
+    const challenge = await Challenge.findById(req.params.id).select('-flag -createdAt -updatedAt').lean();
 
     if (!challenge) {
       return res.status(404).json({

@@ -371,13 +371,11 @@ router.get('/:id', protect, async (req, res) => {
       name: team.name,
       description: team.description,
       captain: team.captain,
-      createdBy: team.createdBy,
       members: updatedMembers,
       totalPoints: calculatedPoints,
       points: calculatedPoints,
       rank: rank,
-      solvedChallenges: allSolvedChallenges.size,
-      createdAt: team.createdAt
+      solvedChallenges: allSolvedChallenges.size
     };
 
     // Debug: Log member stats
