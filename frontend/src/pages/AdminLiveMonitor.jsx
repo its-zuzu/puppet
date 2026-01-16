@@ -1,132 +1,261 @@
-import React, { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { Activity, CheckCircle, XCircle, Radio, AlertCircle, Users, Trophy, Clock } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import './AdminLiveMonitor.css';
 
 const AdminLiveMonitor = () => {
-    const [submissions, setSubmissions] = useState([]);
-    const [connectionStatus, setConnectionStatus] = useState('connecting'); // connecting, connected, error
-    const { user } = useAuth();
-    const eventSourceRef = useRef(null);
+  const [submissions, setSubmissions] = useState([]);
+  const [connectionStatus, setConnectionStatus] = useState('connecting');
+  const [stats, setStats] = useState({ total: 0, success: 0, failed: 0 });
+  const { user } = useAuth();
+  const eventSourceRef = useRef(null);
 
-    useEffect(() => {
-        // Wait for user to be loaded (admin check)
-        if (!user) {
-            console.log('Waiting for user authentication...');
-            setConnectionStatus('error');
-            return;
+  useEffect(() => {
+    if (!user) {
+      console.log('Waiting for user authentication...');
+      setConnectionStatus('error');
+      return;
+    }
+
+    const sseUrl = `/api/r-submission`;
+    console.log('Connecting to SSE (auth via cookies)');
+
+    if (eventSourceRef.current) {
+      eventSourceRef.current.close();
+    }
+
+    const eventSource = new EventSource(sseUrl, {
+      withCredentials: true
+    });
+    eventSourceRef.current = eventSource;
+
+    eventSource.onopen = () => {
+      console.log('SSE Connected');
+      setConnectionStatus('connected');
+    };
+
+    eventSource.onmessage = (event) => {
+      try {
+        const data = JSON.parse(event.data);
+        console.log('SSE Message:', data);
+
+        if (data.type === 'connected') {
+          return;
         }
 
-        // SSE URL - cookies are sent automatically by browser
-        const sseUrl = `/api/r-submission`;
-
-        console.log('Connecting to SSE (auth via cookies)');
-
-        // Close existing connection if any
-        if (eventSourceRef.current) {
-            eventSourceRef.current.close();
-        }
-
-        // EventSource sends cookies automatically
-        const eventSource = new EventSource(sseUrl, {
-            withCredentials: true
+        setSubmissions(prev => {
+          const newSubmissions = [data, ...prev];
+          if (newSubmissions.length > 50) {
+            return newSubmissions.slice(0, 50);
+          }
+          return newSubmissions;
         });
-        eventSourceRef.current = eventSource;
 
-        eventSource.onopen = () => {
-            console.log('SSE Connected');
-            setConnectionStatus('connected');
-        };
+        setStats(prev => {
+          const isFailed = data.type === 'failed_attempt' || data.status === 'incorrect';
+          return {
+            total: prev.total + 1,
+            success: isFailed ? prev.success : prev.success + 1,
+            failed: isFailed ? prev.failed + 1 : prev.failed
+          };
+        });
+      } catch (err) {
+        console.error('Error parsing SSE message:', err);
+      }
+    };
 
-        eventSource.onmessage = (event) => {
-            try {
-                const data = JSON.parse(event.data);
-                console.log('SSE Message:', data);
+    eventSource.onerror = (err) => {
+      console.error('SSE Error:', err);
+      setConnectionStatus('error');
+    };
 
-                if (data.type === 'connected') {
-                    return;
-                }
+    return () => {
+      if (eventSourceRef.current) {
+        eventSourceRef.current.close();
+      }
+    };
+  }, [user]);
 
-                setSubmissions(prev => {
-                    // Keep only last 50 submissions
-                    const newSubmissions = [data, ...prev];
-                    if (newSubmissions.length > 50) {
-                        return newSubmissions.slice(0, 50);
-                    }
-                    return newSubmissions;
-                });
-            } catch (err) {
-                console.error('Error parsing SSE message:', err);
-            }
-        };
+  const getStatusConfig = () => {
+    switch (connectionStatus) {
+      case 'connected':
+        return { icon: Radio, label: 'LIVE', color: 'success' };
+      case 'connecting':
+        return { icon: Activity, label: 'CONNECTING', color: 'warning' };
+      default:
+        return { icon: AlertCircle, label: 'DISCONNECTED', color: 'error' };
+    }
+  };
 
-        eventSource.onerror = (err) => {
-            console.error('SSE Error:', err);
-            setConnectionStatus('error');
-            // EventSource automatically reconnects, but we can show status
-        };
+  const statusConfig = getStatusConfig();
+  const StatusIcon = statusConfig.icon;
 
-        return () => {
-            if (eventSourceRef.current) {
-                eventSourceRef.current.close();
-            }
-        };
-    }, [user]);
+  return (
+    <div className="htb-monitor-container">
+      <div className="htb-monitor-grid-bg"></div>
 
-    return (
-        <div className="admin-live-monitor">
-            <div className="monitor-header">
-                <h2>Live Flag Submissions</h2>
-                <div className={`status-badge status-${connectionStatus}`}>
-                    {connectionStatus === 'connected' ? '● LIVE' : '○ ' + connectionStatus.toUpperCase()}
-                </div>
-            </div>
-
-            <div className="table-container">
-                {connectionStatus === 'error' && (
-                    <div style={{padding: '10px', color: '#e74c3c', marginBottom: '10px'}}>
-                        Connection failed. Check console for details.
-                    </div>
-                )}
-                <table className="submissions-table">
-                    <thead>
-                        <tr>
-                            <th>Time</th>
-                            <th>User</th>
-                            <th>Email</th>
-                            <th>Challenge</th>
-                            <th>Flag</th>
-                            <th>Points</th>
-                            <th>IP</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {submissions.length === 0 ? (
-                            <tr className="empty-row">
-                                <td colSpan="7">Waiting for submissions...</td>
-                            </tr>
-                        ) : (
-                            submissions.map((sub, index) => {
-                                const isFailed = sub.type === 'failed_attempt' || sub.status === 'incorrect';
-                                return (
-                                    <tr key={index} className={`submission-row fade-in ${isFailed ? 'failed-attempt' : ''}`} style={isFailed ? {color: '#e74c3c'} : {color: '#2ecc71'}}>
-                                        <td style={{color: '#ecf0f1'}}>{new Date(sub.submittedAt).toLocaleTimeString()}</td>
-                                        <td className="font-bold" style={{color: '#3498db'}}>{sub.user}</td>
-                                        <td style={{color: '#bdc3c7'}}>{sub.email}</td>
-                                        <td className="text-highlight" style={{color: '#e67e22'}}>{sub.challenge}</td>
-                                        <td style={{color: '#f39c12', fontFamily: 'monospace', fontSize: '0.9em'}}>{sub.submittedFlag || 'N/A'}</td>
-                                        <td className={isFailed ? 'text-error' : 'text-success'} style={{fontWeight: 'bold'}}>
-                                            {isFailed ? '✗ ' : '✓ '}{sub.points}
-                                        </td>
-                                        <td style={{color: '#95a5a6'}}>{sub.ip}</td>
-                                    </tr>
-                                );
-                            })
-                        )}
-                    </tbody>
-                </table>
-            </div>
+      <motion.div 
+        className="htb-monitor-header"
+        initial={{ opacity: 0, y: -20 }}
+        animate={{ opacity: 1, y: 0 }}
+      >
+        <div className="htb-monitor-title-section">
+          <h1 className="htb-monitor-title">
+            <Activity size={32} />
+            LIVE <span className="htb-text-primary">MONITOR</span>
+          </h1>
+          <p className="htb-monitor-subtitle">Real-time flag submission tracking</p>
         </div>
-    );
+        <motion.div 
+          className={`htb-status-badge htb-status-${statusConfig.color}`}
+          animate={{ scale: connectionStatus === 'connected' ? [1, 1.05, 1] : 1 }}
+          transition={{ repeat: connectionStatus === 'connected' ? Infinity : 0, duration: 2 }}
+        >
+          <StatusIcon size={18} />
+          {statusConfig.label}
+        </motion.div>
+      </motion.div>
+
+      <motion.div 
+        className="htb-monitor-stats"
+        initial={{ opacity: 0, y: -10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.1 }}
+      >
+        <div className="htb-stat-card">
+          <Trophy className="htb-stat-icon" size={24} />
+          <div className="htb-stat-content">
+            <span className="htb-stat-label">Total Submissions</span>
+            <span className="htb-stat-value">{stats.total}</span>
+          </div>
+        </div>
+        <div className="htb-stat-card success">
+          <CheckCircle className="htb-stat-icon" size={24} />
+          <div className="htb-stat-content">
+            <span className="htb-stat-label">Successful</span>
+            <span className="htb-stat-value">{stats.success}</span>
+          </div>
+        </div>
+        <div className="htb-stat-card failed">
+          <XCircle className="htb-stat-icon" size={24} />
+          <div className="htb-stat-content">
+            <span className="htb-stat-label">Failed</span>
+            <span className="htb-stat-value">{stats.failed}</span>
+          </div>
+        </div>
+        <div className="htb-stat-card">
+          <Users className="htb-stat-icon" size={24} />
+          <div className="htb-stat-content">
+            <span className="htb-stat-label">Active</span>
+            <span className="htb-stat-value">{submissions.length}</span>
+          </div>
+        </div>
+      </motion.div>
+
+      <AnimatePresence>
+        {connectionStatus === 'error' && (
+          <motion.div 
+            className="htb-alert htb-alert-error"
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -10 }}
+          >
+            <AlertCircle size={18} />
+            Connection failed. Check console for details or refresh the page.
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      <motion.div 
+        className="htb-monitor-section"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ delay: 0.2 }}
+      >
+        <div className="htb-table-container">
+          <table className="htb-monitor-table">
+            <thead>
+              <tr>
+                <th><Clock size={16} /> Time</th>
+                <th><Users size={16} /> User</th>
+                <th>Email</th>
+                <th><Trophy size={16} /> Challenge</th>
+                <th>Flag</th>
+                <th>Points</th>
+                <th>IP Address</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              <AnimatePresence>
+                {submissions.length === 0 ? (
+                  <tr className="htb-empty-row">
+                    <td colSpan="8">
+                      <div className="htb-empty-state">
+                        <Activity size={48} className="htb-empty-icon" />
+                        <p>Waiting for submissions...</p>
+                        <span className="htb-empty-subtitle">Flag submissions will appear here in real-time</span>
+                      </div>
+                    </td>
+                  </tr>
+                ) : (
+                  submissions.map((sub, index) => {
+                    const isFailed = sub.type === 'failed_attempt' || sub.status === 'incorrect';
+                    return (
+                      <motion.tr 
+                        key={`${sub.user}-${sub.submittedAt}-${index}`}
+                        className={`htb-submission-row ${isFailed ? 'failed' : 'success'}`}
+                        initial={{ opacity: 0, x: -20 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        exit={{ opacity: 0, x: 20 }}
+                        transition={{ duration: 0.3 }}
+                      >
+                        <td className="htb-time">
+                          {new Date(sub.submittedAt).toLocaleTimeString('en-US', {
+                            hour: '2-digit',
+                            minute: '2-digit',
+                            second: '2-digit'
+                          })}
+                        </td>
+                        <td className="htb-username">{sub.user}</td>
+                        <td className="htb-email">{sub.email}</td>
+                        <td className="htb-challenge">{sub.challenge}</td>
+                        <td className="htb-flag">{sub.submittedFlag || 'N/A'}</td>
+                        <td className="htb-points">
+                          <span className={`htb-points-badge ${isFailed ? 'failed' : 'success'}`}>
+                            {isFailed ? '0' : sub.points}
+                          </span>
+                        </td>
+                        <td className="htb-ip">{sub.ip}</td>
+                        <td className="htb-status">
+                          <span className={`htb-status-indicator ${isFailed ? 'failed' : 'success'}`}>
+                            {isFailed ? <XCircle size={16} /> : <CheckCircle size={16} />}
+                            {isFailed ? 'Failed' : 'Success'}
+                          </span>
+                        </td>
+                      </motion.tr>
+                    );
+                  })
+                )}
+              </AnimatePresence>
+            </tbody>
+          </table>
+        </div>
+
+        {submissions.length > 0 && (
+          <div className="htb-monitor-footer">
+            <span className="htb-footer-text">
+              Showing last {submissions.length} submissions (max 50)
+            </span>
+            <span className="htb-footer-text htb-text-muted">
+              Auto-refreshes in real-time via Server-Sent Events
+            </span>
+          </div>
+        )}
+      </motion.div>
+    </div>
+  );
 };
 
 export default AdminLiveMonitor;

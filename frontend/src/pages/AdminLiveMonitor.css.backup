@@ -1,0 +1,116 @@
+.admin-live-monitor {
+  padding: 2rem;
+  color: #e0e0e0;
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+.monitor-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 2rem;
+  border-bottom: 1px solid #333;
+  padding-bottom: 1rem;
+}
+
+.monitor-header h2 {
+  margin: 0;
+  font-size: 1.8rem;
+  color: #fff;
+}
+
+.status-badge {
+  padding: 0.5rem 1rem;
+  border-radius: 4px;
+  font-weight: bold;
+  font-size: 0.9rem;
+}
+
+.status-connected {
+  background-color: rgba(30, 215, 96, 0.2);
+  color: #1ed760;
+  border: 1px solid #1ed760;
+}
+
+.status-connecting {
+  background-color: rgba(255, 193, 7, 0.2);
+  color: #ffc107;
+  border: 1px solid #ffc107;
+}
+
+.status-error {
+  background-color: rgba(255, 87, 34, 0.2);
+  color: #ff5722;
+  border: 1px solid #ff5722;
+}
+
+.table-container {
+  background: #1a1a1a;
+  border-radius: 8px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+  overflow-x: auto;
+}
+
+.submissions-table {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+}
+
+.submissions-table th {
+  background: #252525;
+  padding: 1rem;
+  font-weight: 600;
+  color: #888;
+  border-bottom: 1px solid #333;
+}
+
+.submissions-table td {
+  padding: 1rem;
+  border-bottom: 1px solid #2a2a2a;
+  white-space: nowrap;
+}
+
+.submissions-table tr:hover {
+  background: #2a2a2a;
+}
+
+.font-bold {
+  font-weight: bold;
+  color: #fff;
+}
+
+.font-mono {
+  font-family: 'Courier New', Courier, monospace;
+  color: #b0b0b0;
+}
+
+.text-success {
+  color: #1ed760;
+  font-weight: bold;
+}
+
+.text-dim {
+  color: #666;
+}
+
+.text-highlight {
+  color: #64b5f6;
+}
+
+.empty-row td {
+  text-align: center;
+  padding: 3rem;
+  color: #666;
+  font-style: italic;
+}
+
+.fade-in {
+  animation: fadeIn 0.5s ease-in;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(-10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
