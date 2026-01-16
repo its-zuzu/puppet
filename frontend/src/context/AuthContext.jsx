@@ -52,11 +52,10 @@ axios.interceptors.response.use(
 
     // Handle network errors
     if (!error.response) {
-      console.error('Network error - server may be down or unreachable');
-      return Promise.reject({
-        message: 'Network error - server may be down or unreachable',
-        type: 'network'
-      });
+      console.error('Network connection failed');
+      const networkError = new Error('Network connection failed. Please check your internet connection.');
+      networkError.isNetworkError = true;
+      return Promise.reject(networkError);
     }
 
     // Handle 401 errors with refresh token logic
@@ -286,20 +285,52 @@ export const AuthProvider = ({ children }) => {
       console.error('Login error:', err);
       setLoading(false);
 
-      // Handle blocked user
+      // Handle network errors
+      if (err.isNetworkError || !err.response) {
+        const errorMsg = 'Network connection failed. Please check your internet connection and try again.';
+        setError(errorMsg);
+        throw new Error(errorMsg);
+      }
+
+      // Handle blocked user (403)
       if (err.response?.status === 403 && err.response?.data?.isBlocked) {
-        setError('You are blocked. Suspicious activity detected. Contact Admin for further information.');
-        throw err;
+        const errorMsg = 'Your account has been blocked. Contact Admin for further information.';
+        setError(errorMsg);
+        throw new Error(errorMsg);
       }
 
-      // Handle rate limit errors specifically
-      if (err.status === 429) {
-        setError(`Login rate limit exceeded. Please try again in ${err.retryAfter} seconds.`);
-      } else {
-        setError(err.response?.data?.message || 'Login failed');
+      // Handle rate limiting (429)
+      if (err.response?.status === 429) {
+        const retryAfter = err.response?.data?.retryAfter;
+        let timeMessage = 'a few minutes';
+        
+        if (retryAfter) {
+          const minutes = Math.ceil(retryAfter / 60);
+          if (retryAfter < 60) {
+            timeMessage = `${retryAfter} seconds`;
+          } else if (minutes === 1) {
+            timeMessage = '1 minute';
+          } else {
+            timeMessage = `${minutes} minutes`;
+          }
+        }
+        
+        const errorMsg = `Too many login attempts. Please try again in ${timeMessage}.`;
+        setError(errorMsg);
+        throw new Error(errorMsg);
       }
 
-      throw err;
+      // Handle invalid credentials (401)
+      if (err.response?.status === 401) {
+        const errorMsg = 'Invalid credentials. Please check your email and password.';
+        setError(errorMsg);
+        throw new Error(errorMsg);
+      }
+
+      // Handle other errors
+      const errorMsg = err.response?.data?.message || 'Login failed. Please try again.';
+      setError(errorMsg);
+      throw new Error(errorMsg);
     }
   };
 

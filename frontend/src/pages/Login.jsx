@@ -53,11 +53,18 @@ function Login() {
       navigate('/');
     } catch (err) {
       Logger.error('LOGIN_FAILED', { email, error: err.message });
-      const errorMessage = err.response?.data?.message || err.message || 'Login failed. Please try again.';
+      
+      // Set appropriate error message
+      let errorMessage = 'Login failed. Please try again.';
+      
+      if (err.message) {
+        errorMessage = err.message;
+      }
+      
       setFormError(errorMessage);
       
-      // Check if user is blocked
-      if (err.response?.status === 403 && err.response?.data?.isBlocked) {
+      // Check if user is blocked (403)
+      if (err.message?.includes('blocked')) {
         setIsBlocked(true);
       }
       
