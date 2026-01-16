@@ -47,7 +47,7 @@ function Home() {
           const response = await axios.get(`/api/teams/${teamId}`);
           if (response.data && response.data.data) {
             setTeamStats(response.data.data);
-            console.log('Team stats loaded:', response.data.data);
+            // Team stats loaded successfully
           }
         } catch (error) {
           console.error('Error fetching team stats:', error);

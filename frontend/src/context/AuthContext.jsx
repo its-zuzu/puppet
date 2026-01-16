@@ -40,7 +40,15 @@ axios.interceptors.response.use(
   async error => {
     const originalRequest = error.config;
 
-    console.error('API Error:', error);
+    // Only log unexpected errors (not auth failures for unauthenticated users)
+    const isAuthEndpoint = originalRequest?.url?.includes('/api/auth/me') || 
+                           originalRequest?.url?.includes('/api/auth/refresh');
+    const is401 = error.response?.status === 401;
+    
+    // Don't log expected 401s on auth endpoints (user not logged in)
+    if (!(isAuthEndpoint && is401)) {
+      console.error('API Error:', error);
+    }
 
     // Handle network errors
     if (!error.response) {

@@ -36,7 +36,6 @@ function AdminUserProfile() {
 
         // Fetch user details
         const userRes = await axios.get(`/api/auth/users/${id}`);
-        console.log('User data received:', userRes.data);
         setUser(userRes.data.user);
 
         // Fetch solved challenges
