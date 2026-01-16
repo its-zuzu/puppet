@@ -16,6 +16,12 @@
   margin-bottom: 32px;
 }
 
+.htb-user-info {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
 .htb-user-name {
   font-family: var(--font-heading);
   font-size: 2rem;
@@ -24,6 +30,19 @@
   margin: 0;
   text-transform: uppercase;
   letter-spacing: 1px;
+}
+
+.htb-user-email {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.938rem;
+  color: var(--text-secondary);
+  font-family: var(--font-mono);
+}
+
+.htb-user-email svg {
+  color: var(--primary);
 }
 
 .htb-refresh-btn {

@@ -1,57 +1,57 @@
 import { useState, useEffect, useContext } from 'react';
 import { Navigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Award, Trophy, Lock, Users, Flag, Medal, RefreshCw } from 'lucide-react';
+import { Award, Trophy, Lock, Users, Flag, Medal, Mail } from 'lucide-react';
 import axios from 'axios';
 import AuthContext from '../context/AuthContext';
 import { Loading } from '../components/ui';
 import './UserProfile.css';
 
 function Profile() {
-  const { user: authUser, isAuthenticated, loading: authLoading, updateUserData } = useContext(AuthContext);
+  const { user: authUser, isAuthenticated, loading: authLoading } = useContext(AuthContext);
+  const [user, setUser] = useState(null);
   const [challenges, setChallenges] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
+  const [error, setError] = useState(null);
 
   useEffect(() => {
-    if (!authLoading && isAuthenticated) {
-      fetchData();
+    if (!authLoading && !isAuthenticated) {
+      return;
     }
-  }, [authLoading, isAuthenticated]);
+    if (!authLoading && isAuthenticated && authUser) {
+      fetchUserProfile();
+    }
+  }, [authLoading, isAuthenticated, authUser]);
 
-  const fetchData = async () => {
+  const fetchUserProfile = async () => {
     try {
-      // Refresh user data to get latest rank and stats
-      await updateUserData();
-      
-      // Fetch all challenges to get solved challenge details
-      const challengesRes = await axios.get('/api/challenges');
+      const [userRes, challengesRes] = await Promise.all([
+        axios.get('/api/auth/me'),
+        axios.get('/api/challenges')
+      ]);
+
+      setUser(userRes.data.user);
       setChallenges(challengesRes.data.data || []);
     } catch (err) {
-      console.error('Error fetching profile data:', err);
+      console.error('Error fetching profile:', err);
+      setError('Failed to fetch profile');
     } finally {
       setLoading(false);
     }
   };
 
-  const handleRefresh = async () => {
-    setRefreshing(true);
-    await fetchData();
-    setRefreshing(false);
-  };
-
   const getSolvedChallenges = () => {
-    if (!authUser?.solvedChallenges || !Array.isArray(authUser.solvedChallenges)) return [];
+    if (!user?.solvedChallenges || !Array.isArray(user.solvedChallenges)) return [];
     
     // If solvedChallenges already has challenge details, use them directly
-    if (authUser.solvedChallenges.length > 0 && authUser.solvedChallenges[0]?.title) {
-      return authUser.solvedChallenges;
+    if (user.solvedChallenges.length > 0 && user.solvedChallenges[0]?.title) {
+      return user.solvedChallenges;
     }
     
     // Fallback: if it's just IDs, filter from challenges list
     if (!challenges.length) return [];
     return challenges.filter(challenge => 
-      authUser.solvedChallenges.includes(challenge._id)
+      user.solvedChallenges.includes(challenge._id)
     );
   };
 
@@ -59,11 +59,26 @@ function Profile() {
     return <Navigate to="/login" replace />;
   }
 
-  if (authLoading || loading || !authUser) {
+  if (authLoading || loading) {
     return (
       <div className="htb-user-container">
         <div className="htb-user-grid-bg"></div>
         <Loading text="LOADING PROFILE..." />
+      </div>
+    );
+  }
+
+  if (error || !user) {
+    return (
+      <div className="htb-user-container">
+        <div className="htb-user-grid-bg"></div>
+        <motion.div 
+          className="htb-error-state"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+        >
+          <p>{error || 'Failed to load profile'}</p>
+        </motion.div>
       </div>
     );
   }
@@ -79,17 +94,13 @@ function Profile() {
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
       >
-        <h1 className="htb-user-name">{authUser.username}</h1>
-        <motion.button
-          className="htb-refresh-btn"
-          onClick={handleRefresh}
-          disabled={refreshing}
-          whileHover={{ scale: 1.05 }}
-          whileTap={{ scale: 0.95 }}
-        >
-          <RefreshCw size={18} className={refreshing ? 'spinning' : ''} />
-          Refresh Stats
-        </motion.button>
+        <div className="htb-user-info">
+          <h1 className="htb-user-name">{user.username}</h1>
+          <div className="htb-user-email">
+            <Mail size={16} />
+            <span>{user.email}</span>
+          </div>
+        </div>
       </motion.div>
 
       <div className="htb-user-main">
@@ -108,7 +119,7 @@ function Profile() {
             </div>
             <div className="htb-stat-content">
               <div className="htb-stat-label">Total Points</div>
-              <div className="htb-stat-value">{authUser.points || 0}</div>
+              <div className="htb-stat-value">{user.points || 0}</div>
             </div>
           </motion.div>
 
@@ -121,7 +132,7 @@ function Profile() {
             </div>
             <div className="htb-stat-content">
               <div className="htb-stat-label">Challenges Solved</div>
-              <div className="htb-stat-value">{authUser.challengesSolvedCount || authUser.solvedChallenges?.length || 0}</div>
+              <div className="htb-stat-value">{user.challengesSolvedCount || user.solvedChallenges?.length || 0}</div>
             </div>
           </motion.div>
 
@@ -134,7 +145,7 @@ function Profile() {
             </div>
             <div className="htb-stat-content">
               <div className="htb-stat-label">Rank</div>
-              <div className="htb-stat-value">#{authUser.rank || '-'}</div>
+              <div className="htb-stat-value">#{user.rank || '-'}</div>
             </div>
           </motion.div>
 
@@ -147,7 +158,7 @@ function Profile() {
             </div>
             <div className="htb-stat-content">
               <div className="htb-stat-label">Hints Unlocked</div>
-              <div className="htb-stat-value">{authUser.unlockedHints?.length || 0}</div>
+              <div className="htb-stat-value">{user.unlockedHints?.length || 0}</div>
             </div>
           </motion.div>
 
@@ -161,7 +172,7 @@ function Profile() {
             <div className="htb-stat-content">
               <div className="htb-stat-label">Team</div>
               <div className="htb-stat-value htb-stat-team">
-                {authUser.team?.name || 'No Team'}
+                {user.team?.name || 'No Team'}
               </div>
             </div>
           </motion.div>
@@ -207,7 +218,7 @@ function Profile() {
           )}
         </motion.div>
 
-        {authUser.unlockedHints && authUser.unlockedHints.length > 0 && (
+        {user.unlockedHints && user.unlockedHints.length > 0 && (
           <motion.div 
             className="htb-user-section"
             initial={{ opacity: 0, y: 20 }}
@@ -216,10 +227,10 @@ function Profile() {
           >
             <h2 className="htb-section-title">
               <span className="htb-title-line"></span>
-              Unlocked Hints ({authUser.unlockedHints.length})
+              Unlocked Hints ({user.unlockedHints.length})
             </h2>
             <div className="htb-hints-grid">
-              {authUser.unlockedHints.map((hint, idx) => (
+              {user.unlockedHints.map((hint, idx) => (
                 <motion.div 
                   key={idx}
                   className="htb-hint-card"
