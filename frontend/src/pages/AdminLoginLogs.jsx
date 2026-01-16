@@ -27,11 +27,8 @@ function AdminLoginLogs() {
     search: ''
   });
   const [autoRefresh, setAutoRefresh] = useState(true);
-  const [showPasswordModal, setShowPasswordModal] = useState(false);
-  const [selectedLog, setSelectedLog] = useState(null);
-  const [securityCode, setSecurityCode] = useState('');
-  const [viewedPassword, setViewedPassword] = useState(null);
-  const [passwordLoading, setPasswordLoading] = useState(false);
+  const [viewedPasswords, setViewedPasswords] = useState({});
+  const [passwordLoading, setPasswordLoading] = useState({});
 
   useEffect(() => {
     if (!isAuthenticated) {
@@ -72,9 +69,6 @@ function AdminLoginLogs() {
 
       const res = await axios.get(`/api/auth/admin/login-logs?${params}`);
 
-      console.log('Login logs data:', res.data.logs);
-      console.log('First failed log:', res.data.logs.find(l => l.status === 'failed'));
-      
       setLogs(res.data.logs);
       setTotalPages(res.data.pages);
       setTotalLogs(res.data.total);
@@ -123,43 +117,22 @@ function AdminLoginLogs() {
     });
   };
 
-  const handleViewPassword = async (log) => {
-    setSelectedLog(log);
-    setShowPasswordModal(true);
-    setSecurityCode('');
-    setViewedPassword(null);
-  };
-
-  const handleSubmitSecurityCode = async () => {
-    if (!securityCode) {
-      setError('Please enter the security code');
-      setTimeout(() => setError(null), 3000);
-      return;
-    }
-
-    setPasswordLoading(true);
+  const handleViewPassword = async (logId) => {
+    setPasswordLoading(prev => ({ ...prev, [logId]: true }));
     try {
       const response = await axios.post('/api/auth/admin/login-logs/view-password', {
-        logId: selectedLog._id,
-        securityCode
+        logId
       });
 
-      setViewedPassword(response.data.data);
+      setViewedPasswords(prev => ({ ...prev, [logId]: response.data.data }));
       setSuccessMessage('Password retrieved successfully');
       setTimeout(() => setSuccessMessage(''), 3000);
     } catch (err) {
       setError(err.response?.data?.message || 'Failed to retrieve password');
       setTimeout(() => setError(null), 3000);
     } finally {
-      setPasswordLoading(false);
+      setPasswordLoading(prev => ({ ...prev, [logId]: false }));
     }
-  };
-
-  const closePasswordModal = () => {
-    setShowPasswordModal(false);
-    setSelectedLog(null);
-    setSecurityCode('');
-    setViewedPassword(null);
   };
 
   const successLogs = logs.filter(log => log.status === 'success').length;
@@ -375,19 +348,26 @@ function AdminLoginLogs() {
                     )}
                   </td>
                   <td>
-                    {(() => {
-                      const shouldShow = log.status === 'failed' && log.failureReason === 'Invalid password';
-                      console.log(`Log ${log._id}: status=${log.status}, failureReason="${log.failureReason}", shouldShow=${shouldShow}`);
-                      return shouldShow ? (
-                        <button
-                          className="htb-view-password-btn"
-                          onClick={() => handleViewPassword(log)}
-                          title="View failed password attempt (requires security code)"
-                        >
-                          <Eye size={14} /> View Password
-                        </button>
-                      ) : null;
-                    })()}
+                    {log.status === 'failed' && log.failureReason === 'Invalid password' && (
+                      <div className="htb-password-cell">
+                        {!viewedPasswords[log._id] ? (
+                          <button
+                            className="htb-view-password-btn"
+                            onClick={() => handleViewPassword(log._id)}
+                            disabled={passwordLoading[log._id]}
+                            title="View failed password attempt"
+                          >
+                            <Eye size={14} /> {passwordLoading[log._id] ? 'Loading...' : 'View Password'}
+                          </button>
+                        ) : (
+                          <div className="htb-password-display">
+                            <Lock size={12} />
+                            <span className="htb-password-value">{viewedPasswords[log._id].password}</span>
+                            <span className="htb-password-meta">Viewed by {viewedPasswords[log._id].viewedBy}</span>
+                          </div>
+                        )}
+                      </div>
+                    )}
                   </td>
                 </motion.tr>
               ))}
@@ -425,101 +405,6 @@ function AdminLoginLogs() {
           </div>
         )}
       </motion.div>
-
-      {/* Security Code Modal */}
-      <AnimatePresence>
-        {showPasswordModal && (
-          <motion.div 
-            className="htb-modal-overlay"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            onClick={closePasswordModal}
-          >
-            <motion.div 
-              className="htb-modal-content"
-              initial={{ scale: 0.9, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.9, opacity: 0 }}
-              onClick={(e) => e.stopPropagation()}
-            >
-              <div className="htb-modal-header">
-                <Lock size={24} className="htb-modal-icon" />
-                <h3>⚠️ Security Code Required</h3>
-              </div>
-
-              <div className="htb-modal-body">
-                {!viewedPassword ? (
-                  <>
-                    <div className="htb-security-warning">
-                      <AlertTriangle size={18} />
-                      <p>This action requires admin security verification.</p>
-                    </div>
-
-                    <div className="htb-log-details">
-                      <p><strong>User:</strong> {selectedLog?.username}</p>
-                      <p><strong>Email:</strong> {selectedLog?.email}</p>
-                      <p><strong>Time:</strong> {formatDate(selectedLog?.loginTime)}</p>
-                      <p><strong>IP:</strong> {selectedLog?.ipAddress}</p>
-                    </div>
-
-                    <div className="htb-form-group">
-                      <label>Enter Security Code:</label>
-                      <input
-                        type="password"
-                        value={securityCode}
-                        onChange={(e) => setSecurityCode(e.target.value)}
-                        placeholder="Enter admin security code"
-                        onKeyPress={(e) => e.key === 'Enter' && handleSubmitSecurityCode()}
-                        autoFocus
-                      />
-                    </div>
-
-                    <div className="htb-modal-actions">
-                      <button
-                        className="htb-btn-primary"
-                        onClick={handleSubmitSecurityCode}
-                        disabled={passwordLoading}
-                      >
-                        {passwordLoading ? 'Verifying...' : 'View Password'}
-                      </button>
-                      <button className="htb-btn-secondary" onClick={closePasswordModal}>
-                        Cancel
-                      </button>
-                    </div>
-                  </>
-                ) : (
-                  <>
-                    <div className="htb-password-result">
-                      <div className="htb-password-display">
-                        <label>Failed Password Attempt:</label>
-                        <div className="htb-password-value">{viewedPassword.failedPassword}</div>
-                      </div>
-
-                      <div className="htb-audit-info">
-                        <p><strong>Viewed by:</strong> {viewedPassword.viewedBy}</p>
-                        <p><strong>Viewed at:</strong> {new Date(viewedPassword.viewedAt).toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' })}</p>
-                        <p><strong>Expires at:</strong> {new Date(viewedPassword.expiresAt).toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' })}</p>
-                      </div>
-
-                      <div className="htb-security-notice">
-                        <AlertTriangle size={16} />
-                        <span>This action has been logged for security audit.</span>
-                      </div>
-                    </div>
-
-                    <div className="htb-modal-actions">
-                      <button className="htb-btn-primary" onClick={closePasswordModal}>
-                        Close
-                      </button>
-                    </div>
-                  </>
-                )}
-              </div>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
     </div>
   );
 }

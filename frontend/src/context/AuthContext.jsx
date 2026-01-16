@@ -299,44 +299,30 @@ export const AuthProvider = ({ children }) => {
     } catch (err) {
       console.error('Login error:', err);
       
-      // Handle network errors
-      if (err.isNetworkError || !err.response) {
-        const errorMsg = 'Network connection failed. Please check your internet connection and try again.';
-        setError(errorMsg);
-        throw new Error(errorMsg);
-      }
-
-      // Handle blocked user (403)
-      if (err.response?.status === 403 && err.response?.data?.isBlocked) {
-        const errorMsg = 'Your account has been blocked. Contact Admin for further information.';
-        setError(errorMsg);
-        throw new Error(errorMsg);
-      }
-
-      // Handle rate limiting (429)
+      // Handle rate limiting (429) - Check this FIRST before network errors
       if (err.response?.status === 429) {
-        const retryAfter = err.response?.data?.retryAfter;
-        let timeMessage = 'a few minutes';
-        
-        if (retryAfter) {
-          const minutes = Math.ceil(retryAfter / 60);
-          if (retryAfter < 60) {
-            timeMessage = `${retryAfter} seconds`;
-          } else if (minutes === 1) {
-            timeMessage = '1 minute';
-          } else {
-            timeMessage = `${minutes} minutes`;
-          }
-        }
-        
-        const errorMsg = `Too many login attempts. Please try again in ${timeMessage}.`;
+        const message = err.response?.data?.message || 'Too many login attempts';
+        setError(message);
+        throw new Error(message);
+      }
+
+      // Handle blocked user (403) - Check before network errors
+      if (err.response?.status === 403 && err.response?.data?.isBlocked) {
+        const errorMsg = err.response?.data?.message || 'Your account has been blocked. Contact Admin for further information.';
         setError(errorMsg);
         throw new Error(errorMsg);
       }
 
-      // Handle invalid credentials (401)
+      // Handle invalid credentials (401) - Check before network errors
       if (err.response?.status === 401) {
         const errorMsg = err.response?.data?.message || 'Invalid credentials. Please check your email and password.';
+        setError(errorMsg);
+        throw new Error(errorMsg);
+      }
+
+      // Handle network errors - Check this LAST
+      if (err.isNetworkError || !err.response) {
+        const errorMsg = 'Network connection failed. Please check your internet connection and try again.';
         setError(errorMsg);
         throw new Error(errorMsg);
       }

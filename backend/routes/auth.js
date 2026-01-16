@@ -1798,23 +1798,13 @@ router.delete('/admin/login-logs', protect, authorize('admin', 'superadmin'), as
 // @access  Private/Admin
 router.post('/admin/login-logs/view-password', protect, authorize('admin', 'superadmin'), async (req, res) => {
   try {
-    const { logId, securityCode } = req.body;
+    const { logId } = req.body;
 
     // Validate required fields
-    if (!logId || !securityCode) {
+    if (!logId) {
       return res.status(400).json({
         success: false,
-        message: 'Login log ID and security code are required'
-      });
-    }
-
-    // Verify security code
-    const correctCode = process.env.ADMIN_PASSWORD_VIEW_CODE || 'wtf@wizz';
-    if (securityCode !== correctCode) {
-      console.warn(`⚠️ Failed password view attempt by admin ${req.user.username} - Invalid security code`);
-      return res.status(403).json({
-        success: false,
-        message: 'Invalid security code'
+        message: 'Login log ID is required'
       });
     }
 
