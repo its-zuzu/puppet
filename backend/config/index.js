@@ -155,5 +155,12 @@ module.exports = {
   analytics: {
     activeUserDays: parseIntHelper(process.env.ANALYTICS_ACTIVE_USER_DAYS, 30),
     recentActivityDays: parseIntHelper(process.env.ANALYTICS_RECENT_ACTIVITY_DAYS, 7)
+  },
+
+  // File Upload Configuration
+  fileUpload: {
+    maxSize: parseIntHelper(process.env.MAX_FILE_SIZE, 20 * 1024 * 1024), // 20MB default
+    maxFiles: parseIntHelper(process.env.MAX_FILES_PER_CHALLENGE, 10), // 10 files max
+    uploadDir: process.env.UPLOAD_DIR || 'uploads/challenges'
   }
 };

@@ -10,11 +10,20 @@ const { sanitizeInput, validateInput } = require('../middleware/security');
 const requestIp = require('request-ip');
 const UAParser = require('ua-parser-js');
 const crypto = require('crypto');
+const path = require('path');
+const fs = require('fs');
 const { checkEventNotEnded, isEventEnded } = require('../middleware/eventState');
 
 const { getRedisClient } = require('../utils/redis');
 const { clearScoreboardCache } = require('../utils/redis');
 const monitoring = require('../utils/monitoring');
+const { 
+  upload, 
+  handleMulterError, 
+  calculateSHA1, 
+  deleteFile,
+  deleteAllChallengeFiles 
+} = require('../utils/fileUpload');
 // Use centralized Redis for Challenge Rate Limiting
 const redisClient = getRedisClient();
 
@@ -925,5 +934,305 @@ router.put('/:id', protect, authorize('admin', 'superadmin'), async (req, res) =
     });
   }
 });
+
+// ==================== FILE UPLOAD ROUTES ====================
+
+// Upload files to a challenge (Admin only)
+router.post(
+  '/:challengeId/files',
+  protect,
+  authorize('admin', 'superadmin'),
+  upload.array('files', 10), // Max 10 files
+  handleMulterError,
+  async (req, res) => {
+    try {
+      const { challengeId } = req.params;
+
+      if (!isValidObjectId(challengeId)) {
+        return res.status(400).json({
+          success: false,
+          message: 'Invalid challenge ID'
+        });
+      }
+
+      const challenge = await Challenge.findById(challengeId);
+
+      if (!challenge) {
+        // Clean up uploaded files if challenge not found
+        if (req.files) {
+          for (const file of req.files) {
+            await deleteFile(file.path).catch(console.error);
+          }
+        }
+        return res.status(404).json({
+          success: false,
+          message: 'Challenge not found'
+        });
+      }
+
+      if (!req.files || req.files.length === 0) {
+        return res.status(400).json({
+          success: false,
+          message: 'No files uploaded'
+        });
+      }
+
+      // Process uploaded files
+      const fileMetadata = [];
+      
+      for (const file of req.files) {
+        try {
+          // Calculate SHA-1 hash
+          const sha1sum = await calculateSHA1(file.path);
+
+          fileMetadata.push({
+            filename: file.filename,
+            originalName: file.originalname,
+            path: `/uploads/challenges/${challengeId}/${file.filename}`,
+            size: file.size,
+            mimetype: file.mimetype,
+            sha1sum: sha1sum,
+            uploadedAt: new Date()
+          });
+
+          logActivity('FILE_UPLOADED', {
+            challengeId,
+            filename: file.originalname,
+            size: file.size,
+            admin: req.user.username
+          });
+        } catch (error) {
+          console.error('Error processing file:', error);
+          // Clean up file if processing failed
+          await deleteFile(file.path).catch(console.error);
+        }
+      }
+
+      // Add files to challenge
+      challenge.files = challenge.files || [];
+      challenge.files.push(...fileMetadata);
+      await challenge.save();
+
+      res.status(200).json({
+        success: true,
+        message: `${fileMetadata.length} file(s) uploaded successfully`,
+        data: {
+          files: fileMetadata
+        }
+      });
+    } catch (error) {
+      console.error('Error uploading files:', error);
+      
+      // Clean up uploaded files on error
+      if (req.files) {
+        for (const file of req.files) {
+          await deleteFile(file.path).catch(console.error);
+        }
+      }
+      
+      res.status(500).json({
+        success: false,
+        message: 'Error uploading files'
+      });
+    }
+  }
+);
+
+// Get files for a challenge (Admin only)
+router.get(
+  '/:challengeId/files',
+  protect,
+  authorize('admin', 'superadmin'),
+  async (req, res) => {
+    try {
+      const { challengeId } = req.params;
+
+      if (!isValidObjectId(challengeId)) {
+        return res.status(400).json({
+          success: false,
+          message: 'Invalid challenge ID'
+        });
+      }
+
+      const challenge = await Challenge.findById(challengeId);
+
+      if (!challenge) {
+        return res.status(404).json({
+          success: false,
+          message: 'Challenge not found'
+        });
+      }
+
+      res.status(200).json({
+        success: true,
+        data: {
+          files: challenge.files || []
+        }
+      });
+    } catch (error) {
+      console.error('Error fetching files:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Error fetching files'
+      });
+    }
+  }
+);
+
+// Delete a specific file from a challenge (Admin only)
+router.delete(
+  '/:challengeId/files/:filename',
+  protect,
+  authorize('admin', 'superadmin'),
+  async (req, res) => {
+    try {
+      const { challengeId, filename } = req.params;
+
+      if (!isValidObjectId(challengeId)) {
+        return res.status(400).json({
+          success: false,
+          message: 'Invalid challenge ID'
+        });
+      }
+
+      const challenge = await Challenge.findById(challengeId);
+
+      if (!challenge) {
+        return res.status(404).json({
+          success: false,
+          message: 'Challenge not found'
+        });
+      }
+
+      // Find file in challenge
+      const fileIndex = challenge.files.findIndex(f => f.filename === filename);
+
+      if (fileIndex === -1) {
+        return res.status(404).json({
+          success: false,
+          message: 'File not found'
+        });
+      }
+
+      const file = challenge.files[fileIndex];
+      const filePath = path.join(__dirname, '..', file.path);
+
+      // Delete physical file
+      await deleteFile(filePath);
+
+      // Remove from database
+      challenge.files.splice(fileIndex, 1);
+      await challenge.save();
+
+      logActivity('FILE_DELETED', {
+        challengeId,
+        filename: file.originalName,
+        admin: req.user.username
+      });
+
+      res.status(200).json({
+        success: true,
+        message: 'File deleted successfully'
+      });
+    } catch (error) {
+      console.error('Error deleting file:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Error deleting file'
+      });
+    }
+  }
+);
+
+// Download challenge file (Authenticated users only)
+router.get(
+  '/:challengeId/download/:filename',
+  protect,
+  async (req, res) => {
+    try {
+      const { challengeId, filename } = req.params;
+
+      if (!isValidObjectId(challengeId)) {
+        return res.status(400).json({
+          success: false,
+          message: 'Invalid challenge ID'
+        });
+      }
+
+      const challenge = await Challenge.findById(challengeId);
+
+      if (!challenge) {
+        return res.status(404).json({
+          success: false,
+          message: 'Challenge not found'
+        });
+      }
+
+      // Check if challenge is visible (unless admin)
+      if (challenge.state !== 'visible' && req.user.role !== 'admin' && req.user.role !== 'superadmin') {
+        return res.status(403).json({
+          success: false,
+          message: 'Challenge is not accessible'
+        });
+      }
+
+      // Find file
+      const file = challenge.files.find(f => f.filename === filename);
+
+      if (!file) {
+        return res.status(404).json({
+          success: false,
+          message: 'File not found'
+        });
+      }
+
+      const filePath = path.join(__dirname, '..', file.path);
+
+      // Check if file exists
+      if (!fs.existsSync(filePath)) {
+        return res.status(404).json({
+          success: false,
+          message: 'File not found on server'
+        });
+      }
+
+      // Log download
+      logActivity('FILE_DOWNLOADED', {
+        challengeId,
+        filename: file.originalName,
+        user: req.user.username,
+        ip: requestIp.getClientIp(req)
+      });
+
+      // Set headers to force download and prevent execution
+      res.setHeader('Content-Type', 'application/octet-stream');
+      res.setHeader('Content-Disposition', `attachment; filename="${file.originalName}"`);
+      res.setHeader('X-Content-Type-Options', 'nosniff');
+      res.setHeader('Content-Length', file.size);
+
+      // Stream file to response
+      const fileStream = fs.createReadStream(filePath);
+      fileStream.pipe(res);
+
+      fileStream.on('error', (error) => {
+        console.error('Error streaming file:', error);
+        if (!res.headersSent) {
+          res.status(500).json({
+            success: false,
+            message: 'Error downloading file'
+          });
+        }
+      });
+    } catch (error) {
+      console.error('Error downloading file:', error);
+      if (!res.headersSent) {
+        res.status(500).json({
+          success: false,
+          message: 'Error downloading file'
+        });
+      }
+    }
+  }
+);
 
 module.exports = router;

@@ -57,6 +57,36 @@ const ChallengeSchema = new mongoose.Schema({
     content: String,
     cost: Number
   }],
+  files: [{
+    filename: {
+      type: String,
+      required: true
+    },
+    originalName: {
+      type: String,
+      required: true
+    },
+    path: {
+      type: String,
+      required: true
+    },
+    size: {
+      type: Number,
+      required: true
+    },
+    mimetype: {
+      type: String,
+      required: true
+    },
+    sha1sum: {
+      type: String,
+      required: true
+    },
+    uploadedAt: {
+      type: Date,
+      default: Date.now
+    }
+  }],
   solvedBy: [{
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User'
