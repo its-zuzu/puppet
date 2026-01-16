@@ -1055,6 +1055,8 @@ router.get('/user/:id', protect, async (req, res) => {
     const Challenge = require('../models/Challenge');
     const mongoose = require('mongoose');
     
+    console.log('[User Profile] Fetching submissions for user:', user._id.toString());
+    
     // Get all submissions by this user with challenge details
     const userSubmissions = await Submission.aggregate([
       { $match: { user: user._id, isCorrect: true } },
@@ -1078,6 +1080,9 @@ router.get('/user/:id', protect, async (req, res) => {
       },
       { $sort: { solvedAt: -1 } }
     ]);
+
+    console.log('[User Profile] Found submissions:', userSubmissions.length);
+    console.log('[User Profile] Submissions:', userSubmissions);
 
     const calculatedPoints = userSubmissions.reduce((sum, sub) => sum + sub.points, 0);
     
