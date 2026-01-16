@@ -523,6 +523,17 @@
   padding: 32px;
 }
 
+/* Modal Alerts Section */
+.htb-modal-alerts {
+  padding: 20px 32px;
+  background: var(--bg-tertiary);
+  border-bottom: 1px solid var(--border-primary);
+}
+
+.htb-modal-alerts .htb-alert {
+  margin-bottom: 0;
+}
+
 /* Solves Table */
 .htb-no-solves {
   text-align: center;

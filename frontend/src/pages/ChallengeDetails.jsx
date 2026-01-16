@@ -123,10 +123,10 @@ const FlagSubmissionModal = ({ challenge, onClose, onSubmit }) => {
 
     try {
       await onSubmit(flag);
-      setSuccess('Flag submitted successfully!');
+      setSuccess('Correct flag!');
       setTimeout(() => onClose(), 1500);
     } catch (err) {
-      setError(err.message || 'Failed to submit flag');
+      setError(err.message || 'Incorrect flag');
     } finally {
       setIsSubmitting(false);
     }
@@ -164,44 +164,49 @@ const FlagSubmissionModal = ({ challenge, onClose, onSubmit }) => {
             </motion.button>
           </div>
 
+          <AnimatePresence>
+            {(error || success || isEnded) && (
+              <div className="htb-modal-alerts">
+                {isEnded && (
+                  <motion.div 
+                    className="htb-alert htb-alert-warning"
+                    initial={{ opacity: 0, y: -10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -10 }}
+                  >
+                    <AlertCircle size={20} />
+                    CTF Event Has Ended - Submissions are no longer accepted
+                  </motion.div>
+                )}
+                {error && (
+                  <motion.div 
+                    className="htb-alert htb-alert-error"
+                    initial={{ opacity: 0, y: -10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -10 }}
+                    transition={{ duration: 0.3 }}
+                  >
+                    <AlertCircle size={20} />
+                    {error}
+                  </motion.div>
+                )}
+                {success && (
+                  <motion.div 
+                    className="htb-alert htb-alert-success"
+                    initial={{ opacity: 0, y: -10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -10 }}
+                    transition={{ duration: 0.3 }}
+                  >
+                    <CheckCircle2 size={20} />
+                    {success}
+                  </motion.div>
+                )}
+              </div>
+            )}
+          </AnimatePresence>
+
           <div className="htb-modal-body">
-            <AnimatePresence>
-              {isEnded && (
-                <motion.div 
-                  className="htb-alert htb-alert-warning"
-                  initial={{ opacity: 0, y: -10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -10 }}
-                >
-                  <AlertCircle size={20} />
-                  CTF Event Has Ended - Submissions are no longer accepted
-                </motion.div>
-              )}
-              {error && (
-                <motion.div 
-                  className="htb-alert htb-alert-error"
-                  initial={{ opacity: 0, x: -10 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  exit={{ opacity: 0, x: 10 }}
-                  transition={{ duration: 0.3 }}
-                >
-                  <AlertCircle size={20} />
-                  {error}
-                </motion.div>
-              )}
-              {success && (
-                <motion.div 
-                  className="htb-alert htb-alert-success"
-                  initial={{ opacity: 0, x: -10 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  exit={{ opacity: 0, x: 10 }}
-                  transition={{ duration: 0.3 }}
-                >
-                  <CheckCircle2 size={20} />
-                  {success}
-                </motion.div>
-              )}
-            </AnimatePresence>
 
             <form onSubmit={handleSubmit} className="htb-flag-form">
               <div className="htb-form-group">
