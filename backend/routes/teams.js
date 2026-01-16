@@ -228,25 +228,24 @@ router.get('/:id', protect, async (req, res) => {
       });
     });
     
-    // Update each member with their calculated stats
-    team.members.forEach(member => {
+    // Build new members array with calculated stats
+    const updatedMembers = team.members.map(member => {
       const memberId = member._id.toString();
       const stats = statsMap.get(memberId);
-      if (stats) {
-        member.points = stats.points;
-        member.personallySolvedCount = stats.solvedCount;
-        member.personallySolvedChallenges = stats.personalSolvedChallenges;
-      } else {
-        member.points = 0;
-        member.personallySolvedCount = 0;
-        member.personallySolvedChallenges = [];
-      }
-      // Remove the misleading solvedChallenges array (team-wide)
-      delete member.solvedChallenges;
+      
+      return {
+        _id: member._id,
+        username: member.username,
+        email: member.email,
+        points: stats ? stats.points : 0,
+        personallySolvedCount: stats ? stats.solvedCount : 0,
+        personallySolvedChallenges: stats ? stats.personalSolvedChallenges : [],
+        unlockedHints: member.unlockedHints || []
+      };
     });
     
     // Calculate team points from calculated member points
-    const memberPoints = team.members.reduce((sum, member) => sum + (member.points || 0), 0);
+    const memberPoints = updatedMembers.reduce((sum, member) => sum + (member.points || 0), 0);
     
     // Get team awards (includes negative awards for hint unlocks)
     const Award = require('../models/Award');
@@ -277,7 +276,7 @@ router.get('/:id', protect, async (req, res) => {
     
     // Calculate total solved challenges (unique challenges across team from actual submissions)
     const allSolvedChallenges = new Set();
-    team.members.forEach(member => {
+    updatedMembers.forEach(member => {
       if (member.personallySolvedChallenges && Array.isArray(member.personallySolvedChallenges)) {
         member.personallySolvedChallenges.forEach(challenge => {
           allSolvedChallenges.add(challenge.toString());
@@ -285,12 +284,20 @@ router.get('/:id', protect, async (req, res) => {
       }
     });
 
-    // Update team object with calculated values
-    const teamData = team.toObject();
-    teamData.totalPoints = calculatedPoints;
-    teamData.points = calculatedPoints; // Keep for backward compatibility
-    teamData.rank = rank;
-    teamData.solvedChallenges = allSolvedChallenges.size;
+    // Build response with calculated values
+    const teamData = {
+      _id: team._id,
+      name: team.name,
+      description: team.description,
+      captain: team.captain,
+      createdBy: team.createdBy,
+      members: updatedMembers,
+      totalPoints: calculatedPoints,
+      points: calculatedPoints,
+      rank: rank,
+      solvedChallenges: allSolvedChallenges.size,
+      createdAt: team.createdAt
+    };
 
     res.json({
       success: true,
