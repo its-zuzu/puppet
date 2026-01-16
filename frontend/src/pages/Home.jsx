@@ -42,7 +42,9 @@ function Home() {
     const fetchTeamStats = async () => {
       if (isAuthenticated && user?.team) {
         try {
-          const response = await axios.get(`/api/teams/${user.team}`);
+          // Extract team ID properly (handle both string and object cases)
+          const teamId = user.team._id || user.team;
+          const response = await axios.get(`/api/teams/${teamId}`);
           if (response.data && response.data.data) {
             setTeamStats(response.data.data);
             console.log('Team stats loaded:', response.data.data);
