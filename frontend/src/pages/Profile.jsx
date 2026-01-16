@@ -1,7 +1,7 @@
 import { useState, useEffect, useContext } from 'react';
 import { Navigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Award, Trophy, Lock, Users, Flag, Medal } from 'lucide-react';
+import { Award, Trophy, Lock, Users, Flag, Medal, RefreshCw } from 'lucide-react';
 import axios from 'axios';
 import AuthContext from '../context/AuthContext';
 import { Loading } from '../components/ui';
@@ -11,6 +11,7 @@ function Profile() {
   const { user: authUser, isAuthenticated, loading: authLoading, updateUserData } = useContext(AuthContext);
   const [challenges, setChallenges] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
 
   useEffect(() => {
     if (!authLoading && isAuthenticated) {
@@ -31,6 +32,12 @@ function Profile() {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleRefresh = async () => {
+    setRefreshing(true);
+    await fetchData();
+    setRefreshing(false);
   };
 
   const getSolvedChallenges = () => {
@@ -73,6 +80,16 @@ function Profile() {
         animate={{ opacity: 1, y: 0 }}
       >
         <h1 className="htb-user-name">{authUser.username}</h1>
+        <motion.button
+          className="htb-refresh-btn"
+          onClick={handleRefresh}
+          disabled={refreshing}
+          whileHover={{ scale: 1.05 }}
+          whileTap={{ scale: 0.95 }}
+        >
+          <RefreshCw size={18} className={refreshing ? 'spinning' : ''} />
+          Refresh Stats
+        </motion.button>
       </motion.div>
 
       <div className="htb-user-main">
