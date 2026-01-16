@@ -164,6 +164,12 @@ router.post('/', protect, authorize('admin', 'superadmin'), async (req, res) => 
 
     // Clear scoreboard cache
     await clearScoreboardCache();
+    
+    // Invalidate team points cache if award is for a team
+    if (teamId) {
+      const { invalidateTeamPoints } = require('../utils/teamPointsCache');
+      await invalidateTeamPoints(teamId);
+    }
 
     res.status(201).json({
       success: true,
@@ -210,6 +216,12 @@ router.put('/:id', protect, authorize('admin', 'superadmin'), async (req, res) =
 
     // Clear scoreboard cache
     await clearScoreboardCache();
+    
+    // Invalidate team points cache if award is for a team
+    if (award.team) {
+      const { invalidateTeamPoints } = require('../utils/teamPointsCache');
+      await invalidateTeamPoints(award.team);
+    }
 
     res.json({
       success: true,
@@ -238,11 +250,20 @@ router.delete('/:id', protect, authorize('admin', 'superadmin'), async (req, res
         error: 'Award not found'
       });
     }
+    
+    // Store team ID before deletion for cache invalidation
+    const teamId = award.team;
 
     await award.deleteOne();
 
     // Clear scoreboard cache
     await clearScoreboardCache();
+    
+    // Invalidate team points cache if award was for a team
+    if (teamId) {
+      const { invalidateTeamPoints } = require('../utils/teamPointsCache');
+      await invalidateTeamPoints(teamId);
+    }
 
     res.json({
       success: true,

@@ -34,6 +34,18 @@ const TeamSchema = new mongoose.Schema({
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Challenge'
   }],
+  isBlocked: {
+    type: Boolean,
+    default: false
+  },
+  blockedReason: {
+    type: String,
+    default: null
+  },
+  blockedAt: {
+    type: Date,
+    default: null
+  },
   createdAt: {
     type: Date,
     default: Date.now

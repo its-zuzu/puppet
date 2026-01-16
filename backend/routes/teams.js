@@ -8,6 +8,9 @@ const { protect, authorize } = require('../middleware/auth');
 // @desc    Create a new team (Admin only)
 // @access  Private/Admin
 router.post('/', protect, authorize('admin', 'superadmin'), async (req, res) => {
+  const mongoose = require('mongoose');
+  const session = await mongoose.startSession();
+  
   try {
     const { name, description, members, captain, maxMembers } = req.body;
     const MAX_TEAM_MEMBERS = maxMembers || parseInt(process.env.MAX_TEAM_MEMBERS) || 2;
@@ -26,44 +29,48 @@ router.post('/', protect, authorize('admin', 'superadmin'), async (req, res) => 
       });
     }
 
-    // Validate member IDs exist and are valid users
-    if (members && members.length > 0) {
-      const validMembers = await User.find({
-        _id: { $in: members },
-        role: 'user',
-        team: { $exists: false }
-      });
+    let team;
+    await session.withTransaction(async () => {
+      // Validate member IDs exist and are valid users (inside transaction)
+      if (members && members.length > 0) {
+        const validMembers = await User.find({
+          _id: { $in: members },
+          role: 'user',
+          team: { $exists: false }
+        }).session(session);
 
-      if (validMembers.length !== members.length) {
-        return res.status(400).json({
-          success: false,
-          message: 'One or more selected users are invalid or already in a team'
-        });
+        if (validMembers.length !== members.length) {
+          throw new Error('One or more selected users are invalid or already in a team');
+        }
+
+        // Validate captain is in members list
+        if (captain && !members.includes(captain)) {
+          throw new Error('Captain must be a selected team member');
+        }
       }
 
-      // Validate captain is in members list
-      if (captain && !members.includes(captain)) {
-        return res.status(400).json({
-          success: false,
-          message: 'Captain must be a selected team member'
-        });
-      }
-    }
+      // Create team within transaction
+      const teamDoc = await Team.create([{
+        name,
+        description,
+        members: members || [],
+        captain: captain || null,
+        createdBy: req.user._id || req.user.id
+      }], { session });
+      
+      team = teamDoc[0];
 
-    const team = await Team.create({
-      name,
-      description,
-      members: members || [],
-      captain: captain || null,
-      createdBy: req.user._id || req.user.id
+      // Update users within transaction
+      if (members && members.length > 0) {
+        await User.updateMany(
+          { _id: { $in: members } },
+          { team: team._id },
+          { session }
+        );
+      }
     });
 
-    if (members && members.length > 0) {
-      await User.updateMany(
-        { _id: { $in: members } },
-        { team: team._id }
-      );
-    }
+    await session.endSession();
 
     const populatedTeam = await team.populate('members createdBy captain');
 
@@ -72,6 +79,7 @@ router.post('/', protect, authorize('admin', 'superadmin'), async (req, res) => 
       data: populatedTeam
     });
   } catch (error) {
+    await session.endSession();
     console.error('Team creation error:', error);
     res.status(500).json({
       success: false,
@@ -311,12 +319,20 @@ router.get('/:id', protect, async (req, res) => {
     // Calculate team points from calculated member points
     const memberPoints = updatedMembers.reduce((sum, member) => sum + (member.points || 0), 0);
     
-    // Get team awards (includes negative awards for hint unlocks)
-    const Award = require('../models/Award');
-    const awards = await Award.find({ team: team._id }).select('value');
-    const awardPoints = awards.reduce((sum, award) => sum + (award.value || 0), 0);
+    // Use cached team points calculation (same logic, just cached)
+    const { getTeamPoints } = require('../utils/teamPointsCache');
+    const teamPointsData = await getTeamPoints(team._id, memberIds);
     
-    const calculatedPoints = Math.max(0, memberPoints + awardPoints);
+    // Use cached calculation result
+    const calculatedPoints = teamPointsData.total;
+    
+    console.log('[Team Details] Points calculation:', {
+      memberPoints: teamPointsData.memberPoints,
+      awardPoints: teamPointsData.awardPoints,
+      total: calculatedPoints,
+      cached: true,
+      cacheAge: Math.round((Date.now() - teamPointsData.calculatedAt) / 1000)
+    });
 
     // Calculate team rank
     const teamsWithHigherPoints = await Team.countDocuments({

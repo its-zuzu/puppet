@@ -115,6 +115,26 @@ const refreshTokenLimiter = createRateLimit(
   'refresh'
 );
 
+// Newsletter subscription rate limiter (IP-based)
+// Prevent spam: Configurable via .env (default: 5 subscriptions per 15 minutes per IP)
+const newsletterLimiter = createRateLimit(
+  config.rateLimit.newsletter.windowMs,
+  config.rateLimit.newsletter.max,
+  'Too many newsletter subscription attempts. Please try again later.',
+  'newsletter',
+  config.rateLimit.newsletter.cooldownSeconds
+);
+
+// Registration rate limiter (IP-based)
+// Even though registration is disabled, protect the endpoint (configurable via .env)
+const registrationLimiter = createRateLimit(
+  config.rateLimit.registration.windowMs,
+  config.rateLimit.registration.max,
+  'Too many registration attempts. Please try again later.',
+  'register',
+  config.rateLimit.registration.cooldownSeconds
+);
+
 // 3. Security Headers (Helmet with comprehensive security)
 const secureHeaders = helmet({
   // Content Security Policy to mitigate XSS

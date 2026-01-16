@@ -286,6 +286,28 @@ router.get('/:id', async (req, res) => {
       });
     }
 
+    // Check visibility - only admins can access hidden challenges
+    const token = req.cookies.token || req.cookies.access_token || (req.headers.authorization && req.headers.authorization.split(' ')[1]);
+    let isAdmin = false;
+    
+    if (token) {
+      try {
+        const decoded = jwt.verify(token, process.env.JWT_SECRET);
+        const user = await User.findById(decoded.id).select('role');
+        isAdmin = user && (user.role === 'admin' || user.role === 'superadmin');
+      } catch (e) {
+        // Invalid token, treat as non-admin
+      }
+    }
+    
+    // If challenge is not visible and user is not admin, return 404
+    if (!challenge.isVisible && !isAdmin) {
+      return res.status(404).json({
+        success: false,
+        message: 'Challenge not found'
+      });
+    }
+
     // CTFd-style: Get user's unlocked hints from Unlocks table
     let unlockedHints = [];
     let userId = null;
@@ -718,6 +740,12 @@ router.post('/:id/submit', protect, sanitizeInput, checkEventNotEnded, async (re
         // Redis ZSET updates removed - scores calculated dynamically
         // Scoreboard will aggregate from Submissions + Challenges JOINs
       });
+      
+      // Invalidate team points cache after successful transaction
+      if (user.team) {
+        const { invalidateTeamPoints } = require('../utils/teamPointsCache');
+        await invalidateTeamPoints(user.team._id);
+      }
     } catch (transactionError) {
       // If transaction failed due to event ending, return appropriate error
       if (transactionError.message && transactionError.message.includes('CTF event has ended')) {

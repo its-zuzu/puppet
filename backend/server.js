@@ -47,6 +47,7 @@ const registrationStatusRoutes = require('./routes/registrationStatus');
 const blogRoutes = require('./routes/blog');
 const tutorialRoutes = require('./routes/tutorials');
 const teamRoutes = require('./routes/teams');
+const adminTeamManagementRoutes = require('./routes/adminTeamManagement');
 const noticeRoutes = require('./routes/notice');
 const analyticsRoutes = require('./routes/analytics');
 const realtimeRoutes = require('./routes/realtime');
@@ -223,6 +224,7 @@ app.use('/api/registration-status', registrationStatusRoutes);
 app.use('/api/blog', blogRoutes);
 app.use('/api/tutorials', tutorialRoutes);
 app.use('/api/teams', teamRoutes);
+app.use('/api/admin/teams', adminTeamManagementRoutes);
 app.use('/api/notices', noticeRoutes);
 app.use('/api/analytics', analyticsRoutes);
 app.use('/api/r-submission', realtimeRoutes);
@@ -326,26 +328,33 @@ app.use((err, req, res, next) => {
 
 // Handle unhandled promise rejections
 process.on('unhandledRejection', (err) => {
-  console.error('Unhandled Rejection:', err);
-  // Close server & exit process
-  //process.exit(1);
+  console.error('🚨 [CRITICAL] Unhandled Promise Rejection:', err);
+  console.error('Stack trace:', err.stack);
+  
+  // In production, exit immediately to let PM2/Docker restart the process
+  // This prevents the server from running in an unstable state
+  console.error('Exiting process due to unhandled rejection...');
+  process.exit(1);
 });
 
 // Handle uncaught exceptions
 process.on('uncaughtException', (err) => {
-  console.error('Uncaught Exception:', err);
-  // Close server & exit process
+  console.error('🚨 [CRITICAL] Uncaught Exception:', err);
+  console.error('Stack trace:', err.stack);
+  
+  // Always exit on uncaught exceptions - the process is in an undefined state
+  console.error('Exiting process due to uncaught exception...');
   process.exit(1);
 });
 
 // Start server
 const MONGODB_URI = process.env.MONGODB_URI || process.env.MONGO_URI || 'mongodb://localhost:27017/ctf-platform';
 
-// Enhanced MongoDB connection options for 500+ concurrent users support
+// Enhanced MongoDB connection options for 400 concurrent users support
 const mongoOptions = {
-  // Connection pool settings - Optimized for PM2 Cluster (Total ~800 connections with 4 instances)
-  maxPoolSize: parseInt(process.env.MONGO_MAX_POOL_SIZE) || 200,
-  minPoolSize: parseInt(process.env.MONGO_MIN_POOL_SIZE) || 20,
+  // Connection pool settings - Optimized for PM2 Cluster (Total ~600 connections with 4 instances)
+  maxPoolSize: parseInt(process.env.MONGO_MAX_POOL_SIZE) || 150,
+  minPoolSize: parseInt(process.env.MONGO_MIN_POOL_SIZE) || 15,
   maxIdleTimeMS: parseInt(process.env.MONGO_MAX_IDLE_TIME) || 60000, // Close connections after 60 seconds of inactivity
   serverSelectionTimeoutMS: parseInt(process.env.MONGO_SERVER_SELECTION_TIMEOUT) || 10000, // How long to try selecting a server
   socketTimeoutMS: parseInt(process.env.MONGO_SOCKET_TIMEOUT) || 60000, // How long a send or receive on a socket can take before timing out

@@ -3,6 +3,30 @@ const router = express.Router();
 const User = require('../models/User');
 const Challenge = require('../models/Challenge');
 const { protect, authorize } = require('../middleware/auth');
+const { getCacheStats } = require('../utils/teamPointsCache');
+
+// @route   GET /api/analytics/cache-stats
+// @desc    Get cache performance statistics
+// @access  Private/Admin
+router.get('/cache-stats', protect, authorize('admin', 'superadmin'), async (req, res) => {
+  try {
+    const teamPointsCacheStats = getCacheStats();
+    
+    res.json({
+      success: true,
+      data: {
+        teamPointsCache: teamPointsCacheStats,
+        timestamp: new Date().toISOString()
+      }
+    });
+  } catch (error) {
+    console.error('Error fetching cache stats:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error fetching cache statistics'
+    });
+  }
+});
 
 // @route   GET /api/analytics/overview
 // @desc    Get platform overview metrics

@@ -98,8 +98,11 @@ exports.protect = async (req, res, next) => {
     }
 
     if (!user) {
-      // Get user from database
-      const dbUser = await User.findById(decoded.id).select('-password');
+      // Get user from database with team pre-populated
+      const dbUser = await User.findById(decoded.id)
+        .select('-password')
+        .populate('team', '_id name points members captain')
+        .lean(); // Use lean() for better performance (plain JS object)
 
       if (!dbUser) {
         // Remove from cache if user no longer exists
@@ -110,13 +113,17 @@ exports.protect = async (req, res, next) => {
         });
       }
 
-      // Convert to plain object with _id as string for consistency
-      const userObj = dbUser.toObject();
-      userObj._id = userObj._id.toString();
-      user = userObj;
+      // Ensure _id is string for consistency
+      dbUser._id = dbUser._id.toString();
+      if (dbUser.team && dbUser.team._id) {
+        dbUser.team._id = dbUser.team._id.toString();
+      }
+      
+      user = dbUser;
 
-      // Cache the user data
-      await redisClient.setex(cacheKey, CACHE_TTL, JSON.stringify(userObj));
+      // Cache the user data with populated team (15 min TTL for production)
+      const productionCacheTTL = 900; // 15 minutes for production
+      await redisClient.setex(cacheKey, productionCacheTTL, JSON.stringify(dbUser));
     }
 
     // Check if user's password was changed after the token was issued

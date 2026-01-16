@@ -11,7 +11,8 @@ const {
   sanitizeInput,
   validateInput,
   enhancedValidation,
-  refreshTokenLimiter
+  refreshTokenLimiter,
+  registrationLimiter
 } = require('../middleware/security');
 const { sendOTPEmail } = require('../utils/email');
 const requestIp = require('request-ip');
@@ -132,7 +133,7 @@ const clearTokenCookie = (res) => {
 // @route   POST /api/auth/register
 // @desc    Public registration disabled - Admin only
 // @access  Public
-router.post('/register', async (req, res) => {
+router.post('/register', registrationLimiter, async (req, res) => {
   return res.status(403).json({
     success: false,
     message: 'Public registration is currently disabled.',
@@ -378,6 +379,7 @@ router.post('/login', sanitizeInput, async (req, res) => {
     const user = await User.findOne({ email: validatedEmail }).select('+password');
 
     if (!user) {
+      logActivity('LOGIN_FAILED', { email: validatedEmail, reason: 'User not found', ip: req.ip });
       return res.status(401).json({
         success: false,
         message: 'Invalid credentials'
@@ -414,6 +416,7 @@ router.post('/login', sanitizeInput, async (req, res) => {
       // Log failed login attempt and increment counter
       await user.incrementLoginAttempts();
       await createLoginLog(user, req, 'failed', 'Invalid password');
+      logActivity('LOGIN_FAILED', { email: validatedEmail, reason: 'Invalid password', ip: req.ip });
 
       return res.status(401).json({
         success: false,
@@ -785,95 +788,7 @@ router.post('/logout-all', protect, async (req, res) => {
   }
 });
 
-// @route   POST /api/auth/forgotpassword
-// @desc    Forgot password
-// @access  Public
-router.post('/forgotpassword', async (req, res) => {
-  try {
-    const user = await User.findOne({ email: req.body.email });
-
-    if (!user) {
-      return res.status(404).json({
-        success: false,
-        message: 'There is no user with that email'
-      });
-    }
-
-    // Get reset token
-    const resetToken = user.createPasswordResetToken();
-    await user.save();
-
-    // TODO: Send email with reset token
-    // For now, just return the token in development
-    if (process.env.NODE_ENV === 'development') {
-      return res.json({
-        success: true,
-        resetToken
-      });
-    }
-
-    res.json({
-      success: true,
-      message: 'Email sent'
-    });
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: process.env.NODE_ENV === 'development' ? error.message : 'Error processing request'
-    });
-  }
-});
-
-// @route   POST /api/auth/resetpassword/:resettoken
-// @desc    Reset password
-// @access  Public
-router.post('/resetpassword/:resettoken', async (req, res) => {
-  try {
-    // Get hashed token
-    const resetPasswordToken = crypto
-      .createHash('sha256')
-      .update(req.params.resettoken)
-      .digest('hex');
-
-    const user = await User.findOne({
-      resetPasswordToken,
-      resetPasswordExpire: { $gt: Date.now() }
-    });
-
-    if (!user) {
-      return res.status(400).json({
-        success: false,
-        message: 'Invalid or expired reset token'
-      });
-    }
-
-    // Set new password
-    user.password = req.body.password;
-    user.resetPasswordToken = undefined;
-    user.resetPasswordExpire = undefined;
-    user.passwordChangedAt = Date.now();
-    await user.save();
-
-    // NEW: Revoke all refresh tokens for security
-    const refreshTokenUtils = require('../utils/refreshToken');
-    await refreshTokenUtils.revokeAllUserTokens(user._id, 'password_changed');
-
-    // Clear Redis cache
-    const { getRedisClient } = require('../utils/redis');
-    const redisClient = getRedisClient();
-    await redisClient.del(`user:${user._id}`);
-
-    res.json({
-      success: true,
-      message: 'Password reset successful. Please login with your new password.'
-    });
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: process.env.NODE_ENV === 'development' ? error.message : 'Error resetting password'
-    });
-  }
-});
+// Password reset endpoints removed - use admin team management to change passwords
 
 // @route   GET /api/auth/me
 // @desc    Get current logged in user

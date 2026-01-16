@@ -18,7 +18,10 @@ const storage = multer.diskStorage({
     cb(null, uploadsDir);
   },
   filename: function (req, file, cb) {
-    cb(null, Date.now() + path.extname(file.originalname));
+    // Use path.basename() to prevent path traversal attacks
+    const safeFilename = path.basename(file.originalname);
+    const ext = path.extname(safeFilename);
+    cb(null, Date.now() + '-' + Date.now() + ext);
   }
 });
 

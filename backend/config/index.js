@@ -104,6 +104,16 @@ module.exports = {
       windowMs: parseDuration(process.env.REFRESH_TOKEN_RATE_WINDOW || '1m', 60000), // 1 minute window
       max: parseIntHelper(process.env.REFRESH_TOKEN_RATE_MAX, 60) // 60 refreshes per minute (1 per second)
     },
+    newsletter: {
+      windowMs: parseDuration(process.env.NEWSLETTER_RATE_WINDOW || '15m', 900000), // 15 minutes
+      max: parseIntHelper(process.env.NEWSLETTER_RATE_MAX, 5), // 5 subscriptions per window
+      cooldownSeconds: parseIntHelper(process.env.NEWSLETTER_RATE_COOLDOWN, 300) // 5 minute cooldown
+    },
+    registration: {
+      windowMs: parseDuration(process.env.REGISTRATION_RATE_WINDOW || '60m', 3600000), // 60 minutes
+      max: parseIntHelper(process.env.REGISTRATION_RATE_MAX, 10), // 10 attempts per window
+      cooldownSeconds: parseIntHelper(process.env.REGISTRATION_RATE_COOLDOWN, 300) // 5 minute cooldown
+    },
     general: {
       windowMs: parseDuration(process.env.GENERAL_RATE_WINDOW || '15m', 900000), // 15 minutes
       max: parseIntHelper(process.env.GENERAL_RATE_MAX, 500) // 500 requests per window - allows frequent scoreboard refresh
