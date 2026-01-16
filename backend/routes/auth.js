@@ -492,6 +492,15 @@ router.post('/login', sanitizeInput, async (req, res) => {
 
     console.log('[Debug] Sending response...');
 
+    // Ensure team is properly formatted
+    let teamData = null;
+    if (user.team) {
+      teamData = {
+        _id: user.team._id ? user.team._id.toString() : user.team.toString(),
+        name: user.team.name || 'Team'
+      };
+    }
+
     res.json({
       success: true,
       // Token NOT sent in response body (httpOnly cookie only)
@@ -501,10 +510,7 @@ router.post('/login', sanitizeInput, async (req, res) => {
         email: user.email,
         role: user.role,
         points: user.points,
-        team: user.team ? {
-          _id: user.team._id,
-          name: user.team.name
-        } : null
+        team: teamData
       }
     });
   } catch (error) {
@@ -891,6 +897,23 @@ router.get('/me', protect, async (req, res) => {
       });
     }
 
+    // Ensure team is properly formatted
+    let teamData = null;
+    if (user.team) {
+      if (typeof user.team === 'object' && user.team._id) {
+        teamData = {
+          _id: user.team._id.toString(),
+          name: user.team.name || 'Team'
+        };
+      } else {
+        // team is just an ObjectId
+        teamData = {
+          _id: user.team.toString(),
+          name: undefined
+        };
+      }
+    }
+
     res.json({
       success: true,
       user: {
@@ -899,10 +922,7 @@ router.get('/me', protect, async (req, res) => {
         email: user.email,
         role: user.role,
         points: user.points,
-        team: user.team ? {
-          _id: user.team._id || user.team,
-          name: user.team.name || undefined
-        } : null,
+        team: teamData,
         solvedChallenges: user.solvedChallenges,
         createdAt: user.createdAt,
         isBlocked: user.isBlocked
