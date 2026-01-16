@@ -9,24 +9,33 @@ const CACHE_TTL = Math.floor(config.redis.ttl.userCache / 1000); // Convert ms t
 // Protect routes
 exports.protect = async (req, res, next) => {
   let token;
+  let tokenType = 'legacy'; // Track which token type was used
 
-  // Priority 1: Check httpOnly cookie (secure, XSS-protected)
-  if (req.cookies && req.cookies.token) {
-    token = req.cookies.token;
+  // Priority 1: Check new access_token cookie (short-lived, refresh token system)
+  if (req.cookies && req.cookies.access_token) {
+    token = req.cookies.access_token;
+    tokenType = 'access';
   }
-  // Priority 2: Check Bearer token in header (backwards compatibility)
+  // Priority 2: Check legacy token cookie (backward compatibility)
+  else if (req.cookies && req.cookies.token) {
+    token = req.cookies.token;
+    tokenType = 'legacy';
+  }
+  // Priority 3: Check Bearer token in header (API/mobile clients)
   else if (
     req.headers.authorization &&
     req.headers.authorization.startsWith('Bearer')
   ) {
     token = req.headers.authorization.split(' ')[1];
+    tokenType = 'bearer';
   }
 
   // Check if token exists
   if (!token) {
     return res.status(401).json({
       success: false,
-      message: 'Not authorized to access this route'
+      message: 'Not authorized to access this route',
+      requiresAuth: true
     });
   }
 
@@ -34,28 +43,36 @@ exports.protect = async (req, res, next) => {
     // Verify token
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
-    // Calculate token lifetime and refresh threshold
-    // Refresh when 10% of token lifetime remains (e.g., 2.4h for 24h token, 6min for 1h token)
-    const tokenIssued = decoded.iat * 1000; // Convert to milliseconds
-    const tokenExp = decoded.exp * 1000; // Convert to milliseconds
-    const tokenLifetime = tokenExp - tokenIssued;
-    const refreshThreshold = tokenLifetime * 0.10; // 10% of lifetime
-    const now = Date.now();
-    const timeRemaining = tokenExp - now;
+    // For access tokens, verify type
+    if (tokenType === 'access' && decoded.type && decoded.type !== 'access') {
+      return res.status(401).json({
+        success: false,
+        message: 'Invalid token type'
+      });
+    }
 
-    let newTokenGenerated = false;
-    if (timeRemaining < refreshThreshold && timeRemaining > 0) {
-      // Generate new token with same expiration as configured in .env
-      const newToken = jwt.sign(
-        { id: decoded.id },
-        process.env.JWT_SECRET,
-        { expiresIn: process.env.JWT_EXPIRE || '24h' }
-      );
+    // Legacy token refresh logic (only for old 24h tokens)
+    if (tokenType === 'legacy') {
+      // Calculate token lifetime and refresh threshold
+      const tokenIssued = decoded.iat * 1000;
+      const tokenExp = decoded.exp * 1000;
+      const tokenLifetime = tokenExp - tokenIssued;
+      const refreshThreshold = tokenLifetime * 0.10; // 10% of lifetime
+      const now = Date.now();
+      const timeRemaining = tokenExp - now;
 
-      // Set new token in response header
-      res.setHeader('X-New-Token', newToken);
-      newTokenGenerated = true;
-      console.log(`[Auth] Token refreshed for user ${decoded.id} (${Math.round(timeRemaining / 60000)}min remaining)`);
+      if (timeRemaining < refreshThreshold && timeRemaining > 0) {
+        // Generate new legacy token
+        const newToken = jwt.sign(
+          { id: decoded.id },
+          process.env.JWT_SECRET,
+          { expiresIn: process.env.JWT_EXPIRE || '24h' }
+        );
+
+        // Set new token in response header
+        res.setHeader('X-New-Token', newToken);
+        console.log(`[Auth] Legacy token refreshed for user ${decoded.id} (${Math.round(timeRemaining / 60000)}min remaining)`);
+      }
     }
 
     // Check cache first to reduce database load

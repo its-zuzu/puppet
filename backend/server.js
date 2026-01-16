@@ -373,10 +373,6 @@ mongoose.connect(MONGODB_URI, mongoOptions)
     console.log('MongoDB connected successfully with enhanced connection pooling');
     console.log(`Connection pool: min=${mongoOptions.minPoolSize}, max=${mongoOptions.maxPoolSize}`);
 
-    // Ensure admin has correct password
-    const { ensureAdminPassword } = require('./scripts/createAdminWithNewPassword');
-    await ensureAdminPassword();
-
     // Initialize EventState document and load into Redis cache
     try {
       const EventState = require('./models/EventState');

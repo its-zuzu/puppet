@@ -105,6 +105,16 @@ const submissionLimiter = createRateLimit(
   'submit'
 );
 
+// Refresh token rate limiter (IP-based)
+// For 400 concurrent users: 60 requests per minute = 1 refresh per second per IP
+// This prevents abuse while allowing normal refresh patterns
+const refreshTokenLimiter = createRateLimit(
+  config.rateLimit.refreshToken.windowMs,
+  config.rateLimit.refreshToken.max,
+  'Too many token refresh attempts. Please slow down.',
+  'refresh'
+);
+
 // 3. Security Headers (Helmet with comprehensive security)
 const secureHeaders = helmet({
   // Content Security Policy to mitigate XSS
@@ -195,11 +205,14 @@ const validateInput = {
 
   flag: (flag) => {
     if (!flag || typeof flag !== 'string') {
-      throw new Error('Flag must be a string');
+      throw new Error('Invalid flag format');
     }
-    // CTF flags can be anything, but usually follow format. 
-    // We enforce non-empty and reasonable length.
-    if (flag.length > 200) throw new Error('Flag too long');
+    // Enforce configurable max length from .env (default 200)
+    // Length limit not exposed to users for security reasons
+    const maxLength = config.validation.flagMaxLength;
+    if (flag.length > maxLength) {
+      throw new Error('Invalid flag format');
+    }
     return flag.trim();
   },
 
@@ -249,6 +262,7 @@ module.exports = {
   loginLimiter,
   apiLimiter,
   submissionLimiter,
+  refreshTokenLimiter,
   secureHeaders,
   mongoSanitize: mongoSanitize(), // Function call to initialize
   sanitizeInput,

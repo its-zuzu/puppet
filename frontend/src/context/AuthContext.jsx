@@ -16,13 +16,30 @@ axios.defaults.baseURL = getApiUrl();
 axios.defaults.withCredentials = true;  // Enable credentials
 axios.defaults.headers.common['Content-Type'] = 'application/json';
 
-// Enhanced axios interceptors for better multi-user support
+// Enhanced axios interceptors for refresh token handling
+let isRefreshing = false;
+let failedQueue = [];
+
+const processQueue = (error, token = null) => {
+  failedQueue.forEach(prom => {
+    if (error) {
+      prom.reject(error);
+    } else {
+      prom.resolve(token);
+    }
+  });
+  
+  failedQueue = [];
+};
+
 axios.interceptors.response.use(
   response => {
     // Cookies are handled automatically - no manual token refresh needed
     return response;
   },
-  error => {
+  async error => {
+    const originalRequest = error.config;
+
     console.error('API Error:', error);
 
     // Handle network errors
@@ -32,6 +49,52 @@ axios.interceptors.response.use(
         message: 'Network error - server may be down or unreachable',
         type: 'network'
       });
+    }
+
+    // Handle 401 errors with refresh token logic
+    if (error.response?.status === 401 && !originalRequest._retry) {
+      if (isRefreshing) {
+        // Queue this request while refresh is in progress
+        return new Promise((resolve, reject) => {
+          failedQueue.push({ resolve, reject });
+        })
+          .then(() => {
+            return axios(originalRequest);
+          })
+          .catch(err => {
+            return Promise.reject(err);
+          });
+      }
+
+      originalRequest._retry = true;
+      isRefreshing = true;
+
+      try {
+        // Attempt to refresh the access token
+        await axios.post('/api/auth/refresh');
+        
+        // Token refreshed successfully - process queued requests
+        processQueue(null);
+        isRefreshing = false;
+        
+        // Retry the original request
+        return axios(originalRequest);
+      } catch (refreshError) {
+        // Refresh failed - clear queue and redirect to login
+        processQueue(refreshError, null);
+        isRefreshing = false;
+
+        const currentPath = window.location.pathname;
+        // Cookie cleared automatically by browser
+
+        // Only redirect if not already on login page
+        if (currentPath !== '/login' && currentPath !== '/register') {
+          console.log('Token refresh failed, redirecting to login');
+          window.location.href = '/login';
+        }
+
+        return Promise.reject(refreshError);
+      }
     }
 
     // Handle rate limit errors with better user feedback
@@ -48,18 +111,6 @@ axios.interceptors.response.use(
         retryAfter: retryAfter,
         type: 'rate_limit'
       });
-    }
-
-    // Handle authentication errors
-    if (error.response?.status === 401) {
-      const currentPath = window.location.pathname;
-      // Cookie cleared automatically by browser
-
-      // Only redirect if not already on login page
-      if (currentPath !== '/login' && currentPath !== '/register') {
-        console.log('Authentication failed, redirecting to login');
-        window.location.href = '/login';
-      }
     }
 
     // Handle server errors

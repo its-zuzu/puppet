@@ -14,6 +14,7 @@ const { checkEventNotEnded, isEventEnded } = require('../middleware/eventState')
 
 const { getRedisClient } = require('../utils/redis');
 const { clearScoreboardCache } = require('../utils/redis');
+const monitoring = require('../utils/monitoring');
 // Use centralized Redis for Challenge Rate Limiting
 const redisClient = getRedisClient();
 
@@ -79,6 +80,7 @@ const checkFlagSubmissionRate = async (userId, challengeId) => {
   } catch (error) {
     // Fallback if Redis is down: Allow submission but log error
     console.error('[RateLimit] Redis error, failing open:', error.message);
+    monitoring.rateLimit.systemFailure('flag-submission', error);
     return { allowed: true };
   }
 
@@ -96,6 +98,7 @@ const recordFailedSubmission = async (userId, challengeId) => {
     await redisClient.expire(key, windowSeconds);
   } catch (error) {
     console.error('[RateLimit] Error recording failure:', error.message);
+    monitoring.rateLimit.systemFailure('record-failure', error);
   }
 };
 

@@ -10,7 +10,8 @@ const {
   loginLimiter,
   sanitizeInput,
   validateInput,
-  enhancedValidation
+  enhancedValidation,
+  refreshTokenLimiter
 } = require('../middleware/security');
 const { sendOTPEmail } = require('../utils/email');
 const requestIp = require('request-ip');
@@ -431,13 +432,55 @@ router.post('/login', sanitizeInput, async (req, res) => {
       console.error('[Debug] Populate error:', popErr);
     }
 
-    // Generate token and set in httpOnly cookie
-    console.log('[Debug] Generating token...');
-    const token = generateToken(user._id.toString());
-    setTokenCookie(res, token);
-    console.log('[Debug] Token set in httpOnly cookie.');
+    // NEW: Generate token pair (access + refresh)
+    console.log('[Debug] Generating token pair...');
+    const refreshTokenUtils = require('../utils/refreshToken');
+    const clientIp = getRealIP(req);
+    const userAgentParsed = parseUserAgent(req.get('User-Agent'));
+    
+    const tokens = await refreshTokenUtils.createTokenPair(
+      user,
+      clientIp,
+      userAgentParsed
+    );
 
-    logActivity('LOGIN_SUCCESS', { userId: user._id, username: user.username, ip: req.ip, userAgent: req.get('User-Agent') });
+    // Set access token cookie (short-lived, 15min)
+    const isProduction = process.env.NODE_ENV === 'production';
+    res.cookie('access_token', tokens.accessToken, {
+      httpOnly: true,
+      secure: isProduction,
+      sameSite: 'lax',
+      maxAge: 15 * 60 * 1000, // 15 minutes
+      path: '/'
+    });
+
+    // Set refresh token cookie (long-lived, 7 days)
+    res.cookie('refresh_token', tokens.refreshToken, {
+      httpOnly: true,
+      secure: isProduction,
+      sameSite: 'lax',
+      maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+      path: '/'
+    });
+
+    // Legacy: Also set old 'token' cookie for backward compatibility (15min)
+    res.cookie('token', tokens.accessToken, {
+      httpOnly: true,
+      secure: isProduction,
+      sameSite: 'lax',
+      maxAge: 15 * 60 * 1000, // Match access token lifetime
+      path: '/'
+    });
+
+    console.log('[Debug] Token pair set in httpOnly cookies.');
+
+    logActivity('LOGIN_SUCCESS', { 
+      userId: user._id, 
+      username: user.username, 
+      ip: clientIp, 
+      userAgent: userAgentParsed,
+      tokenFamily: tokens.family
+    });
 
     console.log('[Debug] Sending response...');
 
@@ -463,11 +506,28 @@ router.post('/login', sanitizeInput, async (req, res) => {
 });
 
 // @route   POST /api/auth/logout
-// @desc    Logout user and clear token cookie
+// @desc    Logout user and clear token cookie (with refresh token revocation)
 // @access  Private
 router.post('/logout', protect, async (req, res) => {
   try {
+    // NEW: Revoke refresh token if present
+    const refreshToken = req.cookies.refresh_token;
+    if (refreshToken) {
+      const refreshTokenUtils = require('../utils/refreshToken');
+      await refreshTokenUtils.revokeRefreshToken(refreshToken, 'user_logout');
+    }
+    
+    // Clear both access and refresh token cookies
     clearTokenCookie(res);
+    
+    // NEW: Clear refresh token cookie
+    res.cookie('refresh_token', '', {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'strict',
+      expires: new Date(0),
+      path: '/'
+    });
     
     logActivity('LOGOUT_SUCCESS', { 
       userId: req.user._id, 
@@ -483,6 +543,218 @@ router.post('/logout', protect, async (req, res) => {
     res.status(500).json({
       success: false,
       message: 'Error logging out'
+    });
+  }
+});
+
+// @route   POST /api/auth/refresh
+// @desc    Refresh access token using refresh token
+// @access  Public (requires refresh_token cookie)
+// Rate limited to prevent abuse - 60 requests per minute per IP
+router.post('/refresh', refreshTokenLimiter, async (req, res) => {
+  try {
+    const refreshToken = req.cookies.refresh_token;
+
+    if (!refreshToken) {
+      return res.status(401).json({
+        success: false,
+        message: 'Refresh token not found',
+        code: 'NO_REFRESH_TOKEN'
+      });
+    }
+
+    const refreshTokenUtils = require('../utils/refreshToken');
+    const clientIp = getRealIP(req);
+    const userAgent = parseUserAgent(req.get('User-Agent'));
+
+    // Validate refresh token and detect reuse
+    let dbToken;
+    try {
+      dbToken = await refreshTokenUtils.validateRefreshToken(refreshToken);
+    } catch (error) {
+      // Clear invalid token cookie
+      res.cookie('refresh_token', '', {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'strict',
+        expires: new Date(0),
+        path: '/'
+      });
+
+      if (error.message === 'TOKEN_REUSE_DETECTED') {
+        logActivity('SECURITY_ALERT_TOKEN_REUSE', {
+          ip: clientIp,
+          userAgent
+        });
+
+        return res.status(403).json({
+          success: false,
+          message: 'Security breach detected. All sessions have been revoked. Please login again.',
+          code: 'TOKEN_REUSE_DETECTED'
+        });
+      }
+
+      return res.status(401).json({
+        success: false,
+        message: 'Invalid or expired refresh token',
+        code: error.message
+      });
+    }
+
+    // Rotate refresh token (create new pair, mark old as replaced)
+    const newTokens = await refreshTokenUtils.rotateRefreshToken(
+      dbToken,
+      clientIp,
+      userAgent
+    );
+
+    // Set new access token cookie (short-lived, 15min)
+    const isProduction = process.env.NODE_ENV === 'production';
+    res.cookie('access_token', newTokens.accessToken, {
+      httpOnly: true,
+      secure: isProduction,
+      sameSite: 'lax',
+      maxAge: 15 * 60 * 1000, // 15 minutes
+      path: '/'
+    });
+
+    // Set new refresh token cookie (long-lived, 7 days)
+    res.cookie('refresh_token', newTokens.refreshToken, {
+      httpOnly: true,
+      secure: isProduction,
+      sameSite: 'lax',
+      maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+      path: '/'
+    });
+
+    logActivity('TOKEN_REFRESHED', {
+      userId: dbToken.user._id,
+      username: dbToken.user.username,
+      oldTokenId: dbToken.tokenId,
+      newTokenId: newTokens.tokenId
+    });
+
+    res.json({
+      success: true,
+      message: 'Token refreshed successfully',
+      expiresAt: newTokens.expiresAt
+    });
+
+  } catch (error) {
+    console.error('[Refresh Token Error]', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error refreshing token'
+    });
+  }
+});
+
+// @route   GET /api/auth/sessions
+// @desc    Get user's active sessions
+// @access  Private
+router.get('/sessions', protect, async (req, res) => {
+  try {
+    const refreshTokenUtils = require('../utils/refreshToken');
+    const sessions = await refreshTokenUtils.getUserSessions(req.user._id);
+
+    res.json({
+      success: true,
+      count: sessions.length,
+      data: sessions.map(session => ({
+        id: session._id,
+        createdAt: session.createdAt,
+        lastUsedAt: session.lastUsedAt,
+        expiresAt: session.expiresAt,
+        ipAddress: session.ipAddress,
+        userAgent: session.userAgent,
+        isCurrentSession: req.cookies.refresh_token && 
+          refreshTokenUtils.hashToken(req.cookies.refresh_token) === session.tokenHash
+      }))
+    });
+  } catch (error) {
+    console.error('[Sessions Error]', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error fetching sessions'
+    });
+  }
+});
+
+// @route   DELETE /api/auth/sessions/:sessionId
+// @desc    Revoke a specific session
+// @access  Private
+router.delete('/sessions/:sessionId', protect, async (req, res) => {
+  try {
+    const RefreshToken = require('../models/RefreshToken');
+    const session = await RefreshToken.findOne({
+      _id: req.params.sessionId,
+      user: req.user._id
+    });
+
+    if (!session) {
+      return res.status(404).json({
+        success: false,
+        message: 'Session not found'
+      });
+    }
+
+    await session.revoke('user_action');
+
+    logActivity('SESSION_REVOKED', {
+      userId: req.user._id,
+      username: req.user.username,
+      sessionId: session._id
+    });
+
+    res.json({
+      success: true,
+      message: 'Session revoked successfully'
+    });
+  } catch (error) {
+    console.error('[Session Revocation Error]', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error revoking session'
+    });
+  }
+});
+
+// @route   POST /api/auth/logout-all
+// @desc    Logout from all devices (revoke all refresh tokens)
+// @access  Private
+router.post('/logout-all', protect, async (req, res) => {
+  try {
+    const refreshTokenUtils = require('../utils/refreshToken');
+    const revokedCount = await refreshTokenUtils.revokeAllUserTokens(
+      req.user._id,
+      'user_logout_all'
+    );
+
+    // Clear cookies
+    clearTokenCookie(res);
+    res.cookie('refresh_token', '', {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'strict',
+      expires: new Date(0),
+      path: '/'
+    });
+
+    logActivity('LOGOUT_ALL_DEVICES', {
+      userId: req.user._id,
+      username: req.user.username,
+      sessionsRevoked: revokedCount
+    });
+
+    res.json({
+      success: true,
+      message: `Logged out from ${revokedCount} device(s) successfully`
+    });
+  } catch (error) {
+    console.error('[Logout All Error]', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error logging out from all devices'
     });
   }
 });
@@ -553,11 +825,21 @@ router.post('/resetpassword/:resettoken', async (req, res) => {
     user.password = req.body.password;
     user.resetPasswordToken = undefined;
     user.resetPasswordExpire = undefined;
+    user.passwordChangedAt = Date.now();
     await user.save();
+
+    // NEW: Revoke all refresh tokens for security
+    const refreshTokenUtils = require('../utils/refreshToken');
+    await refreshTokenUtils.revokeAllUserTokens(user._id, 'password_changed');
+
+    // Clear Redis cache
+    const { getRedisClient } = require('../utils/redis');
+    const redisClient = getRedisClient();
+    await redisClient.del(`user:${user._id}`);
 
     res.json({
       success: true,
-      message: 'Password reset successful'
+      message: 'Password reset successful. Please login with your new password.'
     });
   } catch (error) {
     res.status(500).json({
@@ -734,15 +1016,58 @@ router.get('/user/:id', protect, async (req, res) => {
       });
     }
 
-    // Calculate user rank
-    const rank = await User.countDocuments({
-      points: { $gt: user.points }
-    }) + 1;
+    // Calculate user's total points dynamically from submissions (like scoreboard does)
+    const Submission = require('../models/Submission');
+    const userSubmissions = await Submission.aggregate([
+      { $match: { user: user._id, isCorrect: true } },
+      {
+        $lookup: {
+          from: 'challenges',
+          localField: 'challenge',
+          foreignField: '_id',
+          as: 'challengeData'
+        }
+      },
+      { $unwind: '$challengeData' },
+      {
+        $group: {
+          _id: null,
+          totalPoints: { $sum: '$challengeData.points' }
+        }
+      }
+    ]);
+
+    const calculatedPoints = userSubmissions.length > 0 ? userSubmissions[0].totalPoints : 0;
+
+    // Calculate user rank based on calculated points
+    const allUsersPoints = await Submission.aggregate([
+      { $match: { isCorrect: true } },
+      {
+        $lookup: {
+          from: 'challenges',
+          localField: 'challenge',
+          foreignField: '_id',
+          as: 'challengeData'
+        }
+      },
+      { $unwind: '$challengeData' },
+      {
+        $group: {
+          _id: '$user',
+          score: { $sum: '$challengeData.points' }
+        }
+      },
+      { $match: { score: { $gt: calculatedPoints } } },
+      { $count: 'count' }
+    ]);
+
+    const rank = (allUsersPoints.length > 0 ? allUsersPoints[0].count : 0) + 1;
 
     res.json({
       success: true,
       user: {
         ...user.toObject(),
+        points: calculatedPoints,
         rank
       }
     });
@@ -1367,13 +1692,30 @@ router.put('/admin/change-password', protect, authorize('admin', 'superadmin'), 
 
     // Update password
     user.password = newPassword;
+    user.passwordChangedAt = Date.now();
     await user.save();
 
-    logActivity('ADMIN_PASSWORD_CHANGED', { userId: user._id, username: user.username });
+    // NEW: Revoke all refresh tokens (force re-login on all devices)
+    const refreshTokenUtils = require('../utils/refreshToken');
+    const revokedCount = await refreshTokenUtils.revokeAllUserTokens(
+      user._id,
+      'password_changed'
+    );
+
+    // Clear Redis cache for this user
+    const { getRedisClient } = require('../utils/redis');
+    const redisClient = getRedisClient();
+    await redisClient.del(`user:${user._id}`);
+
+    logActivity('ADMIN_PASSWORD_CHANGED', { 
+      userId: user._id, 
+      username: user.username,
+      sessionsRevoked: revokedCount
+    });
 
     res.json({
       success: true,
-      message: 'Password changed successfully'
+      message: `Password changed successfully. ${revokedCount} session(s) revoked. You will need to login again.`
     });
   } catch (error) {
     console.error('Error changing admin password:', error);

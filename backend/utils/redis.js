@@ -1,4 +1,5 @@
 const Redis = require('ioredis');
+const monitoring = require('./monitoring');
 
 // Singleton Redis client to prevent connection exhaustion
 // Critical for 500+ concurrent users - only ONE connection pool
@@ -6,6 +7,8 @@ let redisClient = null;
 let redisSubscriber = null;
 let isRedisReady = false;
 let redisReadyPromise = null;
+let connectionFailureCount = 0;
+let lastFailureTime = null;
 
 /**
  * Get or create the main Redis client (for caching, rate limiting, sessions)
@@ -33,12 +36,16 @@ function getRedisClient() {
       redisClient.once('ready', () => {
         isRedisReady = true;
         console.log('✓ Redis Client Ready');
+        // Reset failure counter on successful connection
+        connectionFailureCount = 0;
+        lastFailureTime = null;
         resolve();
       });
 
       redisClient.once('error', (err) => {
         if (!isRedisReady) {
           console.error('Redis Client Connection Failed:', err);
+          monitoring.redis.connectionFailed(err);
           reject(err);
         }
       });
@@ -46,6 +53,22 @@ function getRedisClient() {
 
     redisClient.on('error', (err) => {
       console.error('Redis Client Error:', err);
+      
+      // Track failure patterns
+      const now = Date.now();
+      if (!lastFailureTime || (now - lastFailureTime) > 300000) { // Reset after 5 minutes
+        connectionFailureCount = 1;
+      } else {
+        connectionFailureCount++;
+      }
+      lastFailureTime = now;
+      
+      // Alert on repeated failures (circuit breaker pattern)
+      if (connectionFailureCount >= 5) {
+        monitoring.redis.repeatedFailures(connectionFailureCount, 5);
+      } else {
+        monitoring.redis.operationFailed('connection', err);
+      }
     });
 
     redisClient.on('connect', () => {
@@ -72,6 +95,7 @@ function getRedisSubscriber() {
 
     redisSubscriber.on('error', (err) => {
       console.error('Redis Subscriber Error:', err);
+      monitoring.redis.operationFailed('subscriber', err);
     });
 
     redisSubscriber.on('connect', () => {

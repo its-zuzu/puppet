@@ -62,7 +62,13 @@ module.exports = {
   // JWT Configuration
   jwt: {
     secret: process.env.JWT_SECRET,
-    expiresIn: process.env.JWT_EXPIRE || '24h',
+    expiresIn: process.env.JWT_EXPIRE || '24h', // Legacy - for backward compatibility
+    // New: Short-lived access tokens
+    accessTokenExpiresIn: process.env.JWT_ACCESS_EXPIRE || '15m', // 15 minutes
+    // New: Long-lived refresh tokens
+    refreshTokenExpiresIn: process.env.JWT_REFRESH_EXPIRE || '7d', // 7 days
+    // Separate refresh token secret (recommended for security)
+    refreshSecret: process.env.JWT_REFRESH_SECRET || process.env.JWT_SECRET,
     // Refresh token when this % of lifetime remains (default 10%)
     refreshThresholdPercent: parseIntHelper(process.env.JWT_REFRESH_THRESHOLD_PERCENT, 10)
   },
@@ -94,6 +100,10 @@ module.exports = {
       windowSeconds: parseIntHelper(process.env.FLAG_SUBMIT_WINDOW, 60), // 60 second window
       cooldownSeconds: parseIntHelper(process.env.FLAG_SUBMIT_COOLDOWN, 30) // 30 second cooldown when limit hit
     },
+    refreshToken: {
+      windowMs: parseDuration(process.env.REFRESH_TOKEN_RATE_WINDOW || '1m', 60000), // 1 minute window
+      max: parseIntHelper(process.env.REFRESH_TOKEN_RATE_MAX, 60) // 60 refreshes per minute (1 per second)
+    },
     general: {
       windowMs: parseDuration(process.env.GENERAL_RATE_WINDOW || '15m', 900000), // 15 minutes
       max: parseIntHelper(process.env.GENERAL_RATE_MAX, 500) // 500 requests per window - allows frequent scoreboard refresh
@@ -101,6 +111,11 @@ module.exports = {
     securityAudit: {
       windowMs: parseDuration(process.env.SECURITY_AUDIT_WINDOW || '15m', 900000) // 15 minutes
     }
+  },
+  
+  // Input Validation Limits
+  validation: {
+    flagMaxLength: parseIntHelper(process.env.FLAG_MAX_LENGTH, 200) // Default 200 chars, configurable for security
   },
 
   // Real-time / SSE Configuration

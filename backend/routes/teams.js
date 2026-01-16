@@ -191,7 +191,41 @@ router.get('/:id', protect, async (req, res) => {
       });
     }
 
-    // Calculate team points from members + team awards
+    // Calculate points dynamically for each member from submissions (like scoreboard does)
+    const Submission = require('../models/Submission');
+    const memberIds = team.members.map(m => m._id);
+    
+    const memberPointsAgg = await Submission.aggregate([
+      { $match: { user: { $in: memberIds }, isCorrect: true } },
+      {
+        $lookup: {
+          from: 'challenges',
+          localField: 'challenge',
+          foreignField: '_id',
+          as: 'challengeData'
+        }
+      },
+      { $unwind: '$challengeData' },
+      {
+        $group: {
+          _id: '$user',
+          totalPoints: { $sum: '$challengeData.points' }
+        }
+      }
+    ]);
+    
+    // Create a map of userId -> calculated points
+    const pointsMap = new Map();
+    memberPointsAgg.forEach(item => {
+      pointsMap.set(item._id.toString(), item.totalPoints);
+    });
+    
+    // Update each member with their calculated points
+    team.members.forEach(member => {
+      member.points = pointsMap.get(member._id.toString()) || 0;
+    });
+    
+    // Calculate team points from calculated member points
     const memberPoints = team.members.reduce((sum, member) => sum + (member.points || 0), 0);
     
     // Get team awards (includes negative awards for hint unlocks)
