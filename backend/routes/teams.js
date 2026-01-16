@@ -229,6 +229,12 @@ router.get('/:id', protect, async (req, res) => {
       }
     ]);
     
+    console.log('[Team Details] Unlocks aggregation:', {
+      memberIds: memberIds.map(id => id.toString()),
+      unlocksFound: unlocksAgg.length,
+      unlocks: unlocksAgg.map(u => ({ userId: u._id.toString(), count: u.unlockedCount }))
+    });
+    
     // Create a map of userId -> calculated stats
     const statsMap = new Map();
     memberStatsAgg.forEach(item => {
@@ -263,6 +269,13 @@ router.get('/:id', protect, async (req, res) => {
         unlockedHints: stats ? stats.unlockedHintsCount || 0 : 0
       };
     });
+    
+    console.log('[Team Details] Updated member stats:', updatedMembers.map(m => ({
+      username: m.username,
+      points: m.points,
+      solvedCount: m.personallySolvedCount,
+      unlockedHints: m.unlockedHints
+    })));
     
     // Calculate team points from calculated member points
     const memberPoints = updatedMembers.reduce((sum, member) => sum + (member.points || 0), 0);

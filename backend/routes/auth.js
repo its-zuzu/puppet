@@ -1102,6 +1102,11 @@ router.get('/user/:id', protect, async (req, res) => {
       type: 'hints'
     });
     
+    console.log('[User Profile] Unlocked hints:', {
+      userId: user._id.toString(),
+      unlockedHintsCount
+    });
+    
     // Build solved challenges array with full details
     const solvedChallengesWithDetails = userSubmissions.map(sub => ({
       _id: sub.challengeId,
