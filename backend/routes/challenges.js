@@ -286,15 +286,22 @@ router.get('/:id', async (req, res) => {
       });
     }
 
-    // Check visibility - only admins can access hidden challenges
+    // Check visibility and get user context - only admins can access hidden challenges
     const token = req.cookies.token || req.cookies.access_token || (req.headers.authorization && req.headers.authorization.split(' ')[1]);
     let isAdmin = false;
+    let userId = null;
+    let teamId = null;
     
     if (token) {
       try {
         const decoded = jwt.verify(token, process.env.JWT_SECRET);
-        const user = await User.findById(decoded.id).select('role');
+        const user = await User.findById(decoded.id).select('role').populate('team');
         isAdmin = user && (user.role === 'admin' || user.role === 'superadmin');
+        
+        if (user) {
+          userId = user._id;
+          teamId = user.team ? user.team._id : null;
+        }
       } catch (e) {
         // Invalid token, treat as non-admin
       }
@@ -310,56 +317,44 @@ router.get('/:id', async (req, res) => {
 
     // CTFd-style: Get user's unlocked hints from Unlocks table
     let unlockedHints = [];
-    let userId = null;
-    let teamId = null;
 
-    // Check for token in cookies (primary) or Authorization header (fallback)
-    const token = req.cookies.token || (req.headers.authorization && req.headers.authorization.split(' ')[1]);
-
-    if (token) {
+    if (token && userId && teamId) {
       try {
         const Unlock = require('../models/Unlock');
-        const decoded = jwt.verify(token, process.env.JWT_SECRET);
-        const user = await User.findById(decoded.id).populate('team');
 
-        if (user) {
-          userId = user._id;
-          teamId = user.team ? user.team._id : null;
+        // Get all unlocks for this challenge
+        const query = {
+          challenge: req.params.id,
+          type: 'hints'
+        };
 
-          // Get all unlocks for this challenge
-          const query = {
-            challenge: req.params.id,
-            type: 'hints'
-          };
-
-          if (teamId) {
-            query.$or = [
-              { user: userId },
-              { team: teamId }
-            ];
-          } else {
-            query.user = userId;
-          }
-
-          console.log('[Challenge GET] Query for unlocks:', JSON.stringify(query, null, 2));
-
-          const unlocks = await Unlock.find(query).select('target user team challenge');
-          unlockedHints = unlocks.map(u => u.target);
-          
-          console.log('[Challenge GET] Unlocked hints check:', {
-            userId: userId.toString(),
-            teamId: teamId ? teamId.toString() : null,
-            challengeId: req.params.id,
-            foundUnlocks: unlocks.length,
-            unlockDetails: unlocks.map(u => ({
-              target: u.target,
-              user: u.user.toString(),
-              team: u.team ? u.team.toString() : null,
-              challenge: u.challenge.toString()
-            })),
-            unlockedHintIndexes: unlockedHints
-          });
+        if (teamId) {
+          query.$or = [
+            { user: userId },
+            { team: teamId }
+          ];
+        } else {
+          query.user = userId;
         }
+
+        console.log('[Challenge GET] Query for unlocks:', JSON.stringify(query, null, 2));
+
+        const unlocks = await Unlock.find(query).select('target user team challenge');
+        unlockedHints = unlocks.map(u => u.target);
+          
+        console.log('[Challenge GET] Unlocked hints check:', {
+          userId: userId.toString(),
+          teamId: teamId ? teamId.toString() : null,
+          challengeId: req.params.id,
+          foundUnlocks: unlocks.length,
+          unlockDetails: unlocks.map(u => ({
+            target: u.target,
+            user: u.user.toString(),
+            team: u.team ? u.team.toString() : null,
+            challenge: u.challenge.toString()
+          })),
+          unlockedHintIndexes: unlockedHints
+        });
       } catch (err) {
         console.error('[Challenge GET] Auth error:', err.message);
         // Token invalid or user not found, continue without unlocked hints
@@ -627,7 +622,7 @@ router.post('/:id/submit', protect, sanitizeInput, checkEventNotEnded, async (re
     if (eventEnded) {
       return res.status(403).json({
         success: false,
-        message: 'CTF event has ended. Submissions are no longer accepted.'
+        message: 'CTF event has ended.'
       });
     }
 
@@ -641,7 +636,7 @@ router.post('/:id/submit', protect, sanitizeInput, checkEventNotEnded, async (re
         // Final check inside transaction to prevent any scoring writes if event ended
         const eventEndedInTransaction = await isEventEnded();
         if (eventEndedInTransaction) {
-          throw new Error('CTF event has ended. Submissions are no longer accepted.');
+          throw new Error('CTF event has ended.');
         }
         
         // CTFd-style: Update solvedBy arrays + user.points for display
@@ -751,7 +746,7 @@ router.post('/:id/submit', protect, sanitizeInput, checkEventNotEnded, async (re
       if (transactionError.message && transactionError.message.includes('CTF event has ended')) {
         return res.status(403).json({
           success: false,
-          message: 'CTF event has ended. Submissions are no longer accepted.'
+          message: 'CTF event has ended.'
         });
       }
       throw transactionError; // Re-throw other transaction errors

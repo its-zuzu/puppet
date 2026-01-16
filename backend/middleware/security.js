@@ -283,6 +283,8 @@ module.exports = {
   apiLimiter,
   submissionLimiter,
   refreshTokenLimiter,
+  newsletterLimiter,
+  registrationLimiter,
   secureHeaders,
   mongoSanitize: mongoSanitize(), // Function call to initialize
   sanitizeInput,
