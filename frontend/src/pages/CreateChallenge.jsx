@@ -114,26 +114,27 @@ function CreateChallenge() {
         challengeData
       );
 
-      const challengeId = res.data._id;
+      const challengeId = res.data.data._id;
 
       // Upload files if any selected
       if (selectedFiles.length > 0) {
         setSuccessMessage('Challenge created! Uploading files...');
-        const formData = new FormData();
+        const fileFormData = new FormData();
         selectedFiles.forEach(file => {
-          formData.append('files', file);
+          fileFormData.append('files', file);
         });
 
         try {
           await axios.post(
             `/api/challenges/${challengeId}/files`,
-            formData,
+            fileFormData,
             {
               headers: { 'Content-Type': 'multipart/form-data' }
             }
           );
           setSuccessMessage('Challenge and files uploaded successfully!');
         } catch (uploadErr) {
+          console.error('File upload error:', uploadErr);
           setSuccessMessage('Challenge created but file upload failed. Redirecting to edit page...');
         }
       } else {
