@@ -299,6 +299,13 @@ router.get('/:id', protect, async (req, res) => {
       createdAt: team.createdAt
     };
 
+    // Debug: Log member stats
+    console.log('[Team Details] Member stats:', updatedMembers.map(m => ({
+      username: m.username,
+      points: m.points,
+      solvedCount: m.personallySolvedCount
+    })));
+
     res.json({
       success: true,
       data: teamData
