@@ -28,6 +28,10 @@ function EditChallenge() {
   const [formError, setFormError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [successMessage, setSuccessMessage] = useState('');
+  const [files, setFiles] = useState([]);
+  const [uploadedFiles, setUploadedFiles] = useState([]);
+  const [isLoadingFiles, setIsLoadingFiles] = useState(false);
+  const [isDeletingFile, setIsDeletingFile] = useState('');
 
   // Redirect if not authenticated or not admin
   useEffect(() => {
@@ -78,6 +82,99 @@ function EditChallenge() {
     
     fetchChallenge();
   }, [challenge, id]);
+
+  // Load challenge files
+  useEffect(() => {
+    const fetchFiles = async () => {
+      if (!id) return;
+      
+      setIsLoadingFiles(true);
+      try {
+        const res = await axios.get(`/api/challenges/${id}/files`);
+        setUploadedFiles(res.data.data.files || []);
+      } catch (err) {
+        console.error('Error loading files:', err);
+      } finally {
+        setIsLoadingFiles(false);
+      }
+    };
+
+    fetchFiles();
+  }, [id]);
+
+  // Handle file selection
+  const onFileChange = (e) => {
+    const selectedFiles = Array.from(e.target.files);
+    setFiles(selectedFiles);
+  };
+
+  // Handle file upload
+  const handleFileUpload = async (e) => {
+    e.preventDefault();
+    
+    if (files.length === 0) {
+      setFormError('Please select files to upload');
+      return;
+    }
+
+    const formDataObj = new FormData();
+    files.forEach(file => {
+      formDataObj.append('files', file);
+    });
+
+    try {
+      setIsSubmitting(true);
+      await axios.post(`/api/challenges/${id}/files`, formDataObj, {
+        headers: {
+          'Content-Type': 'multipart/form-data'
+        }
+      });
+      
+      setSuccessMessage('Files uploaded successfully');
+      setFiles([]);
+      document.getElementById('file-input').value = '';
+      
+      // Reload files
+      const res = await axios.get(`/api/challenges/${id}/files`);
+      setUploadedFiles(res.data.data.files || []);
+      
+      setTimeout(() => setSuccessMessage(''), 3000);
+    } catch (err) {
+      setFormError(err.response?.data?.message || 'Failed to upload files');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  // Handle file deletion
+  const handleFileDelete = async (filename) => {
+    if (!confirm(`Are you sure you want to delete ${filename}?`)) {
+      return;
+    }
+
+    try {
+      setIsDeletingFile(filename);
+      await axios.delete(`/api/challenges/${id}/files/${filename}`);
+      
+      setSuccessMessage('File deleted successfully');
+      setUploadedFiles(uploadedFiles.filter(f => f.filename !== filename));
+      
+      setTimeout(() => setSuccessMessage(''), 3000);
+    } catch (err) {
+      setFormError(err.response?.data?.message || 'Failed to delete file');
+    } finally {
+      setIsDeletingFile('');
+    }
+  };
+
+  // Format file size
+  const formatFileSize = (bytes) => {
+    if (bytes === 0) return '0 Bytes';
+    const k = 1024;
+    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return Math.round(bytes / Math.pow(k, i) * 100) / 100 + ' ' + sizes[i];
+  };
 
   const onChange = (e) => {
     const { name, value } = e.target;
@@ -336,6 +433,76 @@ function EditChallenge() {
               placeholder="Enter new flag SECE{Flag_Here}"
             />
             <small className="form-hint">Only fill this if you want to change the flag.</small>
+          </div>
+
+          {/* File Upload Section */}
+          <div className="file-upload-section">
+            <h3>Challenge Files</h3>
+            
+            {/* Existing Files */}
+            {uploadedFiles.length > 0 && (
+              <div className="uploaded-files-list">
+                <h4>Uploaded Files ({uploadedFiles.length})</h4>
+                {uploadedFiles.map((file) => (
+                  <div key={file.filename} className="file-item">
+                    <div className="file-info">
+                      <span className="file-icon">📄</span>
+                      <div className="file-details">
+                        <strong>{file.originalName}</strong>
+                        <small>
+                          {formatFileSize(file.size)} • 
+                          Uploaded {new Date(file.uploadedAt).toLocaleDateString()}
+                        </small>
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      className="delete-file-btn"
+                      onClick={() => handleFileDelete(file.filename)}
+                      disabled={isDeletingFile === file.filename}
+                    >
+                      {isDeletingFile === file.filename ? '🔄' : '🗑️'}
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* Upload New Files */}
+            <div className="upload-new-files">
+              <label htmlFor="file-input">Upload New Files</label>
+              <input
+                type="file"
+                id="file-input"
+                multiple
+                onChange={onFileChange}
+                accept=".zip,.tar,.gz,.7z,.rar,.txt,.pdf,.md,.png,.jpg,.jpeg,.gif,.pcap,.pcapng,.exe,.elf,.bin,.py,.js,.c,.cpp,.java,.iso,.ova"
+              />
+              <small className="form-hint">
+                Max 10 files, 20MB each. Allowed: archives, documents, images, binaries, source code, network captures
+              </small>
+              
+              {files.length > 0 && (
+                <div className="selected-files">
+                  <strong>Selected Files:</strong>
+                  <ul>
+                    {files.map((file, idx) => (
+                      <li key={idx}>
+                        {file.name} ({formatFileSize(file.size)})
+                      </li>
+                    ))}
+                  </ul>
+                  <button
+                    type="button"
+                    className="upload-files-btn"
+                    onClick={handleFileUpload}
+                    disabled={isSubmitting}
+                  >
+                    {isSubmitting ? 'Uploading...' : 'Upload Files'}
+                  </button>
+                </div>
+              )}
+            </div>
           </div>
 
           <button

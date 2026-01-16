@@ -634,6 +634,56 @@ function ChallengeDetails() {
             </div>
           </motion.div>
 
+          {challenge.files && challenge.files.length > 0 && (
+            <motion.div 
+              className="htb-section htb-files"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.35 }}
+            >
+              <h3 className="htb-section-title">
+                <span className="htb-title-line"></span>
+                Challenge Files
+              </h3>
+              <div className="htb-files-list">
+                {challenge.files.map((file, index) => (
+                  <div key={index} className="htb-file-item">
+                    <div className="htb-file-info">
+                      <span className="htb-file-name">{file.originalName}</span>
+                      <span className="htb-file-size">
+                        {(file.size / (1024 * 1024)).toFixed(2)} MB
+                      </span>
+                    </div>
+                    <button
+                      onClick={() => {
+                        window.open(
+                          `http://localhost:3000/api/challenges/${challenge._id}/download/${file.filename}`,
+                          '_blank'
+                        );
+                      }}
+                      className="htb-download-btn"
+                    >
+                      <svg 
+                        className="download-icon" 
+                        fill="none" 
+                        stroke="currentColor" 
+                        viewBox="0 0 24 24"
+                      >
+                        <path 
+                          strokeLinecap="round" 
+                          strokeLinejoin="round" 
+                          strokeWidth={2} 
+                          d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" 
+                        />
+                      </svg>
+                      Download
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </motion.div>
+          )}
+
           {challenge.hints && challenge.hints.length > 0 && (
             <motion.div 
               className="htb-section htb-hints"

@@ -100,25 +100,12 @@ function CreateChallenge() {
         challengeData
       );
 
-      setSuccessMessage('Challenge created successfully!');
-      setFormData({
-        title: '',
-        description: '',
-        category: 'web',
-        difficulty: 'Easy',
-        points: 100,
-        flag: '',
-        hints: [{ content: '', cost: 0 }],
-        isVisible: true,
-        function: 'static',
-        initial: 500,
-        minimum: 100,
-        decay: 20
-      });
-
+      setSuccessMessage('Challenge created successfully! Redirecting to edit page...');
+      
+      // Redirect to edit page where files can be uploaded
       setTimeout(() => {
-        navigate('/challenges');
-      }, 2000);
+        navigate(`/admin/edit-challenge/${res.data._id}`);
+      }, 1500);
     } catch (err) {
       setFormError(err.response?.data?.message || 'Failed to create challenge');
     } finally {
