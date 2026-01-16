@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const Team = require('../models/Team');
 const User = require('../models/User');
+const Award = require('../models/Award');
 const { protect, authorize } = require('../middleware/auth');
 
 // @route   POST /api/teams
