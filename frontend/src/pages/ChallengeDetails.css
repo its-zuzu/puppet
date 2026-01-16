@@ -18,13 +18,7 @@
     linear-gradient(90deg, var(--border-primary) 1px, transparent 1px);
   background-size: 50px 50px;
   opacity: 0.2;
-  animation: gridMove 20s linear infinite;
   z-index: 0;
-}
-
-@keyframes gridMove {
-  0% { transform: translate(0, 0); }
-  100% { transform: translate(50px, 50px); }
 }
 
 /* Event Ended Banner */
