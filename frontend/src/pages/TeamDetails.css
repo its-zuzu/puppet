@@ -319,14 +319,28 @@
 }
 
 .htb-hint-challenge {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.htb-hint-challenge-name {
   font-weight: 600;
   color: var(--text-primary);
+  font-size: 15px;
+}
+
+.htb-hint-index {
+  font-size: 12px;
+  color: var(--text-muted);
+  font-family: var(--font-mono);
 }
 
 .htb-hint-cost {
   font-family: var(--font-mono);
   font-weight: 700;
   color: var(--warning);
+  font-size: 14px;
 }
 
 /* Empty State */

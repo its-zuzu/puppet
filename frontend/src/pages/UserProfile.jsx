@@ -250,10 +250,13 @@ function UserProfile() {
                 >
                   <div className="htb-hint-header">
                     <Lock size={18} />
-                    <h3>{hint.challengeTitle || 'Unknown Challenge'}</h3>
+                    <div className="htb-hint-info">
+                      <h3>{hint.challengeName || 'Unknown Challenge'}</h3>
+                      <span className="htb-hint-index">Hint #{hint.hintIndex + 1}</span>
+                    </div>
                   </div>
                   <div className="htb-hint-meta">
-                    <span className="htb-hint-cost">-{hint.hintCost} pts</span>
+                    <span className="htb-hint-cost">-{hint.cost || 0} pts</span>
                     <span className="htb-hint-date">
                       {new Date(hint.unlockedAt).toLocaleDateString()}
                     </span>

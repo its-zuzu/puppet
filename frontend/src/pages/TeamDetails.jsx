@@ -324,10 +324,15 @@ function TeamDetails() {
                           whileHover={{ scale: 1.02 }}
                         >
                           <div className="htb-hint-challenge">
-                            {hint.challengeTitle || 'Unknown Challenge'}
+                            <span className="htb-hint-challenge-name">
+                              {hint.challengeName || 'Unknown Challenge'}
+                            </span>
+                            <span className="htb-hint-index">
+                              Hint #{hint.hintIndex + 1}
+                            </span>
                           </div>
                           <div className="htb-hint-cost">
-                            -{hint.hintCost} pts
+                            -{hint.cost || 0} pts
                           </div>
                         </motion.div>
                       ))}

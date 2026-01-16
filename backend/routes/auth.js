@@ -1095,16 +1095,40 @@ router.get('/user/:id', protect, async (req, res) => {
 
     const calculatedPoints = userSubmissions.reduce((sum, sub) => sum + sub.points, 0);
     
-    // Get unlocked hints count from Unlock model
+    // Get unlocked hints with full details from Unlock model
     const Unlock = require('../models/Unlock');
-    const unlockedHintsCount = await Unlock.countDocuments({
-      user: user._id,
-      type: 'hints'
-    });
+    const unlockedHintsWithDetails = await Unlock.aggregate([
+      { $match: { user: user._id, type: 'hints' } },
+      {
+        $lookup: {
+          from: 'challenges',
+          localField: 'challenge',
+          foreignField: '_id',
+          as: 'challengeData'
+        }
+      },
+      { $unwind: '$challengeData' },
+      {
+        $project: {
+          target: 1,
+          challengeId: '$challenge',
+          challengeName: '$challengeData.title',
+          challengeCategory: '$challengeData.category',
+          hintCost: { $arrayElemAt: ['$challengeData.hints.cost', '$target'] },
+          createdAt: 1
+        }
+      },
+      { $sort: { createdAt: -1 } }
+    ]);
     
     console.log('[User Profile] Unlocked hints:', {
       userId: user._id.toString(),
-      unlockedHintsCount
+      unlockedHintsCount: unlockedHintsWithDetails.length,
+      hints: unlockedHintsWithDetails.map(h => ({
+        challenge: h.challengeName,
+        hintIndex: h.target,
+        cost: h.hintCost
+      }))
     });
     
     // Build solved challenges array with full details
@@ -1151,7 +1175,14 @@ router.get('/user/:id', protect, async (req, res) => {
         rank,
         solvedChallenges: solvedChallengesWithDetails,
         challengesSolvedCount: solvedChallengesWithDetails.length,
-        unlockedHints: unlockedHintsCount
+        unlockedHints: unlockedHintsWithDetails.map(h => ({
+          challengeId: h.challengeId,
+          challengeName: h.challengeName,
+          challengeCategory: h.challengeCategory,
+          hintIndex: h.target,
+          cost: h.hintCost,
+          unlockedAt: h.createdAt
+        }))
       }
     });
   } catch (error) {

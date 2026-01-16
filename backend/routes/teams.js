@@ -218,21 +218,40 @@ router.get('/:id', protect, async (req, res) => {
       }
     ]);
     
-    // Get unlocked hints count for each member
-    const unlocksAgg = await Unlock.aggregate([
+    // Get unlocked hints with full details for each member
+    const unlocksWithDetails = await Unlock.aggregate([
       { $match: { user: { $in: memberIds }, type: 'hints' } },
       {
-        $group: {
-          _id: '$user',
-          unlockedCount: { $sum: 1 }
+        $lookup: {
+          from: 'challenges',
+          localField: 'challenge',
+          foreignField: '_id',
+          as: 'challengeData'
         }
-      }
+      },
+      { $unwind: '$challengeData' },
+      {
+        $project: {
+          user: 1,
+          target: 1,
+          challengeName: '$challengeData.title',
+          challengeId: '$challenge',
+          hintCost: { $arrayElemAt: ['$challengeData.hints.cost', '$target'] },
+          createdAt: 1
+        }
+      },
+      { $sort: { createdAt: -1 } }
     ]);
     
-    console.log('[Team Details] Unlocks aggregation:', {
+    console.log('[Team Details] Unlocks with details:', {
       memberIds: memberIds.map(id => id.toString()),
-      unlocksFound: unlocksAgg.length,
-      unlocks: unlocksAgg.map(u => ({ userId: u._id.toString(), count: u.unlockedCount }))
+      unlocksFound: unlocksWithDetails.length,
+      unlocks: unlocksWithDetails.map(u => ({ 
+        userId: u.user.toString(), 
+        challenge: u.challengeName,
+        hintIndex: u.target,
+        cost: u.hintCost
+      }))
     });
     
     // Create a map of userId -> calculated stats
@@ -242,15 +261,27 @@ router.get('/:id', protect, async (req, res) => {
       statsMap.set(userId, {
         points: item.totalPoints,
         solvedCount: item.solvedCount,
-        personalSolvedChallenges: item.solvedChallenges
+        personalSolvedChallenges: item.solvedChallenges,
+        unlockedHints: []
       });
     });
     
-    // Add unlocked hints count to stats map
-    unlocksAgg.forEach(item => {
-      const userId = item._id.toString();
-      const existingStats = statsMap.get(userId) || { points: 0, solvedCount: 0, personalSolvedChallenges: [] };
-      existingStats.unlockedHintsCount = item.unlockedCount;
+    // Add unlocked hints details to stats map
+    unlocksWithDetails.forEach(unlock => {
+      const userId = unlock.user.toString();
+      const existingStats = statsMap.get(userId) || { 
+        points: 0, 
+        solvedCount: 0, 
+        personalSolvedChallenges: [],
+        unlockedHints: []
+      };
+      existingStats.unlockedHints.push({
+        challengeId: unlock.challengeId,
+        challengeName: unlock.challengeName,
+        hintIndex: unlock.target,
+        cost: unlock.hintCost,
+        unlockedAt: unlock.createdAt
+      });
       statsMap.set(userId, existingStats);
     });
     
@@ -266,7 +297,7 @@ router.get('/:id', protect, async (req, res) => {
         points: stats ? stats.points : 0,
         personallySolvedCount: stats ? stats.solvedCount : 0,
         personallySolvedChallenges: stats ? stats.personalSolvedChallenges : [],
-        unlockedHints: stats ? stats.unlockedHintsCount || 0 : 0
+        unlockedHints: stats ? stats.unlockedHints : []
       };
     });
     
@@ -274,7 +305,7 @@ router.get('/:id', protect, async (req, res) => {
       username: m.username,
       points: m.points,
       solvedCount: m.personallySolvedCount,
-      unlockedHints: m.unlockedHints
+      unlockedHintsCount: m.unlockedHints.length
     })));
     
     // Calculate team points from calculated member points
