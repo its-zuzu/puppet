@@ -34,6 +34,7 @@ const Input = ({
           type={type}
           className={inputClasses}
           required={required}
+          autoComplete="off"
           {...props}
         />
       </div>

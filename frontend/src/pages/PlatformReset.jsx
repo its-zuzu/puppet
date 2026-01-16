@@ -97,6 +97,7 @@ function PlatformReset() {
               setSecurityCode(e.target.value);
               setError('');
             }}
+            autoComplete="off"
             placeholder="Enter security code"
             disabled={isResetting}
             style={{ marginBottom: '2rem' }}

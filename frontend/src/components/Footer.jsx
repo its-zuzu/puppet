@@ -136,6 +136,7 @@ const Footer = () => {
                 placeholder="Enter your email address"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
+                autoComplete="off"
                 required
               />
               <div className="htb-input-border"></div>

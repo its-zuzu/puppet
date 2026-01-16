@@ -138,6 +138,7 @@ function AdminCreateUser() {
               value={formData.email}
               onChange={handleChange}
               placeholder="Enter email address"
+              autoComplete="off"
               required
             />
           </div>
@@ -152,6 +153,7 @@ function AdminCreateUser() {
                 value={formData.password}
                 onChange={handleChange}
                 placeholder="Enter password (min 6 characters)"
+                autoComplete="new-password"
                 required
               />
             </div>
@@ -165,6 +167,7 @@ function AdminCreateUser() {
                 value={formData.confirmPassword}
                 onChange={handleChange}
                 placeholder="Confirm password"
+                autoComplete="new-password"
                 required
               />
             </div>
