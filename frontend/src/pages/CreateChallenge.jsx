@@ -27,6 +27,7 @@ function CreateChallenge() {
   const [formError, setFormError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [successMessage, setSuccessMessage] = useState('');
+  const [selectedFiles, setSelectedFiles] = useState([]);
 
   const { title, description, category, difficulty, points, flag } = formData;
 
@@ -48,6 +49,19 @@ function CreateChallenge() {
         : value
     });
     setFormError('');
+  };
+
+  const onFileChange = (e) => {
+    const files = Array.from(e.target.files);
+    setSelectedFiles(files);
+  };
+
+  const removeFile = (index) => {
+    setSelectedFiles(prev => prev.filter((_, i) => i !== index));
+  };
+
+  const formatFileSize = (bytes) => {
+    return (bytes / (1024 * 1024)).toFixed(2);
   };
 
   const handleHintChange = (index, field, value) => {
@@ -100,11 +114,34 @@ function CreateChallenge() {
         challengeData
       );
 
-      setSuccessMessage('Challenge created successfully! Redirecting to edit page...');
+      const challengeId = res.data._id;
+
+      // Upload files if any selected
+      if (selectedFiles.length > 0) {
+        setSuccessMessage('Challenge created! Uploading files...');
+        const formData = new FormData();
+        selectedFiles.forEach(file => {
+          formData.append('files', file);
+        });
+
+        try {
+          await axios.post(
+            `/api/challenges/${challengeId}/files`,
+            formData,
+            {
+              headers: { 'Content-Type': 'multipart/form-data' }
+            }
+          );
+          setSuccessMessage('Challenge and files uploaded successfully!');
+        } catch (uploadErr) {
+          setSuccessMessage('Challenge created but file upload failed. Redirecting to edit page...');
+        }
+      } else {
+        setSuccessMessage('Challenge created successfully!');
+      }
       
-      // Redirect to edit page where files can be uploaded
       setTimeout(() => {
-        navigate(`/admin/edit-challenge/${res.data._id}`);
+        navigate(`/admin/edit-challenge/${challengeId}`);
       }, 1500);
     } catch (err) {
       setFormError(err.response?.data?.message || 'Failed to create challenge');
@@ -346,6 +383,51 @@ function CreateChallenge() {
             <button type="button" className="add-hint-btn" onClick={addHint}>
               Add Hint
             </button>
+          </div>
+
+          <div className="file-upload-section">
+            <h3>Challenge Files (Optional)</h3>
+            <p className="section-description">Upload files that participants need to solve the challenge (max 20MB per file)</p>
+            
+            <div className="file-selector">
+              <input
+                type="file"
+                id="file-input"
+                multiple
+                onChange={onFileChange}
+                accept=".zip,.tar,.gz,.7z,.rar,.txt,.pdf,.md,.png,.jpg,.jpeg,.gif,.pcap,.pcapng,.exe,.elf,.bin,.so,.dll,.py,.js,.c,.cpp,.java,.iso,.ova,.vmdk"
+                style={{ display: 'none' }}
+              />
+              <label htmlFor="file-input" className="file-selector-btn">
+                <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                </svg>
+                Select Files
+              </label>
+            </div>
+
+            {selectedFiles.length > 0 && (
+              <div className="selected-files">
+                <h4>Selected Files ({selectedFiles.length}/10)</h4>
+                <ul className="selected-files-list">
+                  {selectedFiles.map((file, index) => (
+                    <li key={index} className="selected-file-item">
+                      <div className="file-info">
+                        <span className="file-name">{file.name}</span>
+                        <span className="file-size">{formatFileSize(file.size)} MB</span>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => removeFile(index)}
+                        className="remove-file-btn"
+                      >
+                        ×
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
           </div>
 
           <div className="form-group">
