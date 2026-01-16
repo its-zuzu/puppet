@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { motion } from 'framer-motion';
 import { MapPin, Mail, Phone, MessageSquare, Send, CheckCircle, AlertCircle } from 'lucide-react';
 import axios from 'axios';
-import Loading from '../components/ui/Loading';
+import { Loading } from '../components/ui';
 import './ContactUs.css';
 
 function ContactUs() {
@@ -41,7 +41,7 @@ function ContactUs() {
   };
 
   if (isLoading) {
-    return <Loading />;
+    return <Loading text="LOADING..." />;
   }
 
   return (

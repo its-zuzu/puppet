@@ -2,7 +2,7 @@ import { useState, useEffect, useContext } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import AuthContext from '../context/AuthContext';
-import Loading from '../components/Loading';
+import { Loading } from '../components/ui';
 import './AdminLoginLogs.css';
 
 function AdminLoginLogs() {
@@ -120,7 +120,7 @@ function AdminLoginLogs() {
   if (loading && logs.length === 0) {
     return (
       <div className="admin-login-logs">
-        <Loading size="medium" text="Loading logs" />
+        <Loading text="LOADING LOGS..." />
       </div>
     );
   }

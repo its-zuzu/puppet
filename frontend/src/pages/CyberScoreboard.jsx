@@ -125,7 +125,7 @@ function Scoreboard() {
       <Card className="cyber-scoreboard-table-card">
         {loading ? (
           <div className="cyber-scoreboard-loading">
-            <Loading text="Loading standings..." />
+            <Loading text="LOADING STANDINGS..." />
           </div>
         ) : standings.length === 0 ? (
           <div className="cyber-scoreboard-empty">

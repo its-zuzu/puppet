@@ -5,7 +5,7 @@ import { ChevronLeft, Award, Users, Lock, Unlock, Flag, AlertCircle, CheckCircle
 import axios from 'axios'
 import AuthContext from '../context/AuthContext'
 import { useEventState } from '../hooks/useEventState'
-import Loading from '../components/Loading'
+import { Loading } from '../components/ui'
 import './ChallengeDetails.css'
 
 // Set default axios timeout for this component
@@ -64,7 +64,7 @@ const SolvesModal = ({ challenge, onClose }) => {
 
           <div className="htb-modal-body">
             {loading ? (
-              <Loading size="small" inline text="Loading solves" />
+              <Loading text="LOADING SOLVES..." />
             ) : solves.length === 0 ? (
               <div className="htb-no-solves">No one has solved this challenge yet!</div>
             ) : (
@@ -537,7 +537,7 @@ function ChallengeDetails() {
   if (loading) {
     return (
       <div className="challenge-details-container">
-        <Loading size="medium" text="Loading challenge" />
+        <Loading text="LOADING CHALLENGE..." />
       </div>
     );
   }

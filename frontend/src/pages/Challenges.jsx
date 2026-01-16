@@ -121,7 +121,7 @@ function Challenges() {
   if (loading) {
     return (
       <div className="challenges-page">
-        <Loading size="large" text="Loading challenges..." />
+        <Loading text="LOADING CHALLENGES..." />
       </div>
     );
   }

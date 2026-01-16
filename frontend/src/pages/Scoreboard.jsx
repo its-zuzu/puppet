@@ -2,7 +2,7 @@ import React, { useState, useEffect, useContext } from 'react';
 import axios from 'axios';
 import AuthContext from '../context/AuthContext';
 import ScoreGraph from '../components/ScoreGraph';
-import Loading from '../components/Loading';
+import { Loading } from '../components/ui';
 import CustomMessageDisplay from '../components/CustomMessageDisplay';
 import CTFEndedDisplay from '../components/CTFEndedDisplay';
 import { useEventState } from '../hooks/useEventState';
@@ -98,7 +98,7 @@ function Scoreboard() {
           </thead>
           <tbody>
             {loading ? (
-              <tr><td colSpan="3" style={{ padding: '30px', textAlign: 'center' }}><Loading size="small" inline text="Loading" /></td></tr>
+              <tr><td colSpan="3" style={{ padding: '30px', textAlign: 'center' }}><Loading text="LOADING..." /></td></tr>
             ) : standings.length === 0 ? (
               <tr><td colSpan="3" style={{ padding: '30px', textAlign: 'center' }}>No visible solves yet</td></tr>
             ) : (

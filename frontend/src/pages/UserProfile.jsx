@@ -60,7 +60,7 @@ function UserProfile() {
     return (
       <div className="htb-user-container">
         <div className="htb-user-grid-bg"></div>
-        <Loading />
+        <Loading text="LOADING USER..." />
       </div>
     );
   }

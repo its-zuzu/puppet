@@ -190,11 +190,23 @@ export const AuthProvider = ({ children }) => {
         // Not authenticated - cookie invalid or absent
         setUser(null);
         setIsAuthenticated(false);
+      } finally {
+        // Always set loading to false
+        setLoading(false);
       }
-      setLoading(false);
     };
 
+    // Set a timeout to ensure loading doesn't hang indefinitely
+    const timeoutId = setTimeout(() => {
+      if (loading) {
+        console.warn('Auth check timeout - setting loading to false');
+        setLoading(false);
+      }
+    }, 5000); // 5 second timeout
+
     loadUser();
+
+    return () => clearTimeout(timeoutId);
   }, []);
 
   // Periodic check for user block status (every 60 seconds)

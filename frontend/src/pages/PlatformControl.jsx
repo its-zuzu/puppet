@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import AuthContext from '../context/AuthContext';
 import { useEventState } from '../hooks/useEventState';
-import Loading from '../components/Loading';
+import { Loading } from '../components/ui';
 import './PlatformControl.css';
 
 function PlatformControl() {
@@ -97,7 +97,7 @@ function PlatformControl() {
   };
 
   if (!eventState) {
-    return <Loading size="medium" text="Loading control panel" />;
+    return <Loading text="LOADING CONTROL PANEL..." />;
   }
 
   return (

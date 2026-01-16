@@ -2,7 +2,7 @@ import React, { useState, useEffect, useContext } from 'react';
 import axios from 'axios';
 import ReactECharts from 'echarts-for-react';
 import AuthContext from '../context/AuthContext';
-import Loading from './Loading';
+import { Loading } from './ui';
 
 /**
  * CTFd-Style Score Graph using ECharts
@@ -168,7 +168,7 @@ const ScoreGraph = ({ type = 'teams', limit = 10, height = '400px' }) => {
     }
   };
 
-  if (loading) return <Loading size="small" inline text="Loading graph" />;
+  if (loading) return <Loading text="LOADING GRAPH..." />;
   if (!hasData) return <div style={{ height, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#b0c4de' }}>No solves yet</div>;
 
   return (

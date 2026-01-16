@@ -79,7 +79,7 @@ function Profile() {
   if (loading || !user) {
     return (
       <div className="profile-page">
-        <Loading size="large" text="Loading profile..." />
+        <Loading text="LOADING PROFILE..." />
       </div>
     );
   }
@@ -207,7 +207,7 @@ function Profile() {
           </CardHeader>
           <CardBody>
             {loadingChallenges ? (
-              <Loading size="small" text="Loading challenges..." />
+              <Loading text="LOADING CHALLENGES..." />
             ) : solvedChallenges.length > 0 ? (
               <div className="solved-challenges-list">
                 {solvedChallenges.map((challenge, index) => (

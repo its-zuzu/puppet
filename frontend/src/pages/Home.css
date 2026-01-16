@@ -376,6 +376,7 @@
 .htb-section-header-content {
   max-width: 800px;
   margin: 0 auto;
+  text-align: center;
 }
 
 .htb-section-tag {
@@ -399,6 +400,7 @@
   margin-bottom: 20px;
   letter-spacing: 1px;
   line-height: 1.1;
+  text-align: center;
 }
 
 .htb-section-subtitle {
@@ -421,6 +423,8 @@
 
 .htb-category-card {
   position: relative;
+  width: 100%;
+  min-height: 280px;
   padding: 40px 32px;
   background: var(--bg-secondary);
   border: 1px solid var(--border-primary);
@@ -428,6 +432,8 @@
   cursor: pointer;
   transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
   overflow: hidden;
+  display: flex;
+  flex-direction: column;
 }
 
 .htb-category-card:hover {
@@ -484,6 +490,7 @@
   color: var(--text-primary);
   margin-bottom: 16px;
   transition: color 0.3s ease;
+  min-height: 2em;
 }
 
 .htb-category-card:hover .htb-category-title {
@@ -495,6 +502,7 @@
   line-height: 1.7;
   color: var(--text-secondary);
   margin: 0;
+  flex-grow: 1;
 }
 
 .htb-category-glow {

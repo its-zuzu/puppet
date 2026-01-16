@@ -11,7 +11,7 @@ import {
   ResponsiveContainer
 } from 'recharts';
 import AuthContext from '../context/AuthContext';
-import Loading from './Loading';
+import { Loading } from './ui';
 import './CTFdScoreboardGraph.css';
 
 // High-contrast colors for team lines
@@ -216,7 +216,7 @@ function CTFdScoreboardGraph() {
   if (loading) {
     return (
       <div className="ctfd-graph-container">
-        <Loading size="small" inline text="Loading graph" />
+        <Loading text="LOADING GRAPH..." />
       </div>
     );
   }

@@ -50,7 +50,7 @@ function MyTeam() {
   if (loading || pageLoading) {
     return (
       <div className="my-team-container">
-        <Loading text="Loading team" />
+        <Loading text="LOADING TEAM..." />
       </div>
     );
   }

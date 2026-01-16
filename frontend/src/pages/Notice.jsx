@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Bell, Calendar, User, ChevronLeft, AlertCircle } from 'lucide-react';
 import axios from 'axios';
 import AuthContext from '../context/AuthContext';
-import Loading from '../components/ui/Loading';
+import { Loading } from '../components/ui';
 import './Notice.css';
 
 function Notice() {
@@ -61,7 +61,7 @@ function Notice() {
   };
 
   if (loading) {
-    return <Loading />;
+    return <Loading text="LOADING NOTICES..." />;
   }
 
   return (

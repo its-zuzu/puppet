@@ -53,7 +53,7 @@ function TeamDetails() {
     return (
       <div className="htb-team-container">
         <div className="htb-team-grid-bg"></div>
-        <Loading />
+        <Loading text="LOADING TEAM..." />
       </div>
     );
   }
