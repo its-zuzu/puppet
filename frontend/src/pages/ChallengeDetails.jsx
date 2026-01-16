@@ -250,8 +250,9 @@ const FlagSubmissionModal = ({ challenge, onClose, onSubmit }) => {
   );
 };
 
-const HintUnlockModal = ({ hint, hintIndex, teamPoints, onClose, onConfirm }) => {
+const HintUnlockModal = ({ hint, hintIndex, teamPoints, pointsType, onClose, onConfirm }) => {
   const pointsAfter = teamPoints - hint.cost;
+  const pointsLabel = pointsType === 'team' ? 'Team Points' : 'Your Points';
 
   return (
     <AnimatePresence>
@@ -295,7 +296,7 @@ const HintUnlockModal = ({ hint, hintIndex, teamPoints, onClose, onConfirm }) =>
                   <span className="htb-unlock-value htb-cost">{hint.cost} points</span>
                 </div>
                 <div className="htb-unlock-stat">
-                  <span className="htb-unlock-label">Current Points:</span>
+                  <span className="htb-unlock-label">{pointsLabel}:</span>
                   <span className="htb-unlock-value">{teamPoints} points</span>
                 </div>
                 <div className="htb-unlock-stat">
@@ -438,14 +439,27 @@ function ChallengeDetails() {
     const availablePoints = hasTeam ? teamPoints : userPoints;
     const pointsType = hasTeam ? 'team' : 'individual';
 
+    console.log('[Hint Unlock] Points check:', {
+      hasTeam,
+      teamPoints,
+      userPoints,
+      availablePoints,
+      hintCost: hint.cost
+    });
+
     // Check if enough points available
     if (availablePoints < hint.cost) {
       alert(`Insufficient points! You need ${hint.cost} points but have ${availablePoints} ${pointsType} points.`);
       return;
     }
 
-    // Show custom confirmation modal
-    setPendingHintUnlock({ hint, hintIndex, teamPoints });
+    // Show custom confirmation modal with correct points
+    setPendingHintUnlock({ 
+      hint, 
+      hintIndex, 
+      teamPoints: availablePoints, // Pass the actual available points
+      pointsType 
+    });
     setShowHintConfirm(true);
   };
 
@@ -721,6 +735,7 @@ function ChallengeDetails() {
           hint={pendingHintUnlock.hint}
           hintIndex={pendingHintUnlock.hintIndex}
           teamPoints={pendingHintUnlock.teamPoints}
+          pointsType={pendingHintUnlock.pointsType || 'team'}
           onClose={cancelHintUnlock}
           onConfirm={confirmHintUnlock}
         />
