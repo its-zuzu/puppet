@@ -203,17 +203,17 @@ export const AuthProvider = ({ children }) => {
     // Set a timeout to ensure loading doesn't hang indefinitely
     const timeoutId = setTimeout(() => {
       if (loading) {
-        console.warn('Auth check timeout - setting loading to false');
+        // Silently set loading to false after timeout
         setLoading(false);
       }
-    }, 5000); // 5 second timeout
+    }, 10000); // 10 second timeout
 
     loadUser();
 
     return () => clearTimeout(timeoutId);
   }, []);
 
-  // Periodic check for user block status (every 60 seconds)
+  // Periodic check for user block status (every 5 minutes to reduce load)
   useEffect(() => {
     if (!isAuthenticated || !user) return;
 
@@ -239,7 +239,7 @@ export const AuthProvider = ({ children }) => {
         }
         // For other errors (like 401), silently continue - axios interceptor will handle
       }
-    }, 60000); // Check every 60 seconds
+    }, 300000); // Check every 5 minutes (reduced from 60 seconds)
 
     return () => clearInterval(blockCheckInterval);
   }, [isAuthenticated, user, logout]);

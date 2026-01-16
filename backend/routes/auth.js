@@ -834,7 +834,7 @@ router.post('/logout-all', protect, async (req, res) => {
 // Password reset endpoints removed - use admin team management to change passwords
 
 // @route   GET /api/auth/me
-// @desc    Get current logged in user
+// @desc    Get current logged in user (optimized for 400+ concurrent users)
 // @access  Private
 router.get('/me', protect, async (req, res) => {
   // Prevent HTTP caching to avoid 304 responses
@@ -845,9 +845,18 @@ router.get('/me', protect, async (req, res) => {
   });
 
   try {
-    // Use req.user._id directly (now always a string from middleware)
+    // Use lean() for faster queries and populate only needed fields
     const user = await User.findById(req.user._id)
-      .populate('team', 'name');
+      .populate('team', 'name')
+      .populate('solvedChallenges', 'title category points')
+      .lean();
+
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: 'User not found'
+      });
+    }
 
     if (user.isBlocked) {
       return res.status(403).json({
@@ -865,119 +874,72 @@ router.get('/me', protect, async (req, res) => {
       });
     }
 
-    // Calculate user's total points dynamically from submissions (like scoreboard does)
-    const Submission = require('../models/Submission');
-    const Challenge = require('../models/Challenge');
+    // Use stored points (updated on submission) instead of recalculating
+    const totalPoints = user.points || 0;
+
+    // Get rank from Redis cache (1 minute TTL) or calculate
+    let rank = null;
+    const cacheKey = `user:${user._id}:rank`;
     
-    // Get all submissions by this user with challenge details
-    const userSubmissions = await Submission.aggregate([
-      { $match: { user: user._id, isCorrect: true } },
-      {
-        $lookup: {
-          from: 'challenges',
-          localField: 'challenge',
-          foreignField: '_id',
-          as: 'challengeData'
-        }
-      },
-      { $unwind: '$challengeData' },
-      {
-        $project: {
-          challengeId: '$challenge',
-          challengeTitle: '$challengeData.title',
-          challengeCategory: '$challengeData.category',
-          points: '$challengeData.points',
-          solvedAt: '$submittedAt'
-        }
-      },
-      { $sort: { solvedAt: -1 } }
-    ]);
+    try {
+      const cachedRank = await redisClient.get(cacheKey);
+      if (cachedRank) {
+        rank = parseInt(cachedRank);
+      } else {
+        // Calculate rank efficiently
+        rank = await User.countDocuments({ 
+          points: { $gt: totalPoints },
+          role: { $ne: 'superadmin' }
+        }) + 1;
+        
+        // Cache for 1 minute
+        await redisClient.setex(cacheKey, 60, rank.toString());
+      }
+    } catch (cacheError) {
+      console.error('Redis error, calculating rank directly:', cacheError);
+      rank = await User.countDocuments({ 
+        points: { $gt: totalPoints },
+        role: { $ne: 'superadmin' }
+      }) + 1;
+    }
 
-    const calculatedPoints = userSubmissions.reduce((sum, sub) => sum + sub.points, 0);
-    
-    // Get unlocked hints with full details from Unlock model
-    const Unlock = require('../models/Unlock');
-    const unlockedHintsWithDetails = await Unlock.aggregate([
-      { $match: { user: user._id, type: 'hints' } },
-      {
-        $lookup: {
-          from: 'challenges',
-          localField: 'challenge',
-          foreignField: '_id',
-          as: 'challengeData'
-        }
-      },
-      { $unwind: '$challengeData' },
-      {
-        $project: {
-          target: 1,
-          challengeId: '$challenge',
-          challengeName: '$challengeData.title',
-          challengeCategory: '$challengeData.category',
-          hintCost: { $arrayElemAt: ['$challengeData.hints.cost', '$target'] },
-          createdAt: 1
-        }
-      },
-      { $sort: { createdAt: -1 } }
-    ]);
-    
-    // Build solved challenges array with full details
-    const solvedChallengesWithDetails = userSubmissions.map(sub => ({
-      _id: sub.challengeId,
-      title: sub.challengeTitle,
-      category: sub.challengeCategory,
-      points: sub.points,
-      solvedAt: sub.solvedAt
-    }));
+    // Get unlocked hints efficiently (batch query)
+    let formattedHints = [];
+    if (user.unlockedHints && user.unlockedHints.length > 0) {
+      const Unlock = require('../models/Unlock');
+      const Challenge = require('../models/Challenge');
+      
+      // Get unique challenge IDs
+      const challengeIds = [...new Set(user.unlockedHints.map(h => h.challenge))];
+      
+      // Batch fetch all challenges at once
+      const challenges = await Challenge.find({ _id: { $in: challengeIds } })
+        .select('_id title')
+        .lean();
+      
+      // Create lookup map
+      const challengeMap = {};
+      challenges.forEach(c => {
+        challengeMap[c._id.toString()] = c.title;
+      });
+      
+      // Map hints with challenge names
+      formattedHints = user.unlockedHints.map(hint => ({
+        challenge: hint.challenge,
+        challengeName: challengeMap[hint.challenge.toString()] || 'Unknown Challenge',
+        hintIndex: hint.hintIndex,
+        cost: hint.cost || 0,
+        unlockedAt: hint.unlockedAt
+      }));
+    }
 
-    // Calculate user rank based on calculated points
-    const allUsersPoints = await Submission.aggregate([
-      { $match: { isCorrect: true } },
-      {
-        $lookup: {
-          from: 'challenges',
-          localField: 'challenge',
-          foreignField: '_id',
-          as: 'challengeData'
-        }
-      },
-      { $unwind: '$challengeData' },
-      {
-        $group: {
-          _id: '$user',
-          score: { $sum: '$challengeData.points' }
-        }
-      },
-      { $match: { score: { $gt: calculatedPoints } } },
-      { $count: 'count' }
-    ]);
-
-    const rank = (allUsersPoints.length > 0 ? allUsersPoints[0].count : 0) + 1;
-
-    // Format unlocked hints for response
-    const formattedHints = unlockedHintsWithDetails.map(hint => ({
-      challenge: hint.challengeId,
-      challengeName: hint.challengeName,
-      hintIndex: hint.target,
-      cost: hint.hintCost || 0,
-      unlockedAt: hint.createdAt
-    }));
-
-    // Ensure team is properly formatted
+    // Format team data
     let teamData = null;
     if (user.team) {
-      if (typeof user.team === 'object' && user.team._id) {
-        teamData = {
-          _id: user.team._id.toString(),
-          name: user.team.name || 'Team'
-        };
-      } else {
-        // team is just an ObjectId
-        teamData = {
-          _id: user.team.toString(),
-          name: undefined
-        };
-      }
+      teamData = {
+        _id: user.team._id ? user.team._id.toString() : user.team.toString(),
+        name: user.team.name || 'Team'
+      };
     }
 
     res.json({
@@ -987,15 +949,16 @@ router.get('/me', protect, async (req, res) => {
         username: user.username,
         email: user.email,
         role: user.role,
-        points: calculatedPoints,
+        points: totalPoints,
         rank: rank,
         team: teamData,
-        solvedChallenges: solvedChallengesWithDetails,
+        solvedChallenges: user.solvedChallenges || [],
         unlockedHints: formattedHints,
         isBlocked: user.isBlocked
       }
     });
   } catch (error) {
+    console.error('Error in /api/auth/me:', error);
     res.status(500).json({
       success: false,
       message: process.env.NODE_ENV === 'development' ? error.message : 'Error fetching user data'

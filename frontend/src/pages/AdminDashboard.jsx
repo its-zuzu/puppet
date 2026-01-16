@@ -1,5 +1,11 @@
 import { useState, useEffect, useContext } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
+import { motion, AnimatePresence } from 'framer-motion';
+import { 
+  Users, Shield, Trophy, Bell, Mail, Activity, 
+  Settings, AlertTriangle, Search, Plus, Edit, Trash2,
+  Eye, EyeOff, ChevronLeft, ChevronRight
+} from 'lucide-react';
 import axios from 'axios';
 import AuthContext from '../context/AuthContext';
 import { Loading } from '../components/ui';
@@ -19,7 +25,6 @@ function AdminDashboard() {
   const [activeTab, setActiveTab] = useState('users');
   const [successMessage, setSuccessMessage] = useState('');
   const [subscribers, setSubscribers] = useState([]);
-  const [allUsers, setAllUsers] = useState([]);
 
   const [userPage, setUserPage] = useState(1);
   const [teamPage, setTeamPage] = useState(1);
@@ -49,9 +54,6 @@ function AdminDashboard() {
     }
   }, [isAuthenticated, user, navigate]);
 
-  // Reset handlers removed - use Platform Reset page instead
-
-  // Debounce search term
   useEffect(() => {
     const timer = setTimeout(() => {
       setDebouncedSearchTerm(userSearchTerm);
@@ -61,7 +63,6 @@ function AdminDashboard() {
 
   useEffect(() => {
     const fetchData = async () => {
-      // Only show loading for initial load, not for search
       if (!debouncedSearchTerm) {
         setLoading(true);
       } else {
@@ -72,19 +73,15 @@ function AdminDashboard() {
       try {
         let usersRes;
         if (debouncedSearchTerm) {
-          // When searching, get all matching users without pagination
           usersRes = await axios.get(`/api/auth/users?all=true&search=${encodeURIComponent(debouncedSearchTerm)}`);
           setUsers(usersRes.data.users || []);
           setUserTotal(usersRes.data.users?.length || 0);
-          setAllUsers(usersRes.data.users || []);
         } else {
-          // Normal pagination when not searching
           usersRes = await axios.get(`/api/auth/users?page=${userPage}&limit=${itemsPerPage}`);
           setUsers(usersRes.data.users || []);
           setUserTotal(usersRes.data.total || 0);
         }
 
-        // Only fetch other data on initial load or when not searching
         if (!debouncedSearchTerm) {
           const [challengesRes, subscribersRes, teamsRes, noticesRes] = await Promise.all([
             axios.get(`/api/challenges?page=${challengePage}&limit=${itemsPerPage}`),
@@ -105,8 +102,7 @@ function AdminDashboard() {
         setLoading(false);
         setSearchLoading(false);
       } catch {
-        console.error('Error fetching dashboard data');
-        setError('Failed to fetch data. Please try again.');
+        setError('Failed to fetch data');
         setLoading(false);
         setSearchLoading(false);
       }
@@ -115,22 +111,18 @@ function AdminDashboard() {
     fetchData();
   }, [userPage, teamPage, challengePage, debouncedSearchTerm]);
 
-  // Reset to page 1 when search term changes
   useEffect(() => {
     if (debouncedSearchTerm !== '') {
       setUserPage(1);
     }
   }, [debouncedSearchTerm]);
 
-
-
   const handleDeleteChallenge = async (id) => {
-    if (!window.confirm('Are you sure you want to delete this challenge?')) return;
-
+    if (!window.confirm('Delete this challenge?')) return;
     try {
       await axios.delete(`/api/challenges/${id}`);
       setChallenges(challenges.filter(c => c._id !== id));
-      setSuccessMessage('Challenge deleted successfully!');
+      setSuccessMessage('Challenge deleted');
       setTimeout(() => setSuccessMessage(''), 3000);
     } catch {
       setError('Failed to delete challenge');
@@ -139,12 +131,11 @@ function AdminDashboard() {
   };
 
   const handleDeleteTeam = async (id) => {
-    if (!window.confirm('Are you sure you want to delete this team?')) return;
-
+    if (!window.confirm('Delete this team?')) return;
     try {
       await axios.delete(`/api/teams/${id}`);
       setTeams(teams.filter(t => t._id !== id));
-      setSuccessMessage('Team deleted successfully!');
+      setSuccessMessage('Team deleted');
       setTimeout(() => setSuccessMessage(''), 3000);
     } catch {
       setError('Failed to delete team');
@@ -153,12 +144,11 @@ function AdminDashboard() {
   };
 
   const handleDeleteSubscriber = async (id) => {
-    if (!window.confirm('Are you sure you want to remove this subscriber?')) return;
-
+    if (!window.confirm('Remove this subscriber?')) return;
     try {
       await axios.delete(`/api/newsletter/subscribers/${id}`);
       setSubscribers(subscribers.filter(s => s._id !== id));
-      setSuccessMessage('Subscriber removed!');
+      setSuccessMessage('Subscriber removed');
       setTimeout(() => setSuccessMessage(''), 3000);
     } catch {
       setError('Failed to delete subscriber');
@@ -168,11 +158,7 @@ function AdminDashboard() {
 
   const handleToggleVisibility = async (challengeId, currentVisibility) => {
     try {
-      await axios.put(
-        `/api/challenges/${challengeId}`,
-        { isVisible: !currentVisibility }
-      );
-
+      await axios.put(`/api/challenges/${challengeId}`, { isVisible: !currentVisibility });
       setChallenges(challenges.map(c =>
         c._id === challengeId ? { ...c, isVisible: !currentVisibility } : c
       ));
@@ -184,17 +170,14 @@ function AdminDashboard() {
     }
   };
 
-  const handleUserClick = (userId) => {
-    navigate(`/admin/users/${userId}`);
-  };
+  const handleUserClick = (userId) => navigate(`/admin/users/${userId}`);
 
   const handleDeleteNotice = async (id) => {
-    if (!window.confirm('Are you sure you want to delete this notice?')) return;
-
+    if (!window.confirm('Delete this notice?')) return;
     try {
       await axios.delete(`/api/notices/${id}`);
       setNotices(notices.filter(n => n._id !== id));
-      setSuccessMessage('Notice deleted successfully!');
+      setSuccessMessage('Notice deleted');
       setTimeout(() => setSuccessMessage(''), 3000);
     } catch {
       setError('Failed to delete notice');
@@ -204,30 +187,23 @@ function AdminDashboard() {
 
   const handleSubmitNotice = async (e) => {
     e.preventDefault();
-
     if (!noticeForm.title || !noticeForm.description) {
-      setError('Please fill in title and description');
+      setError('Please fill in all fields');
       return;
     }
 
     try {
       if (editingNotice) {
-        const response = await axios.put(
-          `/api/notices/${editingNotice._id}`,
-          noticeForm
-        );
+        const response = await axios.put(`/api/notices/${editingNotice._id}`, noticeForm);
         setNotices(notices.map(n => n._id === editingNotice._id ? response.data.data : n));
-        setSuccessMessage('Notice updated successfully!');
+        setSuccessMessage('Notice updated');
       } else {
         const response = await axios.post('/api/notices', noticeForm);
         setNotices([response.data.data, ...notices]);
-        setSuccessMessage('Notice created successfully!');
+        setSuccessMessage('Notice created');
       }
 
-      setNoticeForm({
-        title: '',
-        description: ''
-      });
+      setNoticeForm({ title: '', description: '' });
       setEditingNotice(null);
       setShowNoticeForm(false);
       setTimeout(() => setSuccessMessage(''), 3000);
@@ -239,23 +215,16 @@ function AdminDashboard() {
 
   const handleEditNotice = (notice) => {
     setEditingNotice(notice);
-    setNoticeForm({
-      title: notice.title,
-      description: notice.description
-    });
+    setNoticeForm({ title: notice.title, description: notice.description });
     setShowNoticeForm(true);
   };
 
   const handleCancelNoticeForm = () => {
     setShowNoticeForm(false);
     setEditingNotice(null);
-    setNoticeForm({
-      title: '',
-      description: ''
-    });
+    setNoticeForm({ title: '', description: '' });
   };
 
-  // Apply client-side filtering for role and status (search is handled by backend)
   const filteredUsers = users.filter(u => {
     const matchesRole = userRoleFilter === 'all' || u.role === userRoleFilter;
     const matchesStatus = userStatusFilter === 'all' ||
@@ -264,590 +233,578 @@ function AdminDashboard() {
     return matchesRole && matchesStatus;
   }).sort((a, b) => {
     switch (userSortBy) {
-      case 'points':
-        return (b.points || 0) - (a.points || 0);
-      case 'username':
-        return a.username.localeCompare(b.username);
-      case 'email':
-        return a.email.localeCompare(b.email);
-      case 'createdAt':
-      default:
-        return new Date(b.createdAt) - new Date(a.createdAt);
+      case 'points': return (b.points || 0) - (a.points || 0);
+      case 'username': return a.username.localeCompare(b.username);
+      case 'email': return a.email.localeCompare(b.email);
+      default: return new Date(b.createdAt) - new Date(a.createdAt);
     }
   });
 
   const handleChangeRole = async (userId, newRole) => {
-    if (!window.confirm(`Change user role to ${newRole}?`)) return;
-
+    if (!window.confirm(`Change role to ${newRole}?`)) return;
     try {
-      await axios.put(
-        `/api/auth/users/${userId}/role`,
-        { newRole }
-      );
-
-      setUsers(users.map(u =>
-        u._id === userId ? { ...u, role: newRole } : u
-      ));
-      setSuccessMessage(`User role changed to ${newRole}`);
+      await axios.put(`/api/auth/users/${userId}/role`, { newRole });
+      setUsers(users.map(u => u._id === userId ? { ...u, role: newRole } : u));
+      setSuccessMessage(`Role changed to ${newRole}`);
       setTimeout(() => setSuccessMessage(''), 3000);
     } catch (err) {
-      const errorMsg = err.response?.data?.message || 'Failed to change role';
-      setError(errorMsg);
+      setError(err.response?.data?.message || 'Failed to change role');
       setTimeout(() => setError(null), 3000);
     }
   };
 
   const handleBlockUser = async (userId, username, isCurrentlyBlocked) => {
     const action = isCurrentlyBlocked ? 'unblock' : 'block';
-    const reason = isCurrentlyBlocked ? null : prompt('Enter reason for blocking (optional):');
-
-    if (!isCurrentlyBlocked && reason === null) return; // User cancelled
-
-    if (!window.confirm(`Are you sure you want to ${action} user "${username}"?`)) return;
+    const reason = isCurrentlyBlocked ? null : prompt('Reason for blocking (optional):');
+    if (!isCurrentlyBlocked && reason === null) return;
+    if (!window.confirm(`${action} user "${username}"?`)) return;
 
     try {
-      await axios.put(
-        `/api/auth/users/${userId}/block`,
-        {
-          isBlocked: !isCurrentlyBlocked,
-          reason: reason || 'No reason provided'
-        }
-      );
-
-      setUsers(users.map(u =>
-        u._id === userId ? { ...u, isBlocked: !isCurrentlyBlocked, blockedReason: reason } : u
-      ));
-      setSuccessMessage(`User ${action}ed successfully!`);
+      await axios.put(`/api/auth/users/${userId}/block`, {
+        isBlocked: !isCurrentlyBlocked,
+        reason: reason || 'No reason provided'
+      });
+      setUsers(users.map(u => u._id === userId ? { ...u, isBlocked: !isCurrentlyBlocked, blockedReason: reason } : u));
+      setSuccessMessage(`User ${action}ed`);
       setTimeout(() => setSuccessMessage(''), 3000);
     } catch (err) {
-      const errorMsg = err.response?.data?.message || `Failed to ${action} user`;
-      setError(errorMsg);
+      setError(err.response?.data?.message || `Failed to ${action} user`);
       setTimeout(() => setError(null), 3000);
     }
   };
 
   const handleDeleteUser = async (userId, username) => {
-    if (!window.confirm(`Are you sure you want to delete user "${username}"? This action cannot be undone.`)) return;
-
+    if (!window.confirm(`Delete user "${username}"? Cannot be undone.`)) return;
     try {
       await axios.delete(`/api/auth/users/${userId}`);
-
       setUsers(users.filter(u => u._id !== userId));
-      setSuccessMessage('User deleted successfully!');
+      setSuccessMessage('User deleted');
       setTimeout(() => setSuccessMessage(''), 3000);
     } catch (err) {
-      const errorMsg = err.response?.data?.message || 'Failed to delete user';
-      setError(errorMsg);
+      setError(err.response?.data?.message || 'Failed to delete user');
       setTimeout(() => setError(null), 3000);
     }
   };
 
   if (loading) {
     return (
-      <div className="admin-dashboard">
+      <div className="htb-admin-container">
+        <div className="htb-admin-grid-bg"></div>
         <Loading text="LOADING DASHBOARD..." />
       </div>
     );
   }
 
+  const tabs = [
+    { id: 'users', label: 'Users', count: userTotal, icon: Users },
+    { id: 'teams', label: 'Teams', count: teamTotal, icon: Shield },
+    { id: 'challenges', label: 'Challenges', count: challengeTotal, icon: Trophy },
+    { id: 'notices', label: 'Notices', count: noticeTotal, icon: Bell },
+    { id: 'subscribers', label: 'Subscribers', count: subscribers?.length || 0, icon: Mail },
+  ];
+
+  const navItems = [
+    { label: 'Analytics', path: '/admin/analytics', icon: Activity },
+    { label: 'Submissions', path: '/admin/submissions', icon: Trophy },
+    { label: 'Live Monitor', path: '/admin/live-monitor', icon: Activity },
+    { label: 'Platform Control', path: '/admin/platform-control', icon: Settings },
+    { label: 'Messages', path: '/admin/messages', icon: Mail },
+    { label: 'Login Logs', path: '/admin/login-logs', icon: Shield },
+    { label: 'Platform Reset', path: '/admin/platform-reset', icon: AlertTriangle, danger: true },
+  ];
+
   return (
-    <div className="admin-dashboard">
-      <div className="dashboard-header">
-        <h1>Admin <span className="highlight">Dashboard</span></h1>
-        <p>Manage users, teams, and challenges</p>
+    <div className="htb-admin-container">
+      <div className="htb-admin-grid-bg"></div>
+
+      <motion.div 
+        className="htb-admin-header"
+        initial={{ opacity: 0, y: -20 }}
+        animate={{ opacity: 1, y: 0 }}
+      >
+        <h1 className="htb-admin-title">ADMIN <span className="htb-text-primary">DASHBOARD</span></h1>
+        <p className="htb-admin-subtitle">Manage users, teams, challenges, and platform settings</p>
+      </motion.div>
+
+      <AnimatePresence>
+        {successMessage && (
+          <motion.div 
+            className="htb-alert htb-alert-success"
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -10 }}
+          >
+            {successMessage}
+          </motion.div>
+        )}
+        {error && (
+          <motion.div 
+            className="htb-alert htb-alert-error"
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -10 }}
+          >
+            {error}
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      <div className="htb-admin-tabs">
+        {tabs.map(tab => {
+          const Icon = tab.icon;
+          return (
+            <motion.button
+              key={tab.id}
+              className={`htb-tab ${activeTab === tab.id ? 'active' : ''}`}
+              onClick={() => setActiveTab(tab.id)}
+              whileHover={{ y: -2 }}
+              whileTap={{ scale: 0.98 }}
+            >
+              <Icon size={18} />
+              <span>{tab.label}</span>
+              <span className="htb-tab-count">{tab.count}</span>
+            </motion.button>
+          );
+        })}
       </div>
 
-      {successMessage && <div className="success-message">{successMessage}</div>}
-      {error && <div className="error-message">{error}</div>}
-
-      <div className="dashboard-tabs">
-        <button
-          className={`tab-button ${activeTab === 'users' ? 'active' : ''}`}
-          onClick={() => setActiveTab('users')}
-        >
-          Users ({userTotal})
-        </button>
-        <button
-          className={`tab-button ${activeTab === 'teams' ? 'active' : ''}`}
-          onClick={() => setActiveTab('teams')}
-        >
-          Teams ({teamTotal})
-        </button>
-        <button
-          className={`tab-button ${activeTab === 'challenges' ? 'active' : ''}`}
-          onClick={() => setActiveTab('challenges')}
-        >
-          Challenges ({challengeTotal})
-        </button>
-        <button
-          className="tab-button"
-          onClick={() => navigate('/admin/analytics')}
-        >
-          Analytics
-        </button>
-        <button
-          className="tab-button"
-          onClick={() => navigate('/admin/submissions')}
-        >
-          Submissions
-        </button>
-        <button
-          className="tab-button"
-          onClick={() => navigate('/admin/live-monitor')}
-        >
-          Live Monitor
-        </button>
-        <button
-          className={`tab-button ${activeTab === 'platform-control' ? 'active' : ''}`}
-          onClick={() => navigate('/admin/platform-control')}
-        >
-          Platform Control
-        </button>
-        <button
-          className={`tab-button ${activeTab === 'messages' ? 'active' : ''}`}
-          onClick={() => navigate('/admin/messages')}
-        >
-          Messages
-        </button>
-        <button
-          className={`tab-button ${activeTab === 'login-logs' ? 'active' : ''}`}
-          onClick={() => navigate('/admin/login-logs')}
-        >
-          Login Logs
-        </button>
-        <button
-          className={`tab-button ${activeTab === 'subscribers' ? 'active' : ''}`}
-          onClick={() => setActiveTab('subscribers')}
-        >
-          Subscribers ({subscribers?.length || 0})
-        </button>
-        <button
-          className={`tab-button ${activeTab === 'notices' ? 'active' : ''}`}
-          onClick={() => setActiveTab('notices')}
-        >
-          Notices ({noticeTotal})
-        </button>
-        <button
-          className="tab-button danger"
-          onClick={() => navigate('/admin/platform-reset')}
-        >
-          Platform Reset
-        </button>
+      <div className="htb-admin-nav">
+        {navItems.map((item, idx) => {
+          const Icon = item.icon;
+          return (
+            <motion.button
+              key={idx}
+              className={`htb-nav-btn ${item.danger ? 'danger' : ''}`}
+              onClick={() => navigate(item.path)}
+              whileHover={{ x: 3 }}
+              whileTap={{ scale: 0.98 }}
+            >
+              <Icon size={16} />
+              {item.label}
+            </motion.button>
+          );
+        })}
       </div>
 
-      {activeTab === 'users' && (
-        <div className="dashboard-section">
-          <div className="section-header">
-            <h2>User Management</h2>
-            <Link to="/admin/create-user" className="btn-primary">+ Create User</Link>
-          </div>
+      <motion.div 
+        className="htb-admin-content"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ delay: 0.2 }}
+      >
+        {activeTab === 'users' && (
+          <div className="htb-section">
+            <div className="htb-section-header">
+              <h2><Users size={24} /> User Management</h2>
+              <Link to="/admin/create-user" className="htb-btn-primary">
+                <Plus size={16} /> Create User
+              </Link>
+            </div>
 
-          <div className="user-filters">
-            <input
-              type="text"
-              placeholder="Search users by username or email..."
-              value={userSearchTerm}
-              onChange={(e) => setUserSearchTerm(e.target.value)}
-              className="search-input"
-            />
-            <select value={userSortBy} onChange={(e) => setUserSortBy(e.target.value)} className="sort-select">
-              <option value="createdAt">Newest Users</option>
-              <option value="points">Highest Points</option>
-              <option value="username">Username (A-Z)</option>
-              <option value="email">Email (A-Z)</option>
-            </select>
-            <select
-              value={userRoleFilter}
-              onChange={(e) => setUserRoleFilter(e.target.value)}
-              className="sort-select"
-            >
-              <option value="all">All Roles</option>
-              <option value="user">Users Only</option>
-              <option value="admin">Admins Only</option>
-            </select>
-            <select
-              value={userStatusFilter}
-              onChange={(e) => setUserStatusFilter(e.target.value)}
-              className="sort-select"
-            >
-              <option value="all">All Status</option>
-              <option value="active">Active Only</option>
-              <option value="blocked">Blocked Only</option>
-            </select>
-          </div>
-
-          <div className="table-container">
-            <table className="data-table">
-              <thead>
-                <tr>
-                  <th>Username</th>
-                  <th>Email</th>
-                  <th>Role</th>
-                  <th>Points</th>
-                  <th>Status</th>
-                  <th>Challenges Solved</th>
-                  <th>Joined</th>
-                  <th>Action</th>
-                </tr>
-              </thead>
-              <tbody>
-                {filteredUsers.map(u => (
-                  <tr key={u._id}>
-                    <td>
-                      <strong>{u.username}</strong>
-                      {u.isBlocked && <span style={{ color: '#ff4444', marginLeft: '0.5rem', fontSize: '0.8rem' }}>🚫</span>}
-                    </td>
-                    <td title={u.email}>{u.email}</td>
-                    <td><span className={`role-badge ${u.role}`}>{u.role}</span></td>
-                    <td>
-                      <strong style={{ color: '#00ffaa' }}>{u.points}</strong>
-                    </td>
-                    <td>
-                      <span className={`status-badge ${u.isBlocked ? 'blocked' : 'active'}`}>
-                        {u.isBlocked ? 'Blocked' : 'Active'}
-                      </span>
-                    </td>
-                    <td>
-                      <span style={{ color: '#00aaff' }}>{u.solvedChallenges?.length || 0}</span>
-                      {(u.solvedChallenges?.length || 0) > 0 &&
-                        <span style={{ marginLeft: '0.3rem', fontSize: '0.8rem' }}>🏆</span>
-                      }
-                    </td>
-                    <td title={new Date(u.createdAt).toLocaleString()}>
-                      {new Date(u.createdAt).toLocaleDateString()}
-                    </td>
-                    <td>
-                      <button
-                        className="btn-link"
-                        onClick={() => handleUserClick(u._id)}
-                      >
-                        View
-                      </button>
-                      {user?.role === 'admin' && u.role !== 'superadmin' && (
-                        <>
-                          {u.role === 'user' ? (
-                            <button
-                              className="btn-secondary"
-                              onClick={() => handleChangeRole(u._id, 'admin')}
-                              style={{ marginLeft: '0.5rem' }}
-                            >
-                              → Admin
-                            </button>
-                          ) : (
-                            <button
-                              className="btn-secondary"
-                              onClick={() => handleChangeRole(u._id, 'user')}
-                              style={{ marginLeft: '0.5rem' }}
-                            >
-                              → User
-                            </button>
-                          )}
-                        </>
-                      )}
-                      {user?.role === 'admin' && u.role !== 'superadmin' && (
-                        <>
-                          <button
-                            className={u.isBlocked ? 'btn-secondary' : 'btn-warning'}
-                            onClick={() => handleBlockUser(u._id, u.username, u.isBlocked)}
-                            style={{ marginLeft: '0.5rem' }}
-                          >
-                            {u.isBlocked ? 'Unblock' : 'Block'}
-                          </button>
-                          <button
-                            className="btn-delete"
-                            onClick={() => handleDeleteUser(u._id, u.username)}
-                            style={{ marginLeft: '0.5rem' }}
-                          >
-                            Delete
-                          </button>
-                        </>
-                      )}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-          <div className="pagination">
-            {!debouncedSearchTerm && (
-              <>
-                <button
-                  onClick={() => setUserPage(Math.max(1, userPage - 1))}
-                  disabled={userPage === 1}
-                  className="pagination-btn"
-                >
-                  Previous
-                </button>
-                <button
-                  onClick={() => setUserPage(userPage + 1)}
-                  disabled={userPage >= Math.ceil(userTotal / itemsPerPage)}
-                  className="pagination-btn"
-                >
-                  Next
-                </button>
-              </>
-            )}
-            <span className="pagination-info">
-              {debouncedSearchTerm ? (
-                `Found ${filteredUsers.length} users matching "${debouncedSearchTerm}"`
-              ) : (
-                `Page ${userPage} of ${Math.ceil(userTotal / itemsPerPage) || 1} ({filteredUsers.length} of ${userTotal} users)`
-              )}
-            </span>
-          </div>
-        </div>
-      )}
-
-      {activeTab === 'teams' && (
-        <div className="dashboard-section">
-          <div className="section-header">
-            <h2>Teams</h2>
-            <Link to="/admin/create-team" className="btn-primary">+ Create Team</Link>
-          </div>
-          <div className="table-container">
-            <table className="data-table">
-              <thead>
-                <tr>
-                  <th>Team Name</th>
-                  <th>Members</th>
-                  <th>Points</th>
-                  <th>Action</th>
-                </tr>
-              </thead>
-              <tbody>
-                {teams.map(t => (
-                  <tr key={t._id}>
-                    <td>{t.name}</td>
-                    <td>{t.members?.length || 0}/2</td>
-                    <td>{t.points || 0}</td>
-                    <td>
-                      <button
-                        className="btn-delete"
-                        onClick={() => handleDeleteTeam(t._id)}
-                      >
-                        Delete
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-          <div className="pagination">
-            <button
-              onClick={() => setTeamPage(Math.max(1, teamPage - 1))}
-              disabled={teamPage === 1}
-              className="pagination-btn"
-            >
-              Previous
-            </button>
-            <span className="pagination-info">
-              Page {teamPage} of {Math.ceil(teamTotal / itemsPerPage) || 1}
-            </span>
-            <button
-              onClick={() => setTeamPage(teamPage + 1)}
-              disabled={teamPage >= Math.ceil(teamTotal / itemsPerPage)}
-              className="pagination-btn"
-            >
-              Next
-            </button>
-          </div>
-        </div>
-      )}
-
-      {activeTab === 'challenges' && (
-        <div className="dashboard-section">
-          <div className="section-header">
-            <h2>Challenge Management</h2>
-            <Link to="/create-challenge" className="btn-primary">Create Challenge</Link>
-          </div>
-          <div className="table-container">
-            <table className="data-table">
-              <thead>
-                <tr>
-                  <th>Title</th>
-                  <th>Category</th>
-                  <th>Points</th>
-                  <th>Visible</th>
-                  <th>Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {challenges.map(c => (
-                  <tr key={c._id}>
-                    <td>{c.title}</td>
-                    <td>{c.category}</td>
-                    <td>{c.points}</td>
-                    <td>
-                      <button
-                        className={`visibility-btn ${c.isVisible ? 'visible' : 'hidden'}`}
-                        onClick={() => handleToggleVisibility(c._id, c.isVisible)}
-                      >
-                        {c.isVisible ? 'Show' : 'Hide'}
-                      </button>
-                    </td>
-                    <td>
-                      <Link to={`/edit-challenge/${c._id}`} className="btn-link">Edit</Link>
-                      <button
-                        className="btn-delete"
-                        onClick={() => handleDeleteChallenge(c._id)}
-                      >
-                        Delete
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-          <div className="pagination">
-            <button
-              onClick={() => setChallengePage(Math.max(1, challengePage - 1))}
-              disabled={challengePage === 1}
-              className="pagination-btn"
-            >
-              Previous
-            </button>
-            <span className="pagination-info">
-              Page {challengePage} of {Math.ceil(challengeTotal / itemsPerPage) || 1}
-            </span>
-            <button
-              onClick={() => setChallengePage(challengePage + 1)}
-              disabled={challengePage >= Math.ceil(challengeTotal / itemsPerPage)}
-              className="pagination-btn"
-            >
-              Next
-            </button>
-          </div>
-        </div>
-      )}
-
-      {activeTab === 'subscribers' && (
-        <div className="dashboard-section">
-          <div className="section-header">
-            <h2>Newsletter Subscribers</h2>
-          </div>
-          <div className="table-container">
-            <table className="data-table">
-              <thead>
-                <tr>
-                  <th>Email</th>
-                  <th>Subscribed</th>
-                  <th>Action</th>
-                </tr>
-              </thead>
-              <tbody>
-                {subscribers.map(s => (
-                  <tr key={s._id}>
-                    <td>{s.email}</td>
-                    <td>{new Date(s.subscribedAt).toLocaleDateString()}</td>
-                    <td>
-                      <button
-                        className="btn-delete"
-                        onClick={() => handleDeleteSubscriber(s._id)}
-                      >
-                        Remove
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      )}
-
-      {activeTab === 'notices' && (
-        <div className="dashboard-section">
-          <div className="section-header">
-            <h2>Notice Management</h2>
-            <button
-              className="btn-primary"
-              onClick={() => setShowNoticeForm(!showNoticeForm)}
-            >
-              {showNoticeForm ? '✕ Cancel' : '+ Create Notice'}
-            </button>
-          </div>
-
-          {showNoticeForm && (
-            <form className="notice-form" onSubmit={handleSubmitNotice}>
-              <div className="form-group">
-                <label>Title *</label>
+            <div className="htb-filters">
+              <div className="htb-search-box">
+                <Search size={18} />
                 <input
                   type="text"
-                  value={noticeForm.title}
-                  onChange={(e) => setNoticeForm({ ...noticeForm, title: e.target.value })}
-                  placeholder="Enter notice title"
-                  required
+                  placeholder="Search users..."
+                  value={userSearchTerm}
+                  onChange={(e) => setUserSearchTerm(e.target.value)}
                 />
               </div>
-
-              <div className="form-group">
-                <label>Description *</label>
-                <textarea
-                  value={noticeForm.description}
-                  onChange={(e) => setNoticeForm({ ...noticeForm, description: e.target.value })}
-                  placeholder="Enter notice description"
-                  rows="6"
-                  required
-                />
-              </div>
-
-              <div className="form-actions">
-                <button type="submit" className="btn-primary">
-                  {editingNotice ? 'Update Notice' : 'Create Notice'}
-                </button>
-                <button type="button" className="btn-secondary" onClick={handleCancelNoticeForm}>
-                  Cancel
-                </button>
-              </div>
-            </form>
-          )}
-
-          <div className="table-container">
-            <table className="data-table">
-              <thead>
-                <tr>
-                  <th>Title</th>
-                  <th>Created By</th>
-                  <th>Created</th>
-                  <th>Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {notices.map(n => (
-                  <tr key={n._id}>
-                    <td>{n.title}</td>
-                    <td>{n.createdBy?.username || 'Unknown'}</td>
-                    <td>{new Date(n.createdAt).toLocaleDateString()}</td>
-                    <td>
-                      <button
-                        className="btn-link"
-                        onClick={() => handleEditNotice(n)}
-                      >
-                        Edit
-                      </button>
-                      <button
-                        className="btn-delete"
-                        onClick={() => handleDeleteNotice(n._id)}
-                        style={{ marginLeft: '0.5rem' }}
-                      >
-                        Delete
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-
-          {notices.length === 0 && (
-            <div style={{ textAlign: 'center', padding: '2rem', color: '#888' }}>
-              No notices yet. Create one to get started!
+              <select value={userSortBy} onChange={(e) => setUserSortBy(e.target.value)}>
+                <option value="createdAt">Newest First</option>
+                <option value="points">Highest Points</option>
+                <option value="username">Username (A-Z)</option>
+                <option value="email">Email (A-Z)</option>
+              </select>
+              <select value={userRoleFilter} onChange={(e) => setUserRoleFilter(e.target.value)}>
+                <option value="all">All Roles</option>
+                <option value="user">Users</option>
+                <option value="admin">Admins</option>
+              </select>
+              <select value={userStatusFilter} onChange={(e) => setUserStatusFilter(e.target.value)}>
+                <option value="all">All Status</option>
+                <option value="active">Active</option>
+                <option value="blocked">Blocked</option>
+              </select>
             </div>
-          )}
-        </div>
-      )}
+
+            <div className="htb-table-container">
+              <table className="htb-table">
+                <thead>
+                  <tr>
+                    <th>Username</th>
+                    <th>Email</th>
+                    <th>Role</th>
+                    <th>Points</th>
+                    <th>Status</th>
+                    <th>Solved</th>
+                    <th>Joined</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filteredUsers.map((u, idx) => (
+                    <motion.tr 
+                      key={u._id}
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: idx * 0.02 }}
+                    >
+                      <td>
+                        <strong>{u.username}</strong>
+                        {u.isBlocked && <span className="htb-blocked-badge">🚫</span>}
+                      </td>
+                      <td className="htb-text-muted">{u.email}</td>
+                      <td><span className={`htb-badge htb-badge-${u.role}`}>{u.role}</span></td>
+                      <td className="htb-text-primary"><strong>{u.points}</strong></td>
+                      <td>
+                        <span className={`htb-status ${u.isBlocked ? 'blocked' : 'active'}`}>
+                          {u.isBlocked ? 'Blocked' : 'Active'}
+                        </span>
+                      </td>
+                      <td className="htb-text-info">{u.solvedChallenges?.length || 0}</td>
+                      <td className="htb-text-muted">{new Date(u.createdAt).toLocaleDateString()}</td>
+                      <td className="htb-actions">
+                        <button className="htb-btn-icon" onClick={() => handleUserClick(u._id)}>
+                          <Eye size={16} />
+                        </button>
+                        {user?.role === 'admin' && u.role !== 'superadmin' && (
+                          <>
+                            <button 
+                              className="htb-btn-icon" 
+                              onClick={() => handleChangeRole(u._id, u.role === 'user' ? 'admin' : 'user')}
+                            >
+                              <Shield size={16} />
+                            </button>
+                            <button 
+                              className={`htb-btn-icon ${u.isBlocked ? 'success' : 'warning'}`}
+                              onClick={() => handleBlockUser(u._id, u.username, u.isBlocked)}
+                            >
+                              {u.isBlocked ? <Eye size={16} /> : <EyeOff size={16} />}
+                            </button>
+                            <button 
+                              className="htb-btn-icon danger" 
+                              onClick={() => handleDeleteUser(u._id, u.username)}
+                            >
+                              <Trash2 size={16} />
+                            </button>
+                          </>
+                        )}
+                      </td>
+                    </motion.tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            <div className="htb-pagination">
+              {!debouncedSearchTerm && (
+                <>
+                  <button
+                    onClick={() => setUserPage(Math.max(1, userPage - 1))}
+                    disabled={userPage === 1}
+                    className="htb-pagination-btn"
+                  >
+                    <ChevronLeft size={16} /> Previous
+                  </button>
+                  <span className="htb-pagination-info">
+                    Page {userPage} of {Math.ceil(userTotal / itemsPerPage) || 1}
+                  </span>
+                  <button
+                    onClick={() => setUserPage(userPage + 1)}
+                    disabled={userPage >= Math.ceil(userTotal / itemsPerPage)}
+                    className="htb-pagination-btn"
+                  >
+                    Next <ChevronRight size={16} />
+                  </button>
+                </>
+              )}
+              {debouncedSearchTerm && (
+                <span className="htb-pagination-info">
+                  Found {filteredUsers.length} users matching "{debouncedSearchTerm}"
+                </span>
+              )}
+            </div>
+          </div>
+        )}
+
+        {activeTab === 'teams' && (
+          <div className="htb-section">
+            <div className="htb-section-header">
+              <h2><Shield size={24} /> Team Management</h2>
+              <Link to="/admin/create-team" className="htb-btn-primary">
+                <Plus size={16} /> Create Team
+              </Link>
+            </div>
+
+            <div className="htb-table-container">
+              <table className="htb-table">
+                <thead>
+                  <tr>
+                    <th>Team Name</th>
+                    <th>Members</th>
+                    <th>Points</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {teams.map((t, idx) => (
+                    <motion.tr 
+                      key={t._id}
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: idx * 0.02 }}
+                    >
+                      <td><strong>{t.name}</strong></td>
+                      <td>{t.members?.length || 0}/2</td>
+                      <td className="htb-text-primary"><strong>{t.points || 0}</strong></td>
+                      <td className="htb-actions">
+                        <button className="htb-btn-icon danger" onClick={() => handleDeleteTeam(t._id)}>
+                          <Trash2 size={16} />
+                        </button>
+                      </td>
+                    </motion.tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            <div className="htb-pagination">
+              <button
+                onClick={() => setTeamPage(Math.max(1, teamPage - 1))}
+                disabled={teamPage === 1}
+                className="htb-pagination-btn"
+              >
+                <ChevronLeft size={16} /> Previous
+              </button>
+              <span className="htb-pagination-info">
+                Page {teamPage} of {Math.ceil(teamTotal / itemsPerPage) || 1}
+              </span>
+              <button
+                onClick={() => setTeamPage(teamPage + 1)}
+                disabled={teamPage >= Math.ceil(teamTotal / itemsPerPage)}
+                className="htb-pagination-btn"
+              >
+                Next <ChevronRight size={16} />
+              </button>
+            </div>
+          </div>
+        )}
+
+        {activeTab === 'challenges' && (
+          <div className="htb-section">
+            <div className="htb-section-header">
+              <h2><Trophy size={24} /> Challenge Management</h2>
+              <Link to="/create-challenge" className="htb-btn-primary">
+                <Plus size={16} /> Create Challenge
+              </Link>
+            </div>
+
+            <div className="htb-table-container">
+              <table className="htb-table">
+                <thead>
+                  <tr>
+                    <th>Title</th>
+                    <th>Category</th>
+                    <th>Points</th>
+                    <th>Visibility</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {challenges.map((c, idx) => (
+                    <motion.tr 
+                      key={c._id}
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: idx * 0.02 }}
+                    >
+                      <td><strong>{c.title}</strong></td>
+                      <td><span className="htb-badge">{c.category}</span></td>
+                      <td className="htb-text-primary"><strong>{c.points}</strong></td>
+                      <td>
+                        <button
+                          className={`htb-visibility-btn ${c.isVisible ? 'visible' : 'hidden'}`}
+                          onClick={() => handleToggleVisibility(c._id, c.isVisible)}
+                        >
+                          {c.isVisible ? <Eye size={14} /> : <EyeOff size={14} />}
+                          {c.isVisible ? 'Visible' : 'Hidden'}
+                        </button>
+                      </td>
+                      <td className="htb-actions">
+                        <Link to={`/edit-challenge/${c._id}`} className="htb-btn-icon">
+                          <Edit size={16} />
+                        </Link>
+                        <button className="htb-btn-icon danger" onClick={() => handleDeleteChallenge(c._id)}>
+                          <Trash2 size={16} />
+                        </button>
+                      </td>
+                    </motion.tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            <div className="htb-pagination">
+              <button
+                onClick={() => setChallengePage(Math.max(1, challengePage - 1))}
+                disabled={challengePage === 1}
+                className="htb-pagination-btn"
+              >
+                <ChevronLeft size={16} /> Previous
+              </button>
+              <span className="htb-pagination-info">
+                Page {challengePage} of {Math.ceil(challengeTotal / itemsPerPage) || 1}
+              </span>
+              <button
+                onClick={() => setChallengePage(challengePage + 1)}
+                disabled={challengePage >= Math.ceil(challengeTotal / itemsPerPage)}
+                className="htb-pagination-btn"
+              >
+                Next <ChevronRight size={16} />
+              </button>
+            </div>
+          </div>
+        )}
+
+        {activeTab === 'notices' && (
+          <div className="htb-section">
+            <div className="htb-section-header">
+              <h2><Bell size={24} /> Notice Management</h2>
+              <button
+                className="htb-btn-primary"
+                onClick={() => setShowNoticeForm(!showNoticeForm)}
+              >
+                {showNoticeForm ? '✕ Cancel' : <><Plus size={16} /> Create Notice</>}
+              </button>
+            </div>
+
+            <AnimatePresence>
+              {showNoticeForm && (
+                <motion.form 
+                  className="htb-form"
+                  onSubmit={handleSubmitNotice}
+                  initial={{ opacity: 0, height: 0 }}
+                  animate={{ opacity: 1, height: 'auto' }}
+                  exit={{ opacity: 0, height: 0 }}
+                >
+                  <div className="htb-form-group">
+                    <label>Title *</label>
+                    <input
+                      type="text"
+                      value={noticeForm.title}
+                      onChange={(e) => setNoticeForm({ ...noticeForm, title: e.target.value })}
+                      placeholder="Enter notice title"
+                      required
+                    />
+                  </div>
+
+                  <div className="htb-form-group">
+                    <label>Description *</label>
+                    <textarea
+                      value={noticeForm.description}
+                      onChange={(e) => setNoticeForm({ ...noticeForm, description: e.target.value })}
+                      placeholder="Enter notice description"
+                      rows="6"
+                      required
+                    />
+                  </div>
+
+                  <div className="htb-form-actions">
+                    <button type="submit" className="htb-btn-primary">
+                      {editingNotice ? 'Update Notice' : 'Create Notice'}
+                    </button>
+                    <button type="button" className="htb-btn-secondary" onClick={handleCancelNoticeForm}>
+                      Cancel
+                    </button>
+                  </div>
+                </motion.form>
+              )}
+            </AnimatePresence>
+
+            <div className="htb-table-container">
+              <table className="htb-table">
+                <thead>
+                  <tr>
+                    <th>Title</th>
+                    <th>Created By</th>
+                    <th>Created</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {notices.map((n, idx) => (
+                    <motion.tr 
+                      key={n._id}
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: idx * 0.02 }}
+                    >
+                      <td><strong>{n.title}</strong></td>
+                      <td className="htb-text-muted">{n.createdBy?.username || 'Unknown'}</td>
+                      <td className="htb-text-muted">{new Date(n.createdAt).toLocaleDateString()}</td>
+                      <td className="htb-actions">
+                        <button className="htb-btn-icon" onClick={() => handleEditNotice(n)}>
+                          <Edit size={16} />
+                        </button>
+                        <button className="htb-btn-icon danger" onClick={() => handleDeleteNotice(n._id)}>
+                          <Trash2 size={16} />
+                        </button>
+                      </td>
+                    </motion.tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            {notices.length === 0 && (
+              <div className="htb-empty-state">
+                <Bell size={48} />
+                <p>No notices yet. Create one to get started!</p>
+              </div>
+            )}
+          </div>
+        )}
+
+        {activeTab === 'subscribers' && (
+          <div className="htb-section">
+            <div className="htb-section-header">
+              <h2><Mail size={24} /> Newsletter Subscribers</h2>
+            </div>
+
+            <div className="htb-table-container">
+              <table className="htb-table">
+                <thead>
+                  <tr>
+                    <th>Email</th>
+                    <th>Subscribed</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {subscribers.map((s, idx) => (
+                    <motion.tr 
+                      key={s._id}
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: idx * 0.02 }}
+                    >
+                      <td><strong>{s.email}</strong></td>
+                      <td className="htb-text-muted">{new Date(s.subscribedAt).toLocaleDateString()}</td>
+                      <td className="htb-actions">
+                        <button className="htb-btn-icon danger" onClick={() => handleDeleteSubscriber(s._id)}>
+                          <Trash2 size={16} />
+                        </button>
+                      </td>
+                    </motion.tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
+      </motion.div>
     </div>
   );
 }
