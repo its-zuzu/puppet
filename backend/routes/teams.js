@@ -193,6 +193,7 @@ router.get('/:id', protect, async (req, res) => {
 
     // Calculate points dynamically for each member from submissions (like scoreboard does)
     const Submission = require('../models/Submission');
+    const Unlock = require('../models/Unlock');
     const mongoose = require('mongoose');
     const memberIds = team.members.map(m => m._id);
     
@@ -217,6 +218,17 @@ router.get('/:id', protect, async (req, res) => {
       }
     ]);
     
+    // Get unlocked hints count for each member
+    const unlocksAgg = await Unlock.aggregate([
+      { $match: { user: { $in: memberIds }, type: 'hints' } },
+      {
+        $group: {
+          _id: '$user',
+          unlockedCount: { $sum: 1 }
+        }
+      }
+    ]);
+    
     // Create a map of userId -> calculated stats
     const statsMap = new Map();
     memberStatsAgg.forEach(item => {
@@ -226,6 +238,14 @@ router.get('/:id', protect, async (req, res) => {
         solvedCount: item.solvedCount,
         personalSolvedChallenges: item.solvedChallenges
       });
+    });
+    
+    // Add unlocked hints count to stats map
+    unlocksAgg.forEach(item => {
+      const userId = item._id.toString();
+      const existingStats = statsMap.get(userId) || { points: 0, solvedCount: 0, personalSolvedChallenges: [] };
+      existingStats.unlockedHintsCount = item.unlockedCount;
+      statsMap.set(userId, existingStats);
     });
     
     // Build new members array with calculated stats
@@ -240,7 +260,7 @@ router.get('/:id', protect, async (req, res) => {
         points: stats ? stats.points : 0,
         personallySolvedCount: stats ? stats.solvedCount : 0,
         personallySolvedChallenges: stats ? stats.personalSolvedChallenges : [],
-        unlockedHints: member.unlockedHints || []
+        unlockedHints: stats ? stats.unlockedHintsCount || 0 : 0
       };
     });
     
