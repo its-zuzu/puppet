@@ -291,10 +291,12 @@ router.get('/:id', async (req, res) => {
     let userId = null;
     let teamId = null;
 
-    if (req.headers.authorization) {
+    // Check for token in cookies (primary) or Authorization header (fallback)
+    const token = req.cookies.token || (req.headers.authorization && req.headers.authorization.split(' ')[1]);
+
+    if (token) {
       try {
         const Unlock = require('../models/Unlock');
-        const token = req.headers.authorization.split(' ')[1];
         const decoded = jwt.verify(token, process.env.JWT_SECRET);
         const user = await User.findById(decoded.id).populate('team');
 
