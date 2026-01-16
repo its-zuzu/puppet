@@ -59,7 +59,11 @@ axios.interceptors.response.use(
     }
 
     // Handle 401 errors with refresh token logic
-    if (error.response?.status === 401 && !originalRequest._retry) {
+    // Skip refresh logic for login/register endpoints (they should fail immediately)
+    const isLoginEndpoint = originalRequest?.url?.includes('/api/auth/login') || 
+                           originalRequest?.url?.includes('/api/auth/register');
+    
+    if (error.response?.status === 401 && !originalRequest._retry && !isLoginEndpoint) {
       if (isRefreshing) {
         // Queue this request while refresh is in progress
         return new Promise((resolve, reject) => {
