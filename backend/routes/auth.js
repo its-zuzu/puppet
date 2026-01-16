@@ -1018,6 +1018,9 @@ router.get('/user/:id', protect, async (req, res) => {
 
     // Calculate user's total points dynamically from submissions (like scoreboard does)
     const Submission = require('../models/Submission');
+    const Challenge = require('../models/Challenge');
+    
+    // Get all submissions by this user with challenge details
     const userSubmissions = await Submission.aggregate([
       { $match: { user: user._id, isCorrect: true } },
       {
@@ -1030,14 +1033,27 @@ router.get('/user/:id', protect, async (req, res) => {
       },
       { $unwind: '$challengeData' },
       {
-        $group: {
-          _id: null,
-          totalPoints: { $sum: '$challengeData.points' }
+        $project: {
+          challengeId: '$challenge',
+          challengeTitle: '$challengeData.title',
+          challengeCategory: '$challengeData.category',
+          points: '$challengeData.points',
+          solvedAt: '$submittedAt'
         }
-      }
+      },
+      { $sort: { solvedAt: -1 } }
     ]);
 
-    const calculatedPoints = userSubmissions.length > 0 ? userSubmissions[0].totalPoints : 0;
+    const calculatedPoints = userSubmissions.reduce((sum, sub) => sum + sub.points, 0);
+    
+    // Build solved challenges array with full details
+    const solvedChallengesWithDetails = userSubmissions.map(sub => ({
+      _id: sub.challengeId,
+      title: sub.challengeTitle,
+      category: sub.challengeCategory,
+      points: sub.points,
+      solvedAt: sub.solvedAt
+    }));
 
     // Calculate user rank based on calculated points
     const allUsersPoints = await Submission.aggregate([
@@ -1066,9 +1082,15 @@ router.get('/user/:id', protect, async (req, res) => {
     res.json({
       success: true,
       user: {
-        ...user.toObject(),
+        _id: user._id,
+        username: user.username,
+        team: user.team,
+        createdAt: user.createdAt,
         points: calculatedPoints,
-        rank
+        rank,
+        solvedChallenges: solvedChallengesWithDetails,
+        challengesSolvedCount: solvedChallengesWithDetails.length,
+        unlockedHints: user.unlockedHints || []
       }
     });
   } catch (error) {
