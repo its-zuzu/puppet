@@ -320,6 +320,11 @@ router.post('/register-admin', protect, authorize('admin', 'superadmin'), async 
       team: teamId || undefined
     });
 
+    // Populate team if exists
+    if (user.team) {
+      await user.populate('team', '_id name');
+    }
+
     // Generate token
     const token = generateToken(user._id);
 
@@ -332,7 +337,10 @@ router.post('/register-admin', protect, authorize('admin', 'superadmin'), async 
         email: user.email,
         role: user.role,
         points: user.points,
-        team: user.team
+        team: user.team ? {
+          _id: user.team._id,
+          name: user.team.name
+        } : null
       }
     });
   } catch (error) {
@@ -493,7 +501,10 @@ router.post('/login', sanitizeInput, async (req, res) => {
         email: user.email,
         role: user.role,
         points: user.points,
-        team: user.team
+        team: user.team ? {
+          _id: user.team._id,
+          name: user.team.name
+        } : null
       }
     });
   } catch (error) {
@@ -888,7 +899,10 @@ router.get('/me', protect, async (req, res) => {
         email: user.email,
         role: user.role,
         points: user.points,
-        team: user.team,
+        team: user.team ? {
+          _id: user.team._id || user.team,
+          name: user.team.name || undefined
+        } : null,
         solvedChallenges: user.solvedChallenges,
         createdAt: user.createdAt,
         isBlocked: user.isBlocked
