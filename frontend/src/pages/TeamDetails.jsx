@@ -269,7 +269,7 @@ function TeamDetails() {
                   </div>
                   <div className="htb-member-stat">
                     <Award size={16} />
-                    <span>{member.personallySolvedChallenges?.length || 0} solved</span>
+                    <span>{member.personallySolvedCount || member.personallySolvedChallenges?.length || 0} solved</span>
                   </div>
                   <div className="htb-member-stat">
                     <Lock size={16} />

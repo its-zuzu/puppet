@@ -41,8 +41,16 @@ function UserProfile() {
   };
 
   const getSolvedChallenges = () => {
-    if (!user?.solvedChallenges || !challenges.length) return [];
+    // Backend now returns full challenge objects with details
+    if (!user?.solvedChallenges || !Array.isArray(user.solvedChallenges)) return [];
     
+    // If solvedChallenges already has challenge details, use them directly
+    if (user.solvedChallenges.length > 0 && user.solvedChallenges[0].title) {
+      return user.solvedChallenges;
+    }
+    
+    // Fallback: if it's just IDs, filter from challenges list
+    if (!challenges.length) return [];
     return challenges.filter(challenge => 
       user.solvedChallenges.includes(challenge._id)
     );
@@ -133,7 +141,7 @@ function UserProfile() {
             </div>
             <div className="htb-stat-content">
               <div className="htb-stat-label">Challenges Solved</div>
-              <div className="htb-stat-value">{user.solvedChallenges?.length || 0}</div>
+              <div className="htb-stat-value">{user.challengesSolvedCount || user.solvedChallenges?.length || 0}</div>
             </div>
           </motion.div>
 
