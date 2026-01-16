@@ -72,6 +72,9 @@ function AdminLoginLogs() {
 
       const res = await axios.get(`/api/auth/admin/login-logs?${params}`);
 
+      console.log('Login logs data:', res.data.logs);
+      console.log('First failed log:', res.data.logs.find(l => l.status === 'failed'));
+      
       setLogs(res.data.logs);
       setTotalPages(res.data.pages);
       setTotalLogs(res.data.total);
