@@ -1033,10 +1033,14 @@ router.get('/user/:id', protect, async (req, res) => {
     // Calculate user's total points dynamically from submissions (like scoreboard does)
     const Submission = require('../models/Submission');
     const Challenge = require('../models/Challenge');
+    const mongoose = require('mongoose');
+    
+    // Ensure user._id is properly converted to ObjectId
+    const userId = mongoose.Types.ObjectId(user._id.toString());
     
     // Get all submissions by this user with challenge details
     const userSubmissions = await Submission.aggregate([
-      { $match: { user: user._id, isCorrect: true } },
+      { $match: { user: userId, isCorrect: true } },
       {
         $lookup: {
           from: 'challenges',

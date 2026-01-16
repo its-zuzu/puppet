@@ -193,6 +193,7 @@ router.get('/:id', protect, async (req, res) => {
 
     // Calculate points dynamically for each member from submissions (like scoreboard does)
     const Submission = require('../models/Submission');
+    const mongoose = require('mongoose');
     const memberIds = team.members.map(m => m._id);
     
     const memberStatsAgg = await Submission.aggregate([
@@ -219,7 +220,8 @@ router.get('/:id', protect, async (req, res) => {
     // Create a map of userId -> calculated stats
     const statsMap = new Map();
     memberStatsAgg.forEach(item => {
-      statsMap.set(item._id.toString(), {
+      const userId = item._id.toString();
+      statsMap.set(userId, {
         points: item.totalPoints,
         solvedCount: item.solvedCount,
         personalSolvedChallenges: item.solvedChallenges
@@ -228,7 +230,8 @@ router.get('/:id', protect, async (req, res) => {
     
     // Update each member with their calculated stats
     team.members.forEach(member => {
-      const stats = statsMap.get(member._id.toString());
+      const memberId = member._id.toString();
+      const stats = statsMap.get(memberId);
       if (stats) {
         member.points = stats.points;
         member.personallySolvedCount = stats.solvedCount;
