@@ -195,7 +195,7 @@ router.get('/:id', protect, async (req, res) => {
     const Submission = require('../models/Submission');
     const memberIds = team.members.map(m => m._id);
     
-    const memberPointsAgg = await Submission.aggregate([
+    const memberStatsAgg = await Submission.aggregate([
       { $match: { user: { $in: memberIds }, isCorrect: true } },
       {
         $lookup: {
@@ -209,20 +209,37 @@ router.get('/:id', protect, async (req, res) => {
       {
         $group: {
           _id: '$user',
-          totalPoints: { $sum: '$challengeData.points' }
+          totalPoints: { $sum: '$challengeData.points' },
+          solvedCount: { $sum: 1 },
+          solvedChallenges: { $addToSet: '$challenge' }
         }
       }
     ]);
     
-    // Create a map of userId -> calculated points
-    const pointsMap = new Map();
-    memberPointsAgg.forEach(item => {
-      pointsMap.set(item._id.toString(), item.totalPoints);
+    // Create a map of userId -> calculated stats
+    const statsMap = new Map();
+    memberStatsAgg.forEach(item => {
+      statsMap.set(item._id.toString(), {
+        points: item.totalPoints,
+        solvedCount: item.solvedCount,
+        personalSolvedChallenges: item.solvedChallenges
+      });
     });
     
-    // Update each member with their calculated points
+    // Update each member with their calculated stats
     team.members.forEach(member => {
-      member.points = pointsMap.get(member._id.toString()) || 0;
+      const stats = statsMap.get(member._id.toString());
+      if (stats) {
+        member.points = stats.points;
+        member.personallySolvedCount = stats.solvedCount;
+        member.personallySolvedChallenges = stats.personalSolvedChallenges;
+      } else {
+        member.points = 0;
+        member.personallySolvedCount = 0;
+        member.personallySolvedChallenges = [];
+      }
+      // Remove the misleading solvedChallenges array (team-wide)
+      delete member.solvedChallenges;
     });
     
     // Calculate team points from calculated member points
@@ -255,11 +272,11 @@ router.get('/:id', protect, async (req, res) => {
     
     const rank = teamsWithPoints.findIndex(t => t._id.toString() === team._id.toString()) + 1;
     
-    // Calculate total solved challenges (unique challenges across team)
+    // Calculate total solved challenges (unique challenges across team from actual submissions)
     const allSolvedChallenges = new Set();
     team.members.forEach(member => {
-      if (member.solvedChallenges && Array.isArray(member.solvedChallenges)) {
-        member.solvedChallenges.forEach(challenge => {
+      if (member.personallySolvedChallenges && Array.isArray(member.personallySolvedChallenges)) {
+        member.personallySolvedChallenges.forEach(challenge => {
           allSolvedChallenges.add(challenge.toString());
         });
       }
