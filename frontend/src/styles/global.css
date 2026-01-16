@@ -95,6 +95,7 @@ body::before {
 }
 
 /* Scrollbar styling */
+/* Chrome, Safari, Edge */
 ::-webkit-scrollbar {
   width: 10px;
   height: 10px;
@@ -112,6 +113,12 @@ body::before {
 
 ::-webkit-scrollbar-thumb:hover {
   background: var(--bg-hover);
+}
+
+/* Firefox */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--bg-elevated) var(--bg-secondary);
 }
 
 /* Selection */

@@ -606,6 +606,7 @@
   padding: 2rem;
   border-radius: 15px;
   border: 1px solid rgba(0, 255, 0, 0.1);
+  -webkit-backdrop-filter: blur(10px);
   backdrop-filter: blur(10px);
   margin-bottom: 4rem;
   transform: translateZ(20px);
