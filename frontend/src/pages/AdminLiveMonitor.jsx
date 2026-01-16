@@ -77,6 +77,9 @@ const AdminLiveMonitor = () => {
     };
   }, [user]);
 
+  // Calculate unique active users based on email
+  const activeUsers = [...new Set(submissions.map(sub => sub.email))].length;
+
   const getStatusConfig = () => {
     switch (connectionStatus) {
       case 'connected':
@@ -147,8 +150,8 @@ const AdminLiveMonitor = () => {
         <div className="htb-stat-card">
           <Users className="htb-stat-icon" size={24} />
           <div className="htb-stat-content">
-            <span className="htb-stat-label">Active</span>
-            <span className="htb-stat-value">{submissions.length}</span>
+            <span className="htb-stat-label">Active Users</span>
+            <span className="htb-stat-value">{activeUsers}</span>
           </div>
         </div>
       </motion.div>
