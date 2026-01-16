@@ -363,7 +363,9 @@ function ChallengeDetails() {
         const res = await axios.get(`/api/challenges/${id}`);
         console.log('Initial challenge fetch:', {
           unlockedHints: res.data.unlockedHints,
-          challengeTitle: res.data.data.title
+          challengeTitle: res.data.data.title,
+          files: res.data.data.files,
+          hasFiles: res.data.data.files && res.data.data.files.length > 0
         });
         setChallenge(res.data.data);
         setUnlockedHints(res.data.unlockedHints || []);
@@ -657,7 +659,7 @@ function ChallengeDetails() {
                     <button
                       onClick={() => {
                         window.open(
-                          `http://localhost:3000/api/challenges/${challenge._id}/download/${file.filename}`,
+                          `/api/challenges/${challenge._id}/download/${file.filename}`,
                           '_blank'
                         );
                       }}
