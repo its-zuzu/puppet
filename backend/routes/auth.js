@@ -846,7 +846,8 @@ router.get('/me', protect, async (req, res) => {
 
   try {
     // Use req.user._id directly (now always a string from middleware)
-    const user = await User.findById(req.user._id).populate('team');
+    const user = await User.findById(req.user._id)
+      .populate('team', 'name');
 
     if (user.isBlocked) {
       return res.status(403).json({
@@ -863,6 +864,104 @@ router.get('/me', protect, async (req, res) => {
         }
       });
     }
+
+    // Calculate user's total points dynamically from submissions (like scoreboard does)
+    const Submission = require('../models/Submission');
+    const Challenge = require('../models/Challenge');
+    
+    // Get all submissions by this user with challenge details
+    const userSubmissions = await Submission.aggregate([
+      { $match: { user: user._id, isCorrect: true } },
+      {
+        $lookup: {
+          from: 'challenges',
+          localField: 'challenge',
+          foreignField: '_id',
+          as: 'challengeData'
+        }
+      },
+      { $unwind: '$challengeData' },
+      {
+        $project: {
+          challengeId: '$challenge',
+          challengeTitle: '$challengeData.title',
+          challengeCategory: '$challengeData.category',
+          points: '$challengeData.points',
+          solvedAt: '$submittedAt'
+        }
+      },
+      { $sort: { solvedAt: -1 } }
+    ]);
+
+    const calculatedPoints = userSubmissions.reduce((sum, sub) => sum + sub.points, 0);
+    
+    // Get unlocked hints with full details from Unlock model
+    const Unlock = require('../models/Unlock');
+    const unlockedHintsWithDetails = await Unlock.aggregate([
+      { $match: { user: user._id, type: 'hints' } },
+      {
+        $lookup: {
+          from: 'challenges',
+          localField: 'challenge',
+          foreignField: '_id',
+          as: 'challengeData'
+        }
+      },
+      { $unwind: '$challengeData' },
+      {
+        $project: {
+          target: 1,
+          challengeId: '$challenge',
+          challengeName: '$challengeData.title',
+          challengeCategory: '$challengeData.category',
+          hintCost: { $arrayElemAt: ['$challengeData.hints.cost', '$target'] },
+          createdAt: 1
+        }
+      },
+      { $sort: { createdAt: -1 } }
+    ]);
+    
+    // Build solved challenges array with full details
+    const solvedChallengesWithDetails = userSubmissions.map(sub => ({
+      _id: sub.challengeId,
+      title: sub.challengeTitle,
+      category: sub.challengeCategory,
+      points: sub.points,
+      solvedAt: sub.solvedAt
+    }));
+
+    // Calculate user rank based on calculated points
+    const allUsersPoints = await Submission.aggregate([
+      { $match: { isCorrect: true } },
+      {
+        $lookup: {
+          from: 'challenges',
+          localField: 'challenge',
+          foreignField: '_id',
+          as: 'challengeData'
+        }
+      },
+      { $unwind: '$challengeData' },
+      {
+        $group: {
+          _id: '$user',
+          score: { $sum: '$challengeData.points' }
+        }
+      },
+      { $match: { score: { $gt: calculatedPoints } } },
+      { $count: 'count' }
+    ]);
+
+    const rank = (allUsersPoints.length > 0 ? allUsersPoints[0].count : 0) + 1;
+
+    // Format unlocked hints for response
+    const formattedHints = unlockedHintsWithDetails.map(hint => ({
+      challenge: hint.challengeId,
+      challengeName: hint.challengeName,
+      hintIndex: hint.target,
+      cost: hint.hintCost || 0,
+      unlockedAt: hint.createdAt
+    }));
 
     // Ensure team is properly formatted
     let teamData = null;
@@ -888,9 +987,11 @@ router.get('/me', protect, async (req, res) => {
         username: user.username,
         email: user.email,
         role: user.role,
-        points: user.points,
+        points: calculatedPoints,
+        rank: rank,
         team: teamData,
-        solvedChallenges: user.solvedChallenges,
+        solvedChallenges: solvedChallengesWithDetails,
+        unlockedHints: formattedHints,
         isBlocked: user.isBlocked
       }
     });
