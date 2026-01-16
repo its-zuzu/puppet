@@ -520,7 +520,7 @@ router.post('/:id/submit', protect, sanitizeInput, checkEventNotEnded, async (re
     if (!rateCheck.allowed) {
       return res.status(429).json({
         success: false,
-        message: "Slow down!"
+        message: "Slow down"
       });
     }
 
