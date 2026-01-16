@@ -3,18 +3,18 @@ import { Navigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { 
   User, Mail, Award, Trophy, Calendar, Shield, 
-  TrendingUp, Clock, CheckCircle, Target 
+  TrendingUp, Clock, CheckCircle, Target, Users 
 } from 'lucide-react';
 import AuthContext from '../context/AuthContext';
 import axios from 'axios';
-import { Card, CardHeader, CardBody, Badge, Loading } from '../components/ui';
-import './Profile.css';
+import { Loading } from '../components/ui';
+import './UserProfile.css';
 
 const DIFFICULTIES = {
-  easy: { label: 'Easy', color: 'success' },
-  medium: { label: 'Medium', color: 'warning' },
-  hard: { label: 'Hard', color: 'danger' },
-  insane: { label: 'Insane', color: 'info' },
+  easy: { label: 'Easy', color: '#00ff00', icon: '●' },
+  medium: { label: 'Medium', color: '#ffaa00', icon: '●' },
+  hard: { label: 'Hard', color: '#ff6b6b', icon: '●' },
+  insane: { label: 'Insane', color: '#ff00ff', icon: '●' },
 };
 
 function Profile() {
@@ -73,177 +73,171 @@ function Profile() {
   }, [isAuthenticated, user]);
 
   if (!loading && !isAuthenticated) {
-    return <Navigate to="/login" />;
+    return <Navigate to="/login" replace />;
   }
 
   if (loading || !user) {
     return (
-      <div className="profile-page">
+      <div className="htb-user-container">
+        <div className="htb-user-grid-bg"></div>
         <Loading text="LOADING PROFILE..." />
       </div>
     );
   }
 
-  const containerVariants = {
-    hidden: { opacity: 0 },
-    visible: {
-      opacity: 1,
-      transition: { staggerChildren: 0.1 }
-    }
-  };
-
-  const itemVariants = {
-    hidden: { opacity: 0, y: 20 },
-    visible: { opacity: 1, y: 0 }
-  };
-
   return (
-    <div className="profile-page">
+    <div className="htb-user-container">
+      <div className="htb-user-grid-bg"></div>
+      
       {/* Header */}
       <motion.div 
-        className="profile-header"
+        className="htb-user-header"
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
       >
-        <div className="profile-avatar">
-          <User size={40} />
+        <div className="htb-user-avatar">
+          <User size={48} />
         </div>
-        <div className="profile-info">
-          <h1 className="profile-name">{user.username}</h1>
-          <p className="profile-email">
-            <Mail size={16} />
-            {user.email}
-          </p>
-          {user.team && (
-            <p className="profile-team">
-              <Shield size={16} />
-              Team: {user.team.name || user.team}
-            </p>
-          )}
+        <div className="htb-user-info">
+          <h1 className="htb-user-name">{user.username}</h1>
+          <div className="htb-user-meta">
+            <span className="htb-user-email">
+              <Mail size={16} />
+              {user.email}
+            </span>
+            {user.team && (
+              <span className="htb-user-team">
+                <Users size={16} />
+                Team: {user.team.name || user.team}
+              </span>
+            )}
+          </div>
         </div>
       </motion.div>
 
-      {/* Stats Cards */}
+      {/* Stats Grid */}
       <motion.div 
-        className="stats-grid"
-        variants={containerVariants}
-        initial="hidden"
-        animate="visible"
+        className="htb-user-stats-grid"
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.2 }}
       >
-        <motion.div variants={itemVariants}>
-          <Card className="stat-card stat-card--primary" hover>
-            <CardBody>
-              <div className="stat-card-icon">
-                <Award />
-              </div>
-              <div className="stat-card-content">
-                <span className="stat-card-value">{stats.totalPoints}</span>
-                <span className="stat-card-label">Total Points</span>
-              </div>
-            </CardBody>
-          </Card>
+        <motion.div 
+          className="htb-stat-card htb-stat-primary"
+          whileHover={{ y: -5 }}
+        >
+          <div className="htb-stat-icon">
+            <Award />
+          </div>
+          <div className="htb-stat-content">
+            <span className="htb-stat-value">{stats.totalPoints}</span>
+            <span className="htb-stat-label">Total Points</span>
+          </div>
         </motion.div>
 
-        <motion.div variants={itemVariants}>
-          <Card className="stat-card stat-card--success" hover>
-            <CardBody>
-              <div className="stat-card-icon">
-                <CheckCircle />
-              </div>
-              <div className="stat-card-content">
-                <span className="stat-card-value">{stats.totalSolves}</span>
-                <span className="stat-card-label">Challenges Solved</span>
-              </div>
-            </CardBody>
-          </Card>
+        <motion.div 
+          className="htb-stat-card htb-stat-success"
+          whileHover={{ y: -5 }}
+        >
+          <div className="htb-stat-icon">
+            <CheckCircle />
+          </div>
+          <div className="htb-stat-content">
+            <span className="htb-stat-value">{stats.totalSolves}</span>
+            <span className="htb-stat-label">Challenges Solved</span>
+          </div>
         </motion.div>
 
-        <motion.div variants={itemVariants}>
-          <Card className="stat-card stat-card--warning" hover>
-            <CardBody>
-              <div className="stat-card-icon">
-                <TrendingUp />
-              </div>
-              <div className="stat-card-content">
-                <span className="stat-card-value">#{stats.rank || '???'}</span>
-                <span className="stat-card-label">Global Rank</span>
-              </div>
-            </CardBody>
-          </Card>
+        <motion.div 
+          className="htb-stat-card htb-stat-warning"
+          whileHover={{ y: -5 }}
+        >
+          <div className="htb-stat-icon">
+            <TrendingUp />
+          </div>
+          <div className="htb-stat-content">
+            <span className="htb-stat-value">#{stats.rank || '???'}</span>
+            <span className="htb-stat-label">Global Rank</span>
+          </div>
         </motion.div>
 
-        <motion.div variants={itemVariants}>
-          <Card className="stat-card stat-card--info" hover>
-            <CardBody>
-              <div className="stat-card-icon">
-                <Calendar />
-              </div>
-              <div className="stat-card-content">
-                <span className="stat-card-value">
-                  {new Date(user.createdAt || Date.now()).toLocaleDateString('en-US', {
-                    month: 'short',
-                    year: 'numeric'
-                  })}
-                </span>
-                <span className="stat-card-label">Member Since</span>
-              </div>
-            </CardBody>
-          </Card>
+        <motion.div 
+          className="htb-stat-card htb-stat-info"
+          whileHover={{ y: -5 }}
+        >
+          <div className="htb-stat-icon">
+            <Calendar />
+          </div>
+          <div className="htb-stat-content">
+            <span className="htb-stat-value">
+              {new Date(user.createdAt || Date.now()).toLocaleDateString('en-US', {
+                month: 'short',
+                year: 'numeric'
+              })}
+            </span>
+            <span className="htb-stat-label">Member Since</span>
+          </div>
         </motion.div>
       </motion.div>
 
       {/* Solved Challenges */}
       <motion.div
+        className="htb-user-challenges"
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.6 }}
+        transition={{ delay: 0.4 }}
       >
-        <Card className="challenges-card">
-          <CardHeader>
-            <h2 className="section-title">
-              <Trophy size={20} />
-              Solved Challenges
-            </h2>
-          </CardHeader>
-          <CardBody>
-            {loadingChallenges ? (
-              <Loading text="LOADING CHALLENGES..." />
-            ) : solvedChallenges.length > 0 ? (
-              <div className="solved-challenges-list">
-                {solvedChallenges.map((challenge, index) => (
-                  <motion.div
-                    key={challenge._id}
-                    className="solved-challenge-item"
-                    initial={{ opacity: 0, x: -20 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ delay: 0.7 + index * 0.05 }}
+        <div className="htb-section-header">
+          <Trophy size={24} />
+          <h2>Solved Challenges</h2>
+        </div>
+        
+        {loadingChallenges ? (
+          <div className="htb-loading-state">
+            <Loading text="LOADING CHALLENGES..." />
+          </div>
+        ) : solvedChallenges.length > 0 ? (
+          <div className="htb-challenges-grid">
+            {solvedChallenges.map((challenge, index) => (
+              <motion.div
+                key={challenge._id}
+                className="htb-challenge-card"
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ delay: 0.5 + index * 0.05 }}
+                whileHover={{ y: -3, boxShadow: '0 0 20px rgba(0, 180, 255, 0.3)' }}
+              >
+                <div className="htb-challenge-header">
+                  <CheckCircle className="htb-solve-icon" size={18} />
+                  <h3 className="htb-challenge-title">{challenge.title}</h3>
+                </div>
+                <div className="htb-challenge-meta">
+                  <span 
+                    className="htb-difficulty" 
+                    style={{ 
+                      color: DIFFICULTIES[challenge.difficulty?.toLowerCase()]?.color || '#999',
+                      borderColor: DIFFICULTIES[challenge.difficulty?.toLowerCase()]?.color || '#999'
+                    }}
                   >
-                    <CheckCircle className="solve-icon" size={20} />
-                    <div className="challenge-info">
-                      <div className="challenge-name">{challenge.title}</div>
-                      <div className="challenge-metadata">
-                        <Badge variant={DIFFICULTIES[challenge.difficulty?.toLowerCase()]?.color || 'primary'}>
-                          {DIFFICULTIES[challenge.difficulty?.toLowerCase()]?.label || challenge.difficulty}
-                        </Badge>
-                        <span className="challenge-category">{challenge.category}</span>
-                        <span className="challenge-points">
-                          <Award size={14} />
-                          {challenge.points} pts
-                        </span>
-                      </div>
-                    </div>
-                  </motion.div>
-                ))}
-              </div>
-            ) : (
-              <div className="no-challenges">
-                <Target size={48} />
-                <h3>No challenges solved yet</h3>
-                <p>Start solving challenges to see your progress here</p>
-              </div>
-            )}
-          </CardBody>
-        </Card>
+                    {DIFFICULTIES[challenge.difficulty?.toLowerCase()]?.icon || '●'} 
+                    {DIFFICULTIES[challenge.difficulty?.toLowerCase()]?.label || challenge.difficulty}
+                  </span>
+                  <span className="htb-category">{challenge.category}</span>
+                  <span className="htb-points">
+                    <Award size={14} />
+                    {challenge.points} pts
+                  </span>
+                </div>
+              </motion.div>
+            ))}
+          </div>
+        ) : (
+          <div className="htb-empty-state">
+            <Target size={64} />
+            <h3>No challenges solved yet</h3>
+            <p>Start solving challenges to see your progress here</p>
+          </div>
+        )}
       </motion.div>
     </div>
   );
