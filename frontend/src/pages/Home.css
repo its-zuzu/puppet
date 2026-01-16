@@ -397,10 +397,11 @@
   font-size: 3.5rem;
   font-weight: 900;
   color: var(--text-primary);
-  margin-bottom: 20px;
+  margin: 0 auto;
   letter-spacing: 1px;
   line-height: 1.1;
   text-align: center;
+  width: 100%;
 }
 
 .htb-section-subtitle {
