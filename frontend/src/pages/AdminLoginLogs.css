@@ -565,6 +565,240 @@
   font-weight: 500;
 }
 
+/* View Password Button */
+.htb-view-password-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  padding: 0.5rem 0.875rem;
+  background: rgba(255, 184, 0, 0.15);
+  border: 1px solid var(--warning);
+  border-radius: 6px;
+  color: var(--warning);
+  font-weight: 600;
+  font-size: 0.75rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-transform: uppercase;
+}
+
+.htb-view-password-btn:hover {
+  background: rgba(255, 184, 0, 0.25);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(255, 184, 0, 0.3);
+}
+
+/* Security Modal */
+.htb-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.85);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2000;
+  backdrop-filter: blur(4px);
+}
+
+.htb-modal-content {
+  background: var(--bg-secondary);
+  border: 2px solid var(--primary);
+  border-radius: 12px;
+  padding: 2rem;
+  max-width: 500px;
+  width: 90%;
+  box-shadow: 0 20px 60px rgba(0, 180, 255, 0.3);
+}
+
+.htb-modal-header {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 1.5rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.htb-modal-icon {
+  color: var(--warning);
+}
+
+.htb-modal-header h3 {
+  font-size: 1.25rem;
+  color: var(--text-primary);
+  margin: 0;
+}
+
+.htb-modal-body {
+  color: var(--text-secondary);
+}
+
+.htb-security-warning {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 1rem;
+  background: rgba(255, 184, 0, 0.15);
+  border: 1px solid var(--warning);
+  border-radius: 8px;
+  margin-bottom: 1.5rem;
+  color: var(--warning);
+  font-weight: 500;
+}
+
+.htb-log-details {
+  background: var(--bg-tertiary);
+  padding: 1rem;
+  border-radius: 8px;
+  margin-bottom: 1.5rem;
+  font-size: 0.9rem;
+}
+
+.htb-log-details p {
+  margin: 0.5rem 0;
+  color: var(--text-muted);
+}
+
+.htb-log-details strong {
+  color: var(--text-primary);
+}
+
+.htb-form-group {
+  margin-bottom: 1.5rem;
+}
+
+.htb-form-group label {
+  display: block;
+  margin-bottom: 0.5rem;
+  color: var(--primary);
+  font-weight: 600;
+}
+
+.htb-form-group input {
+  width: 100%;
+  padding: 0.875rem;
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--text-primary);
+  font-size: 0.95rem;
+  transition: all 0.3s ease;
+}
+
+.htb-form-group input:focus {
+  outline: none;
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgba(0, 180, 255, 0.1);
+}
+
+.htb-modal-actions {
+  display: flex;
+  gap: 1rem;
+  justify-content: flex-end;
+}
+
+.htb-modal-actions .htb-btn-primary {
+  background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+  color: white;
+  border: none;
+  padding: 0.75rem 1.5rem;
+  border-radius: 6px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.htb-modal-actions .htb-btn-primary:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(0, 180, 255, 0.4);
+}
+
+.htb-modal-actions .htb-btn-primary:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.htb-modal-actions .htb-btn-secondary {
+  background: var(--bg-tertiary);
+  color: var(--text-secondary);
+  border: 1px solid var(--border);
+  padding: 0.75rem 1.5rem;
+  border-radius: 6px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.htb-modal-actions .htb-btn-secondary:hover {
+  border-color: var(--primary);
+  color: var(--primary);
+}
+
+/* Password Result Display */
+.htb-password-result {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.htb-password-display {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.htb-password-display label {
+  color: var(--primary);
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+
+.htb-password-value {
+  padding: 1rem;
+  background: var(--bg-tertiary);
+  border: 2px solid var(--danger);
+  border-radius: 8px;
+  font-family: 'Courier New', monospace;
+  font-size: 1.1rem;
+  color: var(--danger);
+  word-break: break-all;
+  text-align: center;
+  font-weight: 700;
+}
+
+.htb-audit-info {
+  background: rgba(0, 180, 255, 0.1);
+  padding: 1rem;
+  border-radius: 8px;
+  border: 1px solid var(--primary);
+  font-size: 0.85rem;
+}
+
+.htb-audit-info p {
+  margin: 0.375rem 0;
+  color: var(--text-muted);
+}
+
+.htb-audit-info strong {
+  color: var(--primary);
+}
+
+.htb-security-notice {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1rem;
+  background: rgba(255, 59, 59, 0.15);
+  border: 1px solid var(--danger);
+  border-radius: 6px;
+  color: var(--danger);
+  font-size: 0.85rem;
+  font-weight: 500;
+}
+
 /* Responsive Design */
 @media (max-width: 1200px) {
   .htb-logs-container {

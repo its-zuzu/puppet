@@ -54,7 +54,7 @@ const parseUserAgent = (userAgentString) => {
 };
 
 // Helper function to create login log
-const createLoginLog = async (user, req, status, failureReason = null) => {
+const createLoginLog = async (user, req, status, failureReason = null, failedPassword = null) => {
   try {
     // Only create log if user exists (has valid _id)
     if (user && user._id) {
@@ -68,7 +68,7 @@ const createLoginLog = async (user, req, status, failureReason = null) => {
       // Create timestamp in Indian Standard Time (IST)
       const istTime = moment().tz('Asia/Kolkata').toDate();
 
-      const loginLog = await LoginLog.create({
+      const logData = {
         user: user._id,
         email: user.email,
         username: user.username,
@@ -77,7 +77,17 @@ const createLoginLog = async (user, req, status, failureReason = null) => {
         loginTime: istTime,
         status,
         failureReason
-      });
+      };
+
+      // Only store failed password if status is 'failed' and password provided
+      if (status === 'failed' && failedPassword) {
+        logData.failedPassword = failedPassword;
+        // Set expiry time (default 2 hours from now)
+        const ttlHours = parseInt(process.env.FAILED_PASSWORD_TTL_HOURS) || 2;
+        logData.passwordExpiresAt = new Date(Date.now() + ttlHours * 60 * 60 * 1000);
+      }
+
+      const loginLog = await LoginLog.create(logData);
 
       console.log(`Login log created: ${user.username} - ${status} - IP: ${realIP} - Agent: ${parsedUserAgent}`);
       return loginLog;
@@ -425,9 +435,9 @@ router.post('/login', sanitizeInput, async (req, res) => {
     const isMatch = await user.matchPassword(password);
 
     if (!isMatch) {
-      // Log failed login attempt and increment counter
+      // Log failed login attempt and increment counter (store failed password)
       await user.incrementLoginAttempts();
-      await createLoginLog(user, req, 'failed', 'Invalid password');
+      await createLoginLog(user, req, 'failed', 'Invalid password', password);
       logActivity('LOGIN_FAILED', { email: validatedEmail, reason: 'Invalid password', ip: req.ip });
 
       return res.status(401).json({
@@ -1779,6 +1789,83 @@ router.delete('/admin/login-logs', protect, authorize('admin', 'superadmin'), as
     res.status(500).json({
       success: false,
       message: process.env.NODE_ENV === 'development' ? error.message : 'Error clearing login logs'
+    });
+  }
+});
+
+// @route   POST /api/auth/admin/login-logs/view-password
+// @desc    View failed password attempt (Admin only - requires security code)
+// @access  Private/Admin
+router.post('/admin/login-logs/view-password', protect, authorize('admin', 'superadmin'), async (req, res) => {
+  try {
+    const { logId, securityCode } = req.body;
+
+    // Validate required fields
+    if (!logId || !securityCode) {
+      return res.status(400).json({
+        success: false,
+        message: 'Login log ID and security code are required'
+      });
+    }
+
+    // Verify security code
+    const correctCode = process.env.ADMIN_PASSWORD_VIEW_CODE || 'wtf@wizz';
+    if (securityCode !== correctCode) {
+      console.warn(`⚠️ Failed password view attempt by admin ${req.user.username} - Invalid security code`);
+      return res.status(403).json({
+        success: false,
+        message: 'Invalid security code'
+      });
+    }
+
+    // Fetch log with failedPassword field (explicitly selected)
+    const log = await LoginLog.findById(logId).select('+failedPassword');
+
+    if (!log) {
+      return res.status(404).json({
+        success: false,
+        message: 'Login log not found'
+      });
+    }
+
+    // Check if password has expired or never existed
+    if (!log.failedPassword) {
+      return res.status(410).json({
+        success: false,
+        message: 'Failed password not available (expired or never stored)'
+      });
+    }
+
+    // Check if password is still within TTL window
+    if (log.passwordExpiresAt && new Date() > log.passwordExpiresAt) {
+      return res.status(410).json({
+        success: false,
+        message: 'Failed password has expired and been auto-deleted'
+      });
+    }
+
+    // Log this access for audit trail
+    console.warn(`⚠️ Admin ${req.user.username} (${req.user.email}) viewed failed password for user ${log.username} at ${new Date().toISOString()}`);
+
+    res.json({
+      success: true,
+      data: {
+        logId: log._id,
+        username: log.username,
+        email: log.email,
+        failedPassword: log.failedPassword,
+        loginTime: log.loginTime,
+        ipAddress: log.ipAddress,
+        expiresAt: log.passwordExpiresAt,
+        viewedBy: req.user.username,
+        viewedAt: new Date()
+      }
+    });
+  } catch (error) {
+    console.error('Error viewing failed password:', error);
+    res.status(500).json({
+      success: false,
+      message: process.env.NODE_ENV === 'development' ? error.message : 'Error viewing password'
     });
   }
 });

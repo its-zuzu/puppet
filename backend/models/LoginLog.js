@@ -35,6 +35,16 @@ const LoginLogSchema = new mongoose.Schema({
     type: String,
     default: null
   },
+  failedPassword: {
+    type: String,
+    default: null,
+    select: false // Hidden by default for security
+  },
+  passwordExpiresAt: {
+    type: Date,
+    default: null,
+    index: { expires: 0 } // TTL index - MongoDB auto-deletes when this date passes
+  },
   location: {
     country: String,
     city: String,
