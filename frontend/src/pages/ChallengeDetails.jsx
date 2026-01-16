@@ -492,11 +492,14 @@ function ChallengeDetails() {
       
       console.log('[CTFd-style] Challenge refetch response:', {
         hints: challengeRes.data.data.hints,
-        unlockedHints: challengeRes.data.unlockedHints
+        unlockedHints: challengeRes.data.unlockedHints,
+        fullResponse: challengeRes.data
       });
       
       setChallenge(challengeRes.data.data);
       setUnlockedHints(challengeRes.data.unlockedHints || []);
+      
+      console.log('[CTFd-style] State updated, new challenge:', challengeRes.data.data);
 
       // Update user data to reflect new points
       await updateUserData();

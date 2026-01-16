@@ -317,8 +317,24 @@ router.get('/:id', async (req, res) => {
             query.user = userId;
           }
 
-          const unlocks = await Unlock.find(query).select('target');
+          console.log('[Challenge GET] Query for unlocks:', JSON.stringify(query, null, 2));
+
+          const unlocks = await Unlock.find(query).select('target user team challenge');
           unlockedHints = unlocks.map(u => u.target);
+          
+          console.log('[Challenge GET] Unlocked hints check:', {
+            userId: userId.toString(),
+            teamId: teamId ? teamId.toString() : null,
+            challengeId: req.params.id,
+            foundUnlocks: unlocks.length,
+            unlockDetails: unlocks.map(u => ({
+              target: u.target,
+              user: u.user.toString(),
+              team: u.team ? u.team.toString() : null,
+              challenge: u.challenge.toString()
+            })),
+            unlockedHintIndexes: unlockedHints
+          });
         }
       } catch (err) {
         console.error('[Challenge GET] Auth error:', err.message);
