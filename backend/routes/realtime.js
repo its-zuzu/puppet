@@ -32,11 +32,11 @@ function ensureSubscribed() {
  * 
  * @route GET /r-submission
  * @access Admin only
- * @auth Cookie (token) or Query param (?token=<jwt>)
+ * @auth Cookie (access_token or token) or Query param (?token=<jwt>)
  */
 router.get('/', async (req, res) => {
-    // 1. Authentication - check cookie first, then query param
-    const token = req.cookies.token || req.query.token;
+    // 1. Authentication - check cookies (access_token priority, then token), then query param
+    const token = req.cookies.access_token || req.cookies.token || req.query.token;
 
     if (!token) {
         return res.status(401).json({ 
