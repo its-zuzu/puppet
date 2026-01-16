@@ -104,9 +104,11 @@ function Login() {
           </div>
 
           {formError && (
-            <Alert type={isBlocked ? "danger" : "warning"}>
-              {formError}
-            </Alert>
+            <div style={{ marginBottom: '24px' }}>
+              <Alert type={isBlocked ? "danger" : "warning"}>
+                {formError}
+              </Alert>
+            </div>
           )}
 
           <form onSubmit={onSubmit} className="htb-auth-form">
