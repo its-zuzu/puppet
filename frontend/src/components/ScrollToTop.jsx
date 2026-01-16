@@ -34,10 +34,21 @@ function ScrollToTop() {
     }
 
     // Otherwise, scroll to top
-    window.scrollTo({
-      top: 0,
-      left: 0,
-      behavior: prefersReducedMotion ? 'auto' : 'smooth'
+    // Use both methods for maximum browser compatibility (especially Firefox)
+    // Immediate scroll for Firefox
+    window.scrollTo(0, 0);
+    
+    // Then smooth scroll for browsers that support it
+    requestAnimationFrame(() => {
+      window.scrollTo({
+        top: 0,
+        left: 0,
+        behavior: prefersReducedMotion ? 'auto' : 'instant'
+      });
+      
+      // Force document scroll as well
+      document.documentElement.scrollTop = 0;
+      document.body.scrollTop = 0;
     });
   }, [pathname, hash]);
 
