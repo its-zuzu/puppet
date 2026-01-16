@@ -351,9 +351,6 @@ function Home() {
           <div className="htb-section-header-content">
             <span className="htb-section-tag">PLATFORM</span>
             <h2 className="htb-section-title">CHALLENGE CATEGORIES</h2>
-            <p className="htb-section-subtitle">
-              Master multiple domains of cybersecurity
-            </p>
           </div>
         </motion.div>
 
