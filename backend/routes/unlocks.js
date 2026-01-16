@@ -103,12 +103,35 @@ router.post('/', protect, checkEventNotEnded, async (req, res) => {
     let teamData = null;
 
     if (user.team) {
-      const team = await Team.findById(user.team._id).populate('members', 'points');
+      const team = await Team.findById(user.team._id).populate('members', '_id');
       if (team) {
         teamData = team;
         
-        // Team points = sum of member points + team awards (includes negative values)
-        const memberPoints = team.members.reduce((sum, member) => sum + (member.points || 0), 0);
+        // Calculate member points dynamically from submissions (like team details does)
+        const Submission = require('../models/Submission');
+        const memberIds = team.members.map(m => m._id);
+        
+        const memberPointsAgg = await Submission.aggregate([
+          { $match: { user: { $in: memberIds }, isCorrect: true } },
+          {
+            $lookup: {
+              from: 'challenges',
+              localField: 'challenge',
+              foreignField: '_id',
+              as: 'challengeData'
+            }
+          },
+          { $unwind: '$challengeData' },
+          {
+            $group: {
+              _id: '$user',
+              totalPoints: { $sum: '$challengeData.points' }
+            }
+          }
+        ]);
+        
+        // Sum all member points
+        const memberPoints = memberPointsAgg.reduce((sum, item) => sum + item.totalPoints, 0);
         
         // Get team awards (includes hint unlock deductions as negative awards)
         const Award = require('../models/Award');
@@ -118,6 +141,7 @@ router.post('/', protect, checkEventNotEnded, async (req, res) => {
         availablePoints = Math.max(0, memberPoints + awardPoints);
         
         console.log('[Unlock] Team points calculation:', {
+          memberCount: memberIds.length,
           memberPoints,
           awardPoints,
           totalAvailable: availablePoints
