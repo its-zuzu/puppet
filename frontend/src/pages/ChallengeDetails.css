@@ -482,6 +482,7 @@
   padding: 24px 32px;
   border-bottom: 1px solid var(--border-primary);
   background: var(--bg-tertiary);
+  gap: 16px;
 }
 
 .htb-modal-title {
@@ -489,6 +490,7 @@
   align-items: center;
   gap: 12px;
   color: var(--primary);
+  flex-shrink: 0;
 }
 
 .htb-modal-title h3 {
@@ -497,6 +499,42 @@
   font-weight: 700;
   color: var(--text-primary);
   margin: 0;
+}
+
+.htb-modal-status {
+  flex: 1;
+  display: flex;
+  justify-content: flex-end;
+  margin: 0 16px;
+}
+
+.htb-status-badge {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 16px;
+  border-radius: var(--radius-md);
+  font-size: 0.875rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.htb-status-warning {
+  background: rgba(255, 193, 7, 0.15);
+  border: 1px solid var(--warning);
+  color: var(--warning);
+}
+
+.htb-status-error {
+  background: rgba(255, 71, 87, 0.15);
+  border: 1px solid var(--danger);
+  color: var(--danger);
+}
+
+.htb-status-success {
+  background: rgba(0, 255, 136, 0.15);
+  border: 1px solid var(--success);
+  color: var(--success);
 }
 
 .htb-modal-close {
@@ -521,17 +559,6 @@
 
 .htb-modal-body {
   padding: 32px;
-}
-
-/* Modal Alerts Section */
-.htb-modal-alerts {
-  padding: 20px 32px;
-  background: var(--bg-tertiary);
-  border-bottom: 1px solid var(--border-primary);
-}
-
-.htb-modal-alerts .htb-alert {
-  margin-bottom: 0;
 }
 
 /* Solves Table */

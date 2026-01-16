@@ -154,6 +154,49 @@ const FlagSubmissionModal = ({ challenge, onClose, onSubmit }) => {
               <Flag size={24} />
               <h3>Submit Flag: {challenge.title}</h3>
             </div>
+            
+            <AnimatePresence>
+              {(error || success || isEnded) && (
+                <div className="htb-modal-status">
+                  {isEnded && (
+                    <motion.div 
+                      className="htb-status-badge htb-status-warning"
+                      initial={{ opacity: 0, scale: 0.8 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      exit={{ opacity: 0, scale: 0.8 }}
+                    >
+                      <AlertCircle size={16} />
+                      Event Ended
+                    </motion.div>
+                  )}
+                  {error && (
+                    <motion.div 
+                      className="htb-status-badge htb-status-error"
+                      initial={{ opacity: 0, scale: 0.8 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      exit={{ opacity: 0, scale: 0.8 }}
+                      transition={{ duration: 0.3 }}
+                    >
+                      <AlertCircle size={16} />
+                      {error}
+                    </motion.div>
+                  )}
+                  {success && (
+                    <motion.div 
+                      className="htb-status-badge htb-status-success"
+                      initial={{ opacity: 0, scale: 0.8 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      exit={{ opacity: 0, scale: 0.8 }}
+                      transition={{ duration: 0.3 }}
+                    >
+                      <CheckCircle2 size={16} />
+                      {success}
+                    </motion.div>
+                  )}
+                </div>
+              )}
+            </AnimatePresence>
+            
             <motion.button 
               className="htb-modal-close" 
               onClick={onClose}
@@ -163,48 +206,6 @@ const FlagSubmissionModal = ({ challenge, onClose, onSubmit }) => {
               <X size={24} />
             </motion.button>
           </div>
-
-          <AnimatePresence>
-            {(error || success || isEnded) && (
-              <div className="htb-modal-alerts">
-                {isEnded && (
-                  <motion.div 
-                    className="htb-alert htb-alert-warning"
-                    initial={{ opacity: 0, y: -10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: -10 }}
-                  >
-                    <AlertCircle size={20} />
-                    CTF Event Has Ended - Submissions are no longer accepted
-                  </motion.div>
-                )}
-                {error && (
-                  <motion.div 
-                    className="htb-alert htb-alert-error"
-                    initial={{ opacity: 0, y: -10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: -10 }}
-                    transition={{ duration: 0.3 }}
-                  >
-                    <AlertCircle size={20} />
-                    {error}
-                  </motion.div>
-                )}
-                {success && (
-                  <motion.div 
-                    className="htb-alert htb-alert-success"
-                    initial={{ opacity: 0, y: -10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: -10 }}
-                    transition={{ duration: 0.3 }}
-                  >
-                    <CheckCircle2 size={20} />
-                    {success}
-                  </motion.div>
-                )}
-              </div>
-            )}
-          </AnimatePresence>
 
           <div className="htb-modal-body">
 
