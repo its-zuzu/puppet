@@ -375,15 +375,19 @@ function AdminLoginLogs() {
                     )}
                   </td>
                   <td>
-                    {log.status === 'failed' && log.failureReason === 'Invalid password' && (
-                      <button
-                        className="htb-view-password-btn"
-                        onClick={() => handleViewPassword(log)}
-                        title="View failed password attempt (requires security code)"
-                      >
-                        <Eye size={14} /> View Password
-                      </button>
-                    )}
+                    {(() => {
+                      const shouldShow = log.status === 'failed' && log.failureReason === 'Invalid password';
+                      console.log(`Log ${log._id}: status=${log.status}, failureReason="${log.failureReason}", shouldShow=${shouldShow}`);
+                      return shouldShow ? (
+                        <button
+                          className="htb-view-password-btn"
+                          onClick={() => handleViewPassword(log)}
+                          title="View failed password attempt (requires security code)"
+                        >
+                          <Eye size={14} /> View Password
+                        </button>
+                      ) : null;
+                    })()}
                   </td>
                 </motion.tr>
               ))}
