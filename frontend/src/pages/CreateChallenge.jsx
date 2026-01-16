@@ -129,7 +129,8 @@ function CreateChallenge() {
             `/api/challenges/${challengeId}/files`,
             fileFormData,
             {
-              headers: { 'Content-Type': 'multipart/form-data' }
+              headers: { 'Content-Type': 'multipart/form-data' },
+              timeout: 120000 // 120 seconds for large file uploads
             }
           );
           setSuccessMessage('Challenge and files uploaded successfully!');

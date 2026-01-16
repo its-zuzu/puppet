@@ -127,7 +127,8 @@ function EditChallenge() {
       await axios.post(`/api/challenges/${id}/files`, formDataObj, {
         headers: {
           'Content-Type': 'multipart/form-data'
-        }
+        },
+        timeout: 120000 // 120 seconds for large file uploads
       });
       
       setSuccessMessage('Files uploaded successfully');
