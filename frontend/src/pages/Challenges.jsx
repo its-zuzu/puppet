@@ -31,7 +31,7 @@ function Challenges() {
   const fetchCategories = async () => {
     try {
       const response = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/api/categories`);
-      const fetchedCategories = response.data.map(cat => ({
+      const fetchedCategories = response.data.data.map(cat => ({
         id: cat.id,
         name: cat.name,
         icon: null
