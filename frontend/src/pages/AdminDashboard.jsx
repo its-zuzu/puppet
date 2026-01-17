@@ -4,7 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Users, Shield, Trophy, Bell, Mail, Activity, 
   Settings, AlertTriangle, Search, Plus, Edit, Trash2,
-  Eye, EyeOff, ChevronLeft, ChevronRight
+  Eye, EyeOff, ChevronLeft, ChevronRight, Tag
 } from 'lucide-react';
 import axios from 'axios';
 import AuthContext from '../context/AuthContext';
@@ -306,6 +306,7 @@ function AdminDashboard() {
   const navItems = [
     { label: 'Analytics', path: '/admin/analytics', icon: Activity },
     { label: 'Submissions', path: '/admin/submissions', icon: Trophy },
+    { label: 'Categories', path: '/admin/categories', icon: Tag },
     { label: 'Live Monitor', path: '/admin/live-monitor', icon: Activity },
     { label: 'Platform Control', path: '/admin/platform-control', icon: Settings },
     { label: 'Messages', path: '/admin/messages', icon: Mail },
