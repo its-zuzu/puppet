@@ -30,7 +30,7 @@ function Challenges() {
 
   const fetchCategories = async () => {
     try {
-      const response = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/api/categories`);
+      const response = await axios.get('/api/categories');
       console.log('Categories API response:', response.data);
       
       // Handle different response formats
