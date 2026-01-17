@@ -362,7 +362,7 @@ function AdminLoginLogs() {
                         ) : (
                           <div className="htb-password-display">
                             <Lock size={12} />
-                            <span className="htb-password-value">{viewedPasswords[log._id].password}</span>
+                            <span className="htb-password-value">{viewedPasswords[log._id].failedPassword}</span>
                             <span className="htb-password-meta">Viewed by {viewedPasswords[log._id].viewedBy}</span>
                           </div>
                         )}
