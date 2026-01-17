@@ -31,14 +31,22 @@ function Challenges() {
   const fetchCategories = async () => {
     try {
       const response = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/api/categories`);
-      const fetchedCategories = response.data.data.map(cat => ({
-        id: cat.id,
-        name: cat.name,
-        icon: null
-      }));
-      setCategories([{ id: 'all', name: 'All Categories', icon: null }, ...fetchedCategories]);
+      console.log('Categories API response:', response.data);
+      
+      // Handle different response formats
+      const categoriesData = response.data.data || response.data;
+      
+      if (Array.isArray(categoriesData)) {
+        const fetchedCategories = categoriesData.map(cat => ({
+          id: cat.id,
+          name: cat.name,
+          icon: null
+        }));
+        setCategories([{ id: 'all', name: 'All Categories', icon: null }, ...fetchedCategories]);
+      }
     } catch (error) {
       console.error('Error fetching categories:', error);
+      console.error('Error response:', error.response?.data);
       // Keep default 'All Categories' if fetch fails
     }
   };
