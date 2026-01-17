@@ -5,46 +5,70 @@ import axios from 'axios';
 import './AdminCategories.css';
 
 function AdminCategories() {
-  const [categories, setCategories] = useState([
-    { id: 'web', name: 'Web' },
-    { id: 'crypto', name: 'Cryptography' },
-    { id: 'forensics', name: 'Forensics' },
-    { id: 'pwn', name: 'Binary' },
-    { id: 'reverse', name: 'Reverse Engineering' },
-    { id: 'misc', name: 'Miscellaneous' },
-  ]);
+  const [categories, setCategories] = useState([]);
   const [newCategory, setNewCategory] = useState({ id: '', name: '' });
   const [editingId, setEditingId] = useState(null);
   const [editingData, setEditingData] = useState({ id: '', name: '' });
   const [loading, setLoading] = useState(false);
   const [alert, setAlert] = useState({ show: false, type: '', message: '' });
 
+  useEffect(() => {
+    fetchCategories();
+  }, []);
+
+  const fetchCategories = async () => {
+    try {
+      setLoading(true);
+      const response = await axios.get('/api/categories');
+      setCategories(response.data.data || []);
+    } catch (error) {
+      console.error('Error fetching categories:', error);
+      showAlert('error', 'Failed to load categories');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const showAlert = (type, message) => {
     setAlert({ show: true, type, message });
     setTimeout(() => setAlert({ show: false, type: '', message: '' }), 3000);
   };
 
-  const handleAddCategory = () => {
+  const handleAddCategory = async () => {
     if (!newCategory.id || !newCategory.name) {
       showAlert('error', 'Please fill in both ID and Name fields');
       return;
     }
 
-    // Check for duplicate ID
-    if (categories.find(cat => cat.id === newCategory.id)) {
-      showAlert('error', 'Category ID already exists');
+    try {
+      setLoading(true);
+      const response = await axios.post('/api/categories', newCategory);
+      setCategories([...categories, response.data.data]);
+      setNewCategory({ id: '', name: '' });
+      showAlert('success', 'Category added successfully');
+    } catch (error) {
+      console.error('Error adding category:', error);
+      showAlert('error', error.response?.data?.message || 'Failed to add category');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleDeleteCategory = async (id) => {
+    if (!window.confirm(`Are you sure you want to delete the "${categories.find(c => c.id === id)?.name}" category?`)) {
       return;
     }
 
-    setCategories([...categories, { ...newCategory }]);
-    setNewCategory({ id: '', name: '' });
-    showAlert('success', 'Category added successfully');
-  };
-
-  const handleDeleteCategory = (id) => {
-    if (window.confirm(`Are you sure you want to delete the "${categories.find(c => c.id === id)?.name}" category?`)) {
+    try {
+      setLoading(true);
+      await axios.delete(`/api/categories/${id}`);
       setCategories(categories.filter(cat => cat.id !== id));
       showAlert('success', 'Category deleted successfully');
+    } catch (error) {
+      console.error('Error deleting category:', error);
+      showAlert('error', error.response?.data?.message || 'Failed to delete category');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -53,17 +77,26 @@ function AdminCategories() {
     setEditingData({ ...category });
   };
 
-  const handleSaveEdit = () => {
+  const handleSaveEdit = async () => {
     if (!editingData.name) {
       showAlert('error', 'Name cannot be empty');
       return;
     }
 
-    setCategories(categories.map(cat => 
-      cat.id === editingId ? { ...cat, name: editingData.name } : cat
-    ));
-    setEditingId(null);
-    showAlert('success', 'Category updated successfully');
+    try {
+      setLoading(true);
+      const response = await axios.put(`/api/categories/${editingId}`, { name: editingData.name });
+      setCategories(categories.map(cat => 
+        cat.id === editingId ? response.data.data : cat
+      ));
+      setEditingId(null);
+      showAlert('success', 'Category updated successfully');
+    } catch (error) {
+      console.error('Error updating category:', error);
+      showAlert('error', error.response?.data?.message || 'Failed to update category');
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleCancelEdit = () => {

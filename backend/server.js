@@ -217,6 +217,7 @@ app.get('/api/health', (req, res) => {
 // Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/challenges', challengeRoutes);
+app.use('/api/categories', require('./routes/categories'));
 app.use('/api/unlocks', require('./routes/unlocks')); // CTFd-style unlocks endpoint
 app.use('/api/contact', contactRoutes);
 app.use('/api/newsletter', newsletterRoutes);

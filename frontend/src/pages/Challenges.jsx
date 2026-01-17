@@ -10,22 +10,13 @@ import AuthContext from '../context/AuthContext';
 import { Button, Input, Card, CardHeader, CardBody, Badge, Loading } from '../components/ui';
 import './Challenges.css';
 
-const CATEGORIES = [
-  { id: 'all', name: 'All Categories', icon: null },
-  { id: 'web', name: 'Web', icon: null },
-  { id: 'crypto', name: 'Cryptography', icon: null },
-  { id: 'forensics', name: 'Forensics', icon: null },
-  { id: 'pwn', name: 'Binary', icon: null },
-  { id: 'reverse', name: 'Reverse Engineering', icon: null },
-  { id: 'misc', name: 'Miscellaneous', icon: null },
-];
-
 function Challenges() {
   const { user, isAuthenticated } = useContext(AuthContext);
   const navigate = useNavigate();
   
   const [challenges, setChallenges] = useState([]);
   const [filteredChallenges, setFilteredChallenges] = useState([]);
+  const [categories, setCategories] = useState([{ id: 'all', name: 'All Categories', icon: null }]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('all');
@@ -33,8 +24,24 @@ function Challenges() {
   const [stats, setStats] = useState({ solved: 0, remaining: 0, total: 0 });
   
   useEffect(() => {
+    fetchCategories();
     fetchChallenges();
   }, []);
+
+  const fetchCategories = async () => {
+    try {
+      const response = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/api/categories`);
+      const fetchedCategories = response.data.map(cat => ({
+        id: cat.id,
+        name: cat.name,
+        icon: null
+      }));
+      setCategories([{ id: 'all', name: 'All Categories', icon: null }, ...fetchedCategories]);
+    } catch (error) {
+      console.error('Error fetching categories:', error);
+      // Keep default 'All Categories' if fetch fails
+    }
+  };
 
   useEffect(() => {
     filterChallenges();
@@ -190,7 +197,7 @@ function Challenges() {
                 Category
               </label>
               <div className="filter-buttons">
-                {CATEGORIES.map(cat => (
+                {categories.map(cat => (
                   <button
                     key={cat.id}
                     className={`filter-btn ${selectedCategory === cat.id ? 'active' : ''}`}
