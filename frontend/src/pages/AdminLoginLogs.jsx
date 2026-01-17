@@ -124,10 +124,12 @@ function AdminLoginLogs() {
         logId
       });
 
+      console.log('Password response:', response.data);
       setViewedPasswords(prev => ({ ...prev, [logId]: response.data.data }));
       setSuccessMessage('Password retrieved successfully');
       setTimeout(() => setSuccessMessage(''), 3000);
     } catch (err) {
+      console.error('Password fetch error:', err);
       setError(err.response?.data?.message || 'Failed to retrieve password');
       setTimeout(() => setError(null), 3000);
     } finally {
@@ -362,8 +364,12 @@ function AdminLoginLogs() {
                         ) : (
                           <div className="htb-password-display">
                             <Lock size={12} />
-                            <span className="htb-password-value">{viewedPasswords[log._id].failedPassword}</span>
-                            <span className="htb-password-meta">Viewed by {viewedPasswords[log._id].viewedBy}</span>
+                            <span className="htb-password-value">
+                              {viewedPasswords[log._id]?.failedPassword || 'No password available'}
+                            </span>
+                            <span className="htb-password-meta">
+                              Viewed by {viewedPasswords[log._id]?.viewedBy || 'Unknown'}
+                            </span>
                           </div>
                         )}
                       </div>
