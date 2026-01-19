@@ -77,9 +77,10 @@ function AdminDashboard() {
           setUsers(usersRes.data.users || []);
           setUserTotal(usersRes.data.users?.length || 0);
         } else {
-          usersRes = await axios.get(`/api/auth/users?page=${userPage}&limit=${itemsPerPage}`);
+          // Fetch ALL users without pagination
+          usersRes = await axios.get(`/api/auth/users?all=true`);
           setUsers(usersRes.data.users || []);
-          setUserTotal(usersRes.data.total || 0);
+          setUserTotal(usersRes.data.users?.length || 0);
         }
 
         if (!debouncedSearchTerm) {
@@ -500,32 +501,12 @@ function AdminDashboard() {
             </div>
 
             <div className="htb-pagination">
-              {!debouncedSearchTerm && (
-                <>
-                  <button
-                    onClick={() => setUserPage(Math.max(1, userPage - 1))}
-                    disabled={userPage === 1}
-                    className="htb-pagination-btn"
-                  >
-                    <ChevronLeft size={16} /> Previous
-                  </button>
-                  <span className="htb-pagination-info">
-                    Page {userPage} of {Math.ceil(userTotal / itemsPerPage) || 1}
-                  </span>
-                  <button
-                    onClick={() => setUserPage(userPage + 1)}
-                    disabled={userPage >= Math.ceil(userTotal / itemsPerPage)}
-                    className="htb-pagination-btn"
-                  >
-                    Next <ChevronRight size={16} />
-                  </button>
-                </>
-              )}
-              {debouncedSearchTerm && (
-                <span className="htb-pagination-info">
-                  Found {filteredUsers.length} users matching "{debouncedSearchTerm}"
-                </span>
-              )}
+              <span className="htb-pagination-info">
+                {debouncedSearchTerm 
+                  ? `Found ${filteredUsers.length} users matching "${debouncedSearchTerm}"`
+                  : `Showing all ${filteredUsers.length} users`
+                }
+              </span>
             </div>
           </div>
         )}
