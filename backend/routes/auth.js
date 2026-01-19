@@ -7,6 +7,7 @@ const LoginLog = require('../models/LoginLog');
 const { protect, authorize } = require('../middleware/auth');
 
 const {
+  ensureSessionCookie,
   loginLimiter,
   sanitizeInput,
   validateInput,
@@ -380,7 +381,7 @@ router.post('/register-admin', protect, authorize('admin', 'superadmin'), async 
 // @route   POST /api/auth/login
 // @desc    Login user
 // @access  Public
-router.post('/login', loginLimiter, sanitizeInput, async (req, res) => {
+router.post('/login', ensureSessionCookie, loginLimiter, sanitizeInput, async (req, res) => {
   try {
     const { email, password } = req.body;
 

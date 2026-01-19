@@ -9,6 +9,21 @@ const config = require('../config');
 
 const redisClient = getRedisClient();
 
+// Session cookie middleware - ensures rl_session cookie exists
+const ensureSessionCookie = (req, res, next) => {
+  if (!req.cookies.rl_session) {
+    const sessionId = crypto.randomUUID();
+    res.cookie('rl_session', sessionId, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      maxAge: 24 * 60 * 60 * 1000 // 24 hours
+    });
+    req.cookies.rl_session = sessionId; // Make it available immediately
+  }
+  next();
+};
+
 // 1. Session-Based Rate Limiting Factory (for onsite events with shared IP)
 const createSessionRateLimit = (windowMs, max, message, prefix, cooldownSeconds = null) => {
   if (cooldownSeconds) {
@@ -21,18 +36,9 @@ const createSessionRateLimit = (windowMs, max, message, prefix, cooldownSeconds 
         sendCommand: (...args) => redisClient.call(...args),
         prefix: `ctf:rl:${prefix}:`
       }),
-      keyGenerator: (req, res) => {
-        // Get or create session cookie for rate limiting
-        let sessionId = req.cookies.rl_session;
-        if (!sessionId) {
-          sessionId = crypto.randomUUID();
-          res.cookie('rl_session', sessionId, {
-            httpOnly: true,
-            secure: process.env.NODE_ENV === 'production',
-            sameSite: 'lax',
-            maxAge: 24 * 60 * 60 * 1000 // 24 hours
-          });
-        }
+      keyGenerator: (req) => {
+        // Read session cookie (should already be set by ensureSessionCookie middleware)
+        const sessionId = req.cookies.rl_session || 'no-session';
         return `session:${sessionId}`;
       },
       handler: async (req, res) => {
@@ -83,17 +89,9 @@ const createSessionRateLimit = (windowMs, max, message, prefix, cooldownSeconds 
       sendCommand: (...args) => redisClient.call(...args),
       prefix: `ctf:rl:${prefix}:`
     }),
-    keyGenerator: (req, res) => {
-      let sessionId = req.cookies.rl_session;
-      if (!sessionId) {
-        sessionId = crypto.randomUUID();
-        res.cookie('rl_session', sessionId, {
-          httpOnly: true,
-          secure: process.env.NODE_ENV === 'production',
-          sameSite: 'lax',
-          maxAge: 24 * 60 * 60 * 1000
-        });
-      }
+    keyGenerator: (req) => {
+      // Read session cookie (should already be set by ensureSessionCookie middleware)
+      const sessionId = req.cookies.rl_session || 'no-session';
       return `session:${sessionId}`;
     },
     passOnStoreError: true
@@ -372,6 +370,7 @@ const secureFileUpload = {
 
 // 6. Consolidated Export
 module.exports = {
+  ensureSessionCookie,
   loginLimiter,
   apiLimiter,
   submissionLimiter,
