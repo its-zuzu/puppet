@@ -3,102 +3,12 @@ const helmet = require('helmet');
 const mongoSanitize = require('express-mongo-sanitize');
 const RedisStore = require('rate-limit-redis').default;
 const requestIp = require('request-ip');
-const crypto = require('crypto');
 const { getRedisClient } = require('../utils/redis');
 const config = require('../config');
 
 const redisClient = getRedisClient();
 
-// Session cookie middleware - ensures rl_session cookie exists
-const ensureSessionCookie = (req, res, next) => {
-  if (!req.cookies.rl_session) {
-    const sessionId = crypto.randomUUID();
-    res.cookie('rl_session', sessionId, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
-      maxAge: 24 * 60 * 60 * 1000 // 24 hours
-    });
-    req.cookies.rl_session = sessionId; // Make it available immediately
-  }
-  next();
-};
-
-// 1. Session-Based Rate Limiting Factory (for onsite events with shared IP)
-const createSessionRateLimit = (windowMs, max, message, prefix, cooldownSeconds = null) => {
-  if (cooldownSeconds) {
-    const limiter = rateLimit({
-      windowMs,
-      max,
-      standardHeaders: true,
-      legacyHeaders: false,
-      store: new RedisStore({
-        sendCommand: (...args) => redisClient.call(...args),
-        prefix: `ctf:rl:${prefix}:`
-      }),
-      keyGenerator: (req) => {
-        // Read session cookie (should already be set by ensureSessionCookie middleware)
-        const sessionId = req.cookies.rl_session || 'no-session';
-        return `session:${sessionId}`;
-      },
-      handler: async (req, res) => {
-        const sessionId = req.cookies.rl_session || 'no-session';
-        const blockedKey = `ctf:rl:blocked:${prefix}:session:${sessionId}`;
-        
-        const existingBlock = await redisClient.get(blockedKey);
-        if (!existingBlock) {
-          await redisClient.setex(blockedKey, cooldownSeconds, 'blocked');
-        }
-        
-        const ttl = await redisClient.ttl(blockedKey);
-        
-        return res.status(429).json({
-          success: false,
-          message: `Too many attempts, slow down!`,
-          retryAfter: ttl > 0 ? ttl : cooldownSeconds
-        });
-      },
-      passOnStoreError: true
-    });
-
-    return async (req, res, next) => {
-      const sessionId = req.cookies.rl_session || 'no-session';
-      const blockedKey = `ctf:rl:blocked:${prefix}:session:${sessionId}`;
-      
-      const isBlocked = await redisClient.get(blockedKey);
-      if (isBlocked) {
-        const ttl = await redisClient.ttl(blockedKey);
-        return res.status(429).json({
-          success: false,
-          message: `Too many attempts, slow down!`,
-          retryAfter: ttl > 0 ? ttl : cooldownSeconds
-        });
-      }
-      
-      return limiter(req, res, next);
-    };
-  }
-
-  return rateLimit({
-    windowMs,
-    max,
-    message: { success: false, message, blocked: true },
-    standardHeaders: true,
-    legacyHeaders: false,
-    store: new RedisStore({
-      sendCommand: (...args) => redisClient.call(...args),
-      prefix: `ctf:rl:${prefix}:`
-    }),
-    keyGenerator: (req) => {
-      // Read session cookie (should already be set by ensureSessionCookie middleware)
-      const sessionId = req.cookies.rl_session || 'no-session';
-      return `session:${sessionId}`;
-    },
-    passOnStoreError: true
-  });
-};
-
-// 2. IP-Based Rate Limiting Factory (for general API protection)
+// 1. Rate Limiting Factory (Redis-backed)
 const createRateLimit = (windowMs, max, message, prefix, cooldownSeconds = null) => {
   // If cooldown is specified, create middleware that checks blocked status first
   if (cooldownSeconds) {
@@ -170,27 +80,24 @@ const createRateLimit = (windowMs, max, message, prefix, cooldownSeconds = null)
   });
 };
 
-// 3. Defined Limiters
-// All rate limiters use SESSION-BASED limiting for onsite events with shared IP
-// Exception: Flag submission is per-user (handled in route logic)
-
-const loginLimiter = createSessionRateLimit(
-  config.rateLimit.sessionLogin.windowMs,
-  config.rateLimit.sessionLogin.max,
-  'Too many login attempts from this browser. Please wait a bit.',
+// 2. Defined Limiters
+const loginLimiter = createRateLimit(
+  config.rateLimit.login.windowMs,
+  config.rateLimit.login.max,
+  'Too many login attempts. Please wait a bit.',
   'login',
-  config.rateLimit.sessionLogin.cooldownSeconds
+  config.rateLimit.login.cooldownSeconds
 );
 
-const apiLimiter = createSessionRateLimit(
-  config.rateLimit.sessionGeneral.windowMs,
-  config.rateLimit.sessionGeneral.max,
-  'Too many requests from this browser. Please slow down.',
+const apiLimiter = createRateLimit(
+  config.rateLimit.general.windowMs,
+  config.rateLimit.general.max,
+  'Too many requests. Please slow down.',
   'common'
 );
 
-// Flag submission: Keep IP-based as DoS protection layer
-// Actual per-user limiting is handled in route logic
+// Note: Challenge submission limiting is handled per-user logic in the route, 
+// but we add a loose IP-based layer here for DoS protection.
 const submissionLimiter = createRateLimit(
   config.rateLimit.flagSubmit.windowMs,
   config.rateLimit.flagSubmit.max,
@@ -198,27 +105,34 @@ const submissionLimiter = createRateLimit(
   'submit'
 );
 
-const refreshTokenLimiter = createSessionRateLimit(
-  config.rateLimit.sessionRefreshToken.windowMs,
-  config.rateLimit.sessionRefreshToken.max,
-  'Too many token refresh attempts from this browser. Please slow down.',
+// Refresh token rate limiter (IP-based)
+// For 400 concurrent users: 60 requests per minute = 1 refresh per second per IP
+// This prevents abuse while allowing normal refresh patterns
+const refreshTokenLimiter = createRateLimit(
+  config.rateLimit.refreshToken.windowMs,
+  config.rateLimit.refreshToken.max,
+  'Too many token refresh attempts. Please slow down.',
   'refresh'
 );
 
-const newsletterLimiter = createSessionRateLimit(
-  config.rateLimit.sessionNewsletter.windowMs,
-  config.rateLimit.sessionNewsletter.max,
-  'Too many newsletter subscription attempts from this browser. Please try again later.',
+// Newsletter subscription rate limiter (IP-based)
+// Prevent spam: Configurable via .env (default: 5 subscriptions per 15 minutes per IP)
+const newsletterLimiter = createRateLimit(
+  config.rateLimit.newsletter.windowMs,
+  config.rateLimit.newsletter.max,
+  'Too many newsletter subscription attempts. Please try again later.',
   'newsletter',
-  config.rateLimit.sessionNewsletter.cooldownSeconds
+  config.rateLimit.newsletter.cooldownSeconds
 );
 
-const registrationLimiter = createSessionRateLimit(
-  config.rateLimit.sessionRegistration.windowMs,
-  config.rateLimit.sessionRegistration.max,
-  'Too many registration attempts from this browser. Please try again later.',
+// Registration rate limiter (IP-based)
+// Even though registration is disabled, protect the endpoint (configurable via .env)
+const registrationLimiter = createRateLimit(
+  config.rateLimit.registration.windowMs,
+  config.rateLimit.registration.max,
+  'Too many registration attempts. Please try again later.',
   'register',
-  config.rateLimit.sessionRegistration.cooldownSeconds
+  config.rateLimit.registration.cooldownSeconds
 );
 
 // 3. Security Headers (Helmet with comprehensive security)
@@ -365,7 +279,6 @@ const secureFileUpload = {
 
 // 6. Consolidated Export
 module.exports = {
-  ensureSessionCookie,
   loginLimiter,
   apiLimiter,
   submissionLimiter,

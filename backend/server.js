@@ -136,10 +136,6 @@ app.use(express.urlencoded({
 // Cookie parsing for JWT authentication
 app.use(cookieParser());
 
-// Session cookie for rate limiting (set globally for all requests)
-const { ensureSessionCookie } = require('./middleware/security');
-app.use(ensureSessionCookie);
-
 // MongoDB injection protection
 app.use(mongoSanitize);
 
