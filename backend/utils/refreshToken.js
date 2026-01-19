@@ -197,6 +197,13 @@ async function validateRefreshToken(token) {
     throw new Error('REFRESH_TOKEN_NOT_FOUND');
   }
 
+  // Check if user still exists (might have been deleted)
+  if (!dbToken.user) {
+    // User was deleted, revoke this token
+    await dbToken.updateOne({ isRevoked: true, revokedAt: new Date(), revokedReason: 'user_deleted' });
+    throw new Error('USER_NOT_FOUND');
+  }
+
   // Step 4: Check if token has been revoked
   if (dbToken.isRevoked) {
     throw new Error('REFRESH_TOKEN_REVOKED');
@@ -214,8 +221,8 @@ async function validateRefreshToken(token) {
     console.error('[SECURITY ALERT] Refresh token reuse detected!', {
       tokenId: dbToken.tokenId,
       family: dbToken.family,
-      user: dbToken.user._id,
-      username: dbToken.user.username,
+      user: dbToken.user ? dbToken.user._id : 'unknown',
+      username: dbToken.user ? dbToken.user.username : 'unknown',
       replacedBy: dbToken.replacedBy
     });
 
@@ -240,6 +247,11 @@ async function validateRefreshToken(token) {
  * @returns {Promise<object>} New token pair { accessToken, refreshToken, tokenId }
  */
 async function rotateRefreshToken(oldToken, ipAddress, userAgent) {
+  // Ensure user exists
+  if (!oldToken.user) {
+    throw new Error('USER_NOT_FOUND');
+  }
+  
   const userId = oldToken.user._id || oldToken.user;
   const userTeam = oldToken.user.team;
   const userRole = oldToken.user.role;
