@@ -164,7 +164,7 @@ module.exports = {
       maxAttempts: parseIntHelper(process.env.FLAG_SUBMIT_MAX_ATTEMPTS, 20),
       windowSeconds: parseIntHelper(process.env.FLAG_SUBMIT_WINDOW, 60),
       cooldownSeconds: parseIntHelper(process.env.FLAG_SUBMIT_COOLDOWN, 30)
-    }
+    },
     securityAudit: {
       windowMs: parseDuration(process.env.SECURITY_AUDIT_WINDOW || '15m', 900000) // 15 minutes
     }
