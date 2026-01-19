@@ -88,43 +88,83 @@ module.exports = {
   },
 
   // Rate Limiting Configuration
+  // =============================================================================
+  // SESSION-BASED RATE LIMITING (For Onsite Events with Shared IP)
+  // All public endpoints use browser session cookies instead of IP address
+  // =============================================================================
   rateLimit: {
-    // Session-based login rate limiting (for onsite events with shared IP)
+    // Login rate limiting
     sessionLogin: {
-      windowMs: parseDuration(process.env.SESSION_LOGIN_RATE_WINDOW || '15m', 900000), // 15 minutes
-      max: parseIntHelper(process.env.SESSION_LOGIN_RATE_MAX, 20), // 20 attempts per session per window
-      cooldownSeconds: parseIntHelper(process.env.SESSION_LOGIN_RATE_COOLDOWN, 300) // 5 minute cooldown when limit hit
+      windowMs: parseDuration(process.env.SESSION_LOGIN_RATE_WINDOW || '15m', 900000),
+      max: parseIntHelper(process.env.SESSION_LOGIN_RATE_MAX, 20),
+      cooldownSeconds: parseIntHelper(process.env.SESSION_LOGIN_RATE_COOLDOWN, 300)
     },
-    // Legacy IP-based login (deprecated, kept for reference)
+    
+    // General API rate limiting
+    sessionGeneral: {
+      windowMs: parseDuration(process.env.SESSION_GENERAL_RATE_WINDOW || '15m', 900000),
+      max: parseIntHelper(process.env.SESSION_GENERAL_RATE_MAX, 1000)
+    },
+    
+    // Refresh token rate limiting
+    sessionRefreshToken: {
+      windowMs: parseDuration(process.env.SESSION_REFRESH_TOKEN_RATE_WINDOW || '1m', 60000),
+      max: parseIntHelper(process.env.SESSION_REFRESH_TOKEN_RATE_MAX, 60)
+    },
+    
+    // Newsletter subscription rate limiting
+    sessionNewsletter: {
+      windowMs: parseDuration(process.env.SESSION_NEWSLETTER_RATE_WINDOW || '15m', 900000),
+      max: parseIntHelper(process.env.SESSION_NEWSLETTER_RATE_MAX, 5),
+      cooldownSeconds: parseIntHelper(process.env.SESSION_NEWSLETTER_RATE_COOLDOWN, 300)
+    },
+    
+    // Registration rate limiting
+    sessionRegistration: {
+      windowMs: parseDuration(process.env.SESSION_REGISTRATION_RATE_WINDOW || '60m', 3600000),
+      max: parseIntHelper(process.env.SESSION_REGISTRATION_RATE_MAX, 10),
+      cooldownSeconds: parseIntHelper(process.env.SESSION_REGISTRATION_RATE_COOLDOWN, 300)
+    },
+    
+    // =============================================================================
+    // LEGACY IP-BASED RATE LIMITING (Deprecated, kept for reference)
+    // =============================================================================
     login: {
       windowMs: parseDuration(process.env.LOGIN_RATE_WINDOW || '15m', 900000),
       max: parseIntHelper(process.env.LOGIN_RATE_MAX, 100),
       cooldownSeconds: parseIntHelper(process.env.LOGIN_RATE_COOLDOWN, 300)
     },
-    flagSubmit: {
-      // Per-user rate limiting (authentication-based, not IP-based)
-      maxAttempts: parseIntHelper(process.env.FLAG_SUBMIT_MAX_ATTEMPTS, 20), // 20 attempts per user per window
-      windowSeconds: parseIntHelper(process.env.FLAG_SUBMIT_WINDOW, 60), // 60 second window
-      cooldownSeconds: parseIntHelper(process.env.FLAG_SUBMIT_COOLDOWN, 30) // 30 second cooldown when limit hit
+    general: {
+      windowMs: parseDuration(process.env.GENERAL_RATE_WINDOW || '15m', 900000),
+      max: parseIntHelper(process.env.GENERAL_RATE_MAX, 500)
     },
     refreshToken: {
-      windowMs: parseDuration(process.env.REFRESH_TOKEN_RATE_WINDOW || '1m', 60000), // 1 minute window
-      max: parseIntHelper(process.env.REFRESH_TOKEN_RATE_MAX, 60) // 60 refreshes per minute (1 per second)
+      windowMs: parseDuration(process.env.REFRESH_TOKEN_RATE_WINDOW || '1m', 60000),
+      max: parseIntHelper(process.env.REFRESH_TOKEN_RATE_MAX, 60)
     },
     newsletter: {
-      windowMs: parseDuration(process.env.NEWSLETTER_RATE_WINDOW || '15m', 900000), // 15 minutes
-      max: parseIntHelper(process.env.NEWSLETTER_RATE_MAX, 5), // 5 subscriptions per window
-      cooldownSeconds: parseIntHelper(process.env.NEWSLETTER_RATE_COOLDOWN, 300) // 5 minute cooldown
+      windowMs: parseDuration(process.env.NEWSLETTER_RATE_WINDOW || '15m', 900000),
+      max: parseIntHelper(process.env.NEWSLETTER_RATE_MAX, 5),
+      cooldownSeconds: parseIntHelper(process.env.NEWSLETTER_RATE_COOLDOWN, 300)
     },
     registration: {
-      windowMs: parseDuration(process.env.REGISTRATION_RATE_WINDOW || '60m', 3600000), // 60 minutes
-      max: parseIntHelper(process.env.REGISTRATION_RATE_MAX, 10), // 10 attempts per window
-      cooldownSeconds: parseIntHelper(process.env.REGISTRATION_RATE_COOLDOWN, 300) // 5 minute cooldown
+      windowMs: parseDuration(process.env.REGISTRATION_RATE_WINDOW || '60m', 3600000),
+      max: parseIntHelper(process.env.REGISTRATION_RATE_MAX, 10),
+      cooldownSeconds: parseIntHelper(process.env.REGISTRATION_RATE_COOLDOWN, 300)
     },
-    general: {
-      windowMs: parseDuration(process.env.GENERAL_RATE_WINDOW || '15m', 900000), // 15 minutes
-      max: parseIntHelper(process.env.GENERAL_RATE_MAX, 500) // 500 requests per window - allows frequent scoreboard refresh
-    },
+    
+    // =============================================================================
+    // FLAG SUBMISSION (IP-based DoS protection + Per-User in route logic)
+    // =============================================================================
+    flagSubmit: {
+      // IP-based limits (DoS protection layer)
+      windowMs: parseDuration(process.env.FLAG_SUBMIT_RATE_WINDOW || '1m', 60000),
+      max: parseIntHelper(process.env.FLAG_SUBMIT_RATE_MAX, 100),
+      // Per-user limits (handled in route logic, not middleware)
+      maxAttempts: parseIntHelper(process.env.FLAG_SUBMIT_MAX_ATTEMPTS, 20),
+      windowSeconds: parseIntHelper(process.env.FLAG_SUBMIT_WINDOW, 60),
+      cooldownSeconds: parseIntHelper(process.env.FLAG_SUBMIT_COOLDOWN, 30)
+    }
     securityAudit: {
       windowMs: parseDuration(process.env.SECURITY_AUDIT_WINDOW || '15m', 900000) // 15 minutes
     }

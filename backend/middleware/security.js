@@ -171,7 +171,9 @@ const createRateLimit = (windowMs, max, message, prefix, cooldownSeconds = null)
 };
 
 // 3. Defined Limiters
-// Login uses session-based limiting (for onsite events with shared IP)
+// All rate limiters use SESSION-BASED limiting for onsite events with shared IP
+// Exception: Flag submission is per-user (handled in route logic)
+
 const loginLimiter = createSessionRateLimit(
   config.rateLimit.sessionLogin.windowMs,
   config.rateLimit.sessionLogin.max,
@@ -180,15 +182,15 @@ const loginLimiter = createSessionRateLimit(
   config.rateLimit.sessionLogin.cooldownSeconds
 );
 
-const apiLimiter = createRateLimit(
-  config.rateLimit.general.windowMs,
-  config.rateLimit.general.max,
-  'Too many requests. Please slow down.',
+const apiLimiter = createSessionRateLimit(
+  config.rateLimit.sessionGeneral.windowMs,
+  config.rateLimit.sessionGeneral.max,
+  'Too many requests from this browser. Please slow down.',
   'common'
 );
 
-// Note: Challenge submission limiting is handled per-user logic in the route, 
-// but we add a loose IP-based layer here for DoS protection.
+// Flag submission: Keep IP-based as DoS protection layer
+// Actual per-user limiting is handled in route logic
 const submissionLimiter = createRateLimit(
   config.rateLimit.flagSubmit.windowMs,
   config.rateLimit.flagSubmit.max,
@@ -196,34 +198,27 @@ const submissionLimiter = createRateLimit(
   'submit'
 );
 
-// Refresh token rate limiter (IP-based)
-// For 400 concurrent users: 60 requests per minute = 1 refresh per second per IP
-// This prevents abuse while allowing normal refresh patterns
-const refreshTokenLimiter = createRateLimit(
-  config.rateLimit.refreshToken.windowMs,
-  config.rateLimit.refreshToken.max,
-  'Too many token refresh attempts. Please slow down.',
+const refreshTokenLimiter = createSessionRateLimit(
+  config.rateLimit.sessionRefreshToken.windowMs,
+  config.rateLimit.sessionRefreshToken.max,
+  'Too many token refresh attempts from this browser. Please slow down.',
   'refresh'
 );
 
-// Newsletter subscription rate limiter (IP-based)
-// Prevent spam: Configurable via .env (default: 5 subscriptions per 15 minutes per IP)
-const newsletterLimiter = createRateLimit(
-  config.rateLimit.newsletter.windowMs,
-  config.rateLimit.newsletter.max,
-  'Too many newsletter subscription attempts. Please try again later.',
+const newsletterLimiter = createSessionRateLimit(
+  config.rateLimit.sessionNewsletter.windowMs,
+  config.rateLimit.sessionNewsletter.max,
+  'Too many newsletter subscription attempts from this browser. Please try again later.',
   'newsletter',
-  config.rateLimit.newsletter.cooldownSeconds
+  config.rateLimit.sessionNewsletter.cooldownSeconds
 );
 
-// Registration rate limiter (IP-based)
-// Even though registration is disabled, protect the endpoint (configurable via .env)
-const registrationLimiter = createRateLimit(
-  config.rateLimit.registration.windowMs,
-  config.rateLimit.registration.max,
-  'Too many registration attempts. Please try again later.',
+const registrationLimiter = createSessionRateLimit(
+  config.rateLimit.sessionRegistration.windowMs,
+  config.rateLimit.sessionRegistration.max,
+  'Too many registration attempts from this browser. Please try again later.',
   'register',
-  config.rateLimit.registration.cooldownSeconds
+  config.rateLimit.sessionRegistration.cooldownSeconds
 );
 
 // 3. Security Headers (Helmet with comprehensive security)
