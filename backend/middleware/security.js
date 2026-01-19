@@ -3,12 +3,104 @@ const helmet = require('helmet');
 const mongoSanitize = require('express-mongo-sanitize');
 const RedisStore = require('rate-limit-redis').default;
 const requestIp = require('request-ip');
+const crypto = require('crypto');
 const { getRedisClient } = require('../utils/redis');
 const config = require('../config');
 
 const redisClient = getRedisClient();
 
-// 1. Rate Limiting Factory (Redis-backed)
+// 1. Session-Based Rate Limiting Factory (for onsite events with shared IP)
+const createSessionRateLimit = (windowMs, max, message, prefix, cooldownSeconds = null) => {
+  if (cooldownSeconds) {
+    const limiter = rateLimit({
+      windowMs,
+      max,
+      standardHeaders: true,
+      legacyHeaders: false,
+      store: new RedisStore({
+        sendCommand: (...args) => redisClient.call(...args),
+        prefix: `ctf:rl:${prefix}:`
+      }),
+      keyGenerator: (req, res) => {
+        // Get or create session cookie for rate limiting
+        let sessionId = req.cookies.rl_session;
+        if (!sessionId) {
+          sessionId = crypto.randomUUID();
+          res.cookie('rl_session', sessionId, {
+            httpOnly: true,
+            secure: process.env.NODE_ENV === 'production',
+            sameSite: 'lax',
+            maxAge: 24 * 60 * 60 * 1000 // 24 hours
+          });
+        }
+        return `session:${sessionId}`;
+      },
+      handler: async (req, res) => {
+        const sessionId = req.cookies.rl_session || 'no-session';
+        const blockedKey = `ctf:rl:blocked:${prefix}:session:${sessionId}`;
+        
+        const existingBlock = await redisClient.get(blockedKey);
+        if (!existingBlock) {
+          await redisClient.setex(blockedKey, cooldownSeconds, 'blocked');
+        }
+        
+        const ttl = await redisClient.ttl(blockedKey);
+        
+        return res.status(429).json({
+          success: false,
+          message: `Too many attempts, slow down!`,
+          retryAfter: ttl > 0 ? ttl : cooldownSeconds
+        });
+      },
+      passOnStoreError: true
+    });
+
+    return async (req, res, next) => {
+      const sessionId = req.cookies.rl_session || 'no-session';
+      const blockedKey = `ctf:rl:blocked:${prefix}:session:${sessionId}`;
+      
+      const isBlocked = await redisClient.get(blockedKey);
+      if (isBlocked) {
+        const ttl = await redisClient.ttl(blockedKey);
+        return res.status(429).json({
+          success: false,
+          message: `Too many attempts, slow down!`,
+          retryAfter: ttl > 0 ? ttl : cooldownSeconds
+        });
+      }
+      
+      return limiter(req, res, next);
+    };
+  }
+
+  return rateLimit({
+    windowMs,
+    max,
+    message: { success: false, message, blocked: true },
+    standardHeaders: true,
+    legacyHeaders: false,
+    store: new RedisStore({
+      sendCommand: (...args) => redisClient.call(...args),
+      prefix: `ctf:rl:${prefix}:`
+    }),
+    keyGenerator: (req, res) => {
+      let sessionId = req.cookies.rl_session;
+      if (!sessionId) {
+        sessionId = crypto.randomUUID();
+        res.cookie('rl_session', sessionId, {
+          httpOnly: true,
+          secure: process.env.NODE_ENV === 'production',
+          sameSite: 'lax',
+          maxAge: 24 * 60 * 60 * 1000
+        });
+      }
+      return `session:${sessionId}`;
+    },
+    passOnStoreError: true
+  });
+};
+
+// 2. IP-Based Rate Limiting Factory (for general API protection)
 const createRateLimit = (windowMs, max, message, prefix, cooldownSeconds = null) => {
   // If cooldown is specified, create middleware that checks blocked status first
   if (cooldownSeconds) {
@@ -80,13 +172,14 @@ const createRateLimit = (windowMs, max, message, prefix, cooldownSeconds = null)
   });
 };
 
-// 2. Defined Limiters
-const loginLimiter = createRateLimit(
-  config.rateLimit.login.windowMs,
-  config.rateLimit.login.max,
-  'Too many login attempts. Please wait a bit.',
+// 3. Defined Limiters
+// Login uses session-based limiting (for onsite events with shared IP)
+const loginLimiter = createSessionRateLimit(
+  config.rateLimit.sessionLogin.windowMs,
+  config.rateLimit.sessionLogin.max,
+  'Too many login attempts from this browser. Please wait a bit.',
   'login',
-  config.rateLimit.login.cooldownSeconds
+  config.rateLimit.sessionLogin.cooldownSeconds
 );
 
 const apiLimiter = createRateLimit(

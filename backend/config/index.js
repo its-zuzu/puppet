@@ -89,10 +89,17 @@ module.exports = {
 
   // Rate Limiting Configuration
   rateLimit: {
+    // Session-based login rate limiting (for onsite events with shared IP)
+    sessionLogin: {
+      windowMs: parseDuration(process.env.SESSION_LOGIN_RATE_WINDOW || '15m', 900000), // 15 minutes
+      max: parseIntHelper(process.env.SESSION_LOGIN_RATE_MAX, 20), // 20 attempts per session per window
+      cooldownSeconds: parseIntHelper(process.env.SESSION_LOGIN_RATE_COOLDOWN, 300) // 5 minute cooldown when limit hit
+    },
+    // Legacy IP-based login (deprecated, kept for reference)
     login: {
-      windowMs: parseDuration(process.env.LOGIN_RATE_WINDOW || '15m', 900000), // 15 minutes
-      max: parseIntHelper(process.env.LOGIN_RATE_MAX, 100), // 100 attempts per window - very generous
-      cooldownSeconds: parseIntHelper(process.env.LOGIN_RATE_COOLDOWN, 300) // 5 minute cooldown when limit hit
+      windowMs: parseDuration(process.env.LOGIN_RATE_WINDOW || '15m', 900000),
+      max: parseIntHelper(process.env.LOGIN_RATE_MAX, 100),
+      cooldownSeconds: parseIntHelper(process.env.LOGIN_RATE_COOLDOWN, 300)
     },
     flagSubmit: {
       // Per-user rate limiting (authentication-based, not IP-based)
