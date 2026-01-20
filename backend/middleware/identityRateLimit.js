@@ -531,10 +531,8 @@ const flagSubmitRateLimit = () => {
         res.set('Retry-After', config.lockTime);
         return res.status(429).json({
           success: false,
-          error: 'Too many flag submissions',
-          retryAfter: config.lockTime,
-          limit: result.limit,
-          window: config.window
+          error: 'Slow down!',
+          retryAfter: config.lockTime
         });
       }
       
