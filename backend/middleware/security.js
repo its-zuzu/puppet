@@ -1,141 +1,13 @@
-const rateLimit = require('express-rate-limit');
 const helmet = require('helmet');
 const mongoSanitize = require('express-mongo-sanitize');
-const RedisStore = require('rate-limit-redis').default;
-const requestIp = require('request-ip');
-const { getRedisClient } = require('../utils/redis');
 const config = require('../config');
 
-const redisClient = getRedisClient();
+// ═══════════════════════════════════════════════════════════════════════════
+// IMPORTANT: Rate limiting has been moved to middleware/identityRateLimit.js
+// Old IP-based rate limiters removed - now using identity-based rate limiting
+// ═══════════════════════════════════════════════════════════════════════════
 
-// 1. Rate Limiting Factory (Redis-backed)
-const createRateLimit = (windowMs, max, message, prefix, cooldownSeconds = null) => {
-  // If cooldown is specified, create middleware that checks blocked status first
-  if (cooldownSeconds) {
-    const limiter = rateLimit({
-      windowMs,
-      max,
-      standardHeaders: true,
-      legacyHeaders: false,
-      store: new RedisStore({
-        sendCommand: (...args) => redisClient.call(...args),
-        prefix: `ctf:rl:${prefix}:` // Unique prefix per limiter
-      }),
-      keyGenerator: (req) => requestIp.getClientIp(req),
-      handler: async (req, res) => {
-        const ip = requestIp.getClientIp(req);
-        const blockedKey = `ctf:rl:blocked:${prefix}:${ip}`;
-        
-        // Set block when rate limit exceeded
-        const existingBlock = await redisClient.get(blockedKey);
-        if (!existingBlock) {
-          await redisClient.setex(blockedKey, cooldownSeconds, 'blocked');
-        }
-        
-        const ttl = await redisClient.ttl(blockedKey);
-        
-        return res.status(429).json({
-          success: false,
-          message: `Too many attempts, slow down!`,
-          retryAfter: ttl > 0 ? ttl : cooldownSeconds
-        });
-      },
-      passOnStoreError: true
-    });
-
-    // Return middleware that checks block status first
-    return async (req, res, next) => {
-      const ip = requestIp.getClientIp(req);
-      const blockedKey = `ctf:rl:blocked:${prefix}:${ip}`;
-      
-      // Check if already blocked
-      const isBlocked = await redisClient.get(blockedKey);
-      if (isBlocked) {
-        const ttl = await redisClient.ttl(blockedKey);
-        return res.status(429).json({
-          success: false,
-          message: `Too many attempts, slow down!`,
-          retryAfter: ttl > 0 ? ttl : cooldownSeconds
-        });
-      }
-      
-      // Not blocked, continue to rate limiter
-      return limiter(req, res, next);
-    };
-  }
-
-  // No cooldown, use standard rate limiter
-  return rateLimit({
-    windowMs,
-    max,
-    message: { success: false, message, blocked: true },
-    standardHeaders: true,
-    legacyHeaders: false,
-    store: new RedisStore({
-      sendCommand: (...args) => redisClient.call(...args),
-      prefix: `ctf:rl:${prefix}:` // Unique prefix per limiter
-    }),
-    keyGenerator: (req) => requestIp.getClientIp(req),
-    passOnStoreError: true
-  });
-};
-
-// 2. Defined Limiters
-const loginLimiter = createRateLimit(
-  config.rateLimit.login.windowMs,
-  config.rateLimit.login.max,
-  'Too many login attempts. Please wait a bit.',
-  'login',
-  config.rateLimit.login.cooldownSeconds
-);
-
-const apiLimiter = createRateLimit(
-  config.rateLimit.general.windowMs,
-  config.rateLimit.general.max,
-  'Too many requests. Please slow down.',
-  'common'
-);
-
-// Note: Challenge submission limiting is handled per-user logic in the route, 
-// but we add a loose IP-based layer here for DoS protection.
-const submissionLimiter = createRateLimit(
-  config.rateLimit.flagSubmit.windowMs,
-  config.rateLimit.flagSubmit.max,
-  'Too many submission attempts.',
-  'submit'
-);
-
-// Refresh token rate limiter (IP-based)
-// For 400 concurrent users: 60 requests per minute = 1 refresh per second per IP
-// This prevents abuse while allowing normal refresh patterns
-const refreshTokenLimiter = createRateLimit(
-  config.rateLimit.refreshToken.windowMs,
-  config.rateLimit.refreshToken.max,
-  'Too many token refresh attempts. Please slow down.',
-  'refresh'
-);
-
-// Newsletter subscription rate limiter (IP-based)
-// Prevent spam: Configurable via .env (default: 5 subscriptions per 15 minutes per IP)
-const newsletterLimiter = createRateLimit(
-  config.rateLimit.newsletter.windowMs,
-  config.rateLimit.newsletter.max,
-  'Too many newsletter subscription attempts. Please try again later.',
-  'newsletter',
-  config.rateLimit.newsletter.cooldownSeconds
-);
-
-// Registration rate limiter (IP-based)
-// Even though registration is disabled, protect the endpoint (configurable via .env)
-const registrationLimiter = createRateLimit(
-  config.rateLimit.registration.windowMs,
-  config.rateLimit.registration.max,
-  'Too many registration attempts. Please try again later.',
-  'register',
-  config.rateLimit.registration.cooldownSeconds
-);
-
-// 3. Security Headers (Helmet with comprehensive security)
+// 1. Security Headers (Helmet with comprehensive security)
 const secureHeaders = helmet({
   // Content Security Policy to mitigate XSS
   contentSecurityPolicy: {
@@ -277,14 +149,8 @@ const secureFileUpload = {
   }
 };
 
-// 6. Consolidated Export
+// 2. Consolidated Export
 module.exports = {
-  loginLimiter,
-  apiLimiter,
-  submissionLimiter,
-  refreshTokenLimiter,
-  newsletterLimiter,
-  registrationLimiter,
   secureHeaders,
   mongoSanitize: mongoSanitize(), // Function call to initialize
   sanitizeInput,

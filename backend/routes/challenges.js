@@ -5,14 +5,19 @@ const Challenge = require('../models/Challenge');
 const User = require('../models/User');
 const Submission = require('../models/Submission');
 const { protect, authorize } = require('../middleware/auth');
-const jwt = require('jsonwebtoken');
+const { checkEventState, checkEventNotEnded, isEventEnded } = require('../middleware/eventState');
 const { sanitizeInput, validateInput } = require('../middleware/security');
+
+// NEW: Identity-based rate limiting for flag submissions
+const {
+  flagSubmitRateLimit,
+  clearFlagLimit
+} = require('../middleware/identityRateLimit');
 const requestIp = require('request-ip');
 const UAParser = require('ua-parser-js');
 const crypto = require('crypto');
 const path = require('path');
 const fs = require('fs');
-const { checkEventNotEnded, isEventEnded } = require('../middleware/eventState');
 
 const { getRedisClient } = require('../utils/redis');
 const { clearScoreboardCache } = require('../utils/redis');
@@ -38,90 +43,6 @@ const config = require('../config');
 // Helper function to validate MongoDB ObjectId
 const isValidObjectId = (id) => {
   return id && /^[0-9a-fA-F]{24}$/.test(id);
-};
-
-// ... (other imports)
-
-// Redis-based Rate limiting for flag submissions
-const checkFlagSubmissionRate = async (userId, challengeId) => {
-  try {
-    const key = `rate:flag:${userId}:${challengeId}`;
-    const maxAttempts = config.rateLimit.flagSubmit.maxAttempts;
-    const windowSeconds = config.rateLimit.flagSubmit.windowSeconds;
-    const cooldownSeconds = config.rateLimit.flagSubmit.cooldownSeconds;
-
-    // Get attempts from Redis
-    const attempts = await redisClient.lrange(key, 0, -1);
-    const now = Date.now();
-
-    // Check if user is in cooldown (blocked)
-    const blockedKey = `rate:blocked:${userId}:${challengeId}`;
-    const isBlocked = await redisClient.get(blockedKey);
-
-    if (isBlocked) {
-      const ttl = await redisClient.ttl(blockedKey);
-      return { allowed: false, remainingTime: ttl > 0 ? ttl : cooldownSeconds };
-    }
-
-    // Filter old attempts (older than window)
-    const validAttempts = attempts.filter(time => (now - parseInt(time)) < (windowSeconds * 1000));
-
-    // If we filtered out attempts, update the list asynchronously
-    if (validAttempts.length < attempts.length) {
-      // Use pipeline for atomicity/efficiency
-      const pipeline = redisClient.pipeline();
-      pipeline.del(key);
-      if (validAttempts.length > 0) {
-        pipeline.rpush(key, ...validAttempts);
-        pipeline.expire(key, windowSeconds);
-      }
-      await pipeline.exec();
-    }
-
-    // Check limit
-    if (validAttempts.length >= maxAttempts) {
-      // Block user
-      await redisClient.setex(blockedKey, cooldownSeconds, 'blocked');
-      return { allowed: false, remainingTime: cooldownSeconds };
-    }
-
-    return { allowed: true };
-  } catch (error) {
-    // Fallback if Redis is down: Allow submission but log error
-    console.error('[RateLimit] Redis error, failing open:', error.message);
-    monitoring.rateLimit.systemFailure('flag-submission', error);
-    return { allowed: true };
-  }
-
-  return { allowed: true };
-};
-
-// Record failed flag submission
-const recordFailedSubmission = async (userId, challengeId) => {
-  try {
-    const key = `rate:flag:${userId}:${challengeId}`;
-    const now = Date.now();
-    const windowSeconds = config.rateLimit.flagSubmit.windowSeconds;
-
-    await redisClient.rpush(key, now);
-    await redisClient.expire(key, windowSeconds);
-  } catch (error) {
-    console.error('[RateLimit] Error recording failure:', error.message);
-    monitoring.rateLimit.systemFailure('record-failure', error);
-  }
-};
-
-// Clear attempts on successful submission
-const clearSubmissionAttempts = async (userId, challengeId) => {
-  try {
-    const key = `rate:flag:${userId}:${challengeId}`;
-    const blockedKey = `rate:blocked:${userId}:${challengeId}`;
-
-    await redisClient.del(key);
-    await redisClient.del(blockedKey);
-  } catch (error) {
-    console.error('[RateLimit] Error clearing attempts:', error.message);
-  }
 };
 
 // @route   GET /api/challenges
@@ -458,7 +379,7 @@ router.post('/', protect, authorize('admin', 'superadmin'), async (req, res) => 
 // @route   POST /api/challenges/:id/submit
 // @desc    Submit a flag for a challenge
 // @access  Private
-router.post('/:id/submit', protect, sanitizeInput, checkEventNotEnded, async (req, res) => {
+router.post('/:id/submit', protect, flagSubmitRateLimit(), sanitizeInput, checkEventNotEnded, async (req, res) => {
   try {
     const { flag } = req.body;
 
@@ -541,15 +462,6 @@ router.post('/:id/submit', protect, sanitizeInput, checkEventNotEnded, async (re
       });
     }
 
-    // Check rate limiting for flag submissions
-    const rateCheck = await checkFlagSubmissionRate(req.user._id, challenge._id);
-    if (!rateCheck.allowed) {
-      return res.status(429).json({
-        success: false,
-        message: "Slow down"
-      });
-    }
-
     // Get IP and User Agent for tracking
     const clientIp = requestIp.getClientIp(req);
     const userAgent = req.get('User-Agent') || 'Unknown';
@@ -593,9 +505,7 @@ router.post('/:id/submit', protect, sanitizeInput, checkEventNotEnded, async (re
     }
 
     if (!isCorrect) {
-      // Record failed submission for rate limiting
-      await recordFailedSubmission(req.user._id, challenge._id);
-
+      // Rate limiting is handled by middleware
       // Optionally publish failed attempts for admin monitoring
       try {
         const failedEvent = {
@@ -635,8 +545,8 @@ router.post('/:id/submit', protect, sanitizeInput, checkEventNotEnded, async (re
       });
     }
 
-    // Clear rate limiting attempts on successful submission (only if event is not ended)
-    await clearSubmissionAttempts(req.user._id, challenge._id);
+    // CRITICAL: Clear rate limit on successful flag submission (use user ID from JWT)
+    await clearFlagLimit(req.user.id, challenge._id.toString());
 
     // Use transaction for atomic operations to prevent race conditions
     const session = await mongoose.startSession();

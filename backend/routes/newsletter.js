@@ -2,10 +2,10 @@ const express = require('express');
 const router = express.Router();
 const Newsletter = require('../models/Newsletter');
 const { protect, authorize } = require('../middleware/auth');
-const { newsletterLimiter } = require('../middleware/security');
+const { publicRateLimit } = require('../middleware/identityRateLimit');
 
 // Subscribe to newsletter
-router.post('/subscribe', newsletterLimiter, async (req, res) => {
+router.post('/subscribe', publicRateLimit(), async (req, res) => {
   try {
     const { email } = req.body;
 

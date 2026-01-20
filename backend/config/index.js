@@ -87,39 +87,13 @@ module.exports = {
     hstsMaxAge: parseIntHelper(process.env.HSTS_MAX_AGE_SECONDS, 31536000) // 1 year
   },
 
-  // Rate Limiting Configuration
+  // Rate Limiting Configuration (Identity-Based, NAT-Safe)
   rateLimit: {
-    login: {
-      windowMs: parseDuration(process.env.LOGIN_RATE_WINDOW || '15m', 900000), // 15 minutes
-      max: parseIntHelper(process.env.LOGIN_RATE_MAX, 100), // 100 attempts per window - very generous
-      cooldownSeconds: parseIntHelper(process.env.LOGIN_RATE_COOLDOWN, 300) // 5 minute cooldown when limit hit
-    },
+    // Legacy flag submission config (still used by some routes)
     flagSubmit: {
-      // Per-user rate limiting (authentication-based, not IP-based)
-      maxAttempts: parseIntHelper(process.env.FLAG_SUBMIT_MAX_ATTEMPTS, 20), // 20 attempts per user per window
-      windowSeconds: parseIntHelper(process.env.FLAG_SUBMIT_WINDOW, 60), // 60 second window
-      cooldownSeconds: parseIntHelper(process.env.FLAG_SUBMIT_COOLDOWN, 30) // 30 second cooldown when limit hit
-    },
-    refreshToken: {
-      windowMs: parseDuration(process.env.REFRESH_TOKEN_RATE_WINDOW || '1m', 60000), // 1 minute window
-      max: parseIntHelper(process.env.REFRESH_TOKEN_RATE_MAX, 60) // 60 refreshes per minute (1 per second)
-    },
-    newsletter: {
-      windowMs: parseDuration(process.env.NEWSLETTER_RATE_WINDOW || '15m', 900000), // 15 minutes
-      max: parseIntHelper(process.env.NEWSLETTER_RATE_MAX, 5), // 5 subscriptions per window
-      cooldownSeconds: parseIntHelper(process.env.NEWSLETTER_RATE_COOLDOWN, 300) // 5 minute cooldown
-    },
-    registration: {
-      windowMs: parseDuration(process.env.REGISTRATION_RATE_WINDOW || '60m', 3600000), // 60 minutes
-      max: parseIntHelper(process.env.REGISTRATION_RATE_MAX, 10), // 10 attempts per window
-      cooldownSeconds: parseIntHelper(process.env.REGISTRATION_RATE_COOLDOWN, 300) // 5 minute cooldown
-    },
-    general: {
-      windowMs: parseDuration(process.env.GENERAL_RATE_WINDOW || '15m', 900000), // 15 minutes
-      max: parseIntHelper(process.env.GENERAL_RATE_MAX, 500) // 500 requests per window - allows frequent scoreboard refresh
-    },
-    securityAudit: {
-      windowMs: parseDuration(process.env.SECURITY_AUDIT_WINDOW || '15m', 900000) // 15 minutes
+      maxAttempts: parseIntHelper(process.env.FLAG_RL_LIMIT, 3),
+      windowSeconds: parseIntHelper(process.env.FLAG_RL_WINDOW, 60),
+      cooldownSeconds: parseIntHelper(process.env.FLAG_LOCK_TIME, 300)
     }
   },
   

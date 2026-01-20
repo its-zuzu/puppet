@@ -64,9 +64,6 @@ function MyTeam() {
           </div>
           <h2>No Team Found</h2>
           <p>{error}</p>
-          <button onClick={() => navigate('/scoreboard')} className="back-button">
-            View Scoreboard
-          </button>
         </div>
       </div>
     );

@@ -7,13 +7,19 @@ const LoginLog = require('../models/LoginLog');
 const { protect, authorize } = require('../middleware/auth');
 
 const {
-  loginLimiter,
   sanitizeInput,
   validateInput,
-  enhancedValidation,
-  refreshTokenLimiter,
-  registrationLimiter
+  enhancedValidation
 } = require('../middleware/security');
+
+// NEW: Identity-based rate limiting (NAT-safe)
+const {
+  loginRateLimit,
+  refreshTokenRateLimit,
+  publicRateLimit,
+  clearLoginLimit,
+  getClientIp
+} = require('../middleware/identityRateLimit');
 const { sendOTPEmail } = require('../utils/email');
 const requestIp = require('request-ip');
 const UAParser = require('ua-parser-js');
@@ -155,7 +161,7 @@ const clearTokenCookie = (res) => {
 // @route   POST /api/auth/register
 // @desc    Public registration disabled - Admin only
 // @access  Public
-router.post('/register', registrationLimiter, async (req, res) => {
+router.post('/register', publicRateLimit(), async (req, res) => {
   return res.status(403).json({
     success: false,
     message: 'Public registration is currently disabled.',
@@ -166,7 +172,7 @@ router.post('/register', registrationLimiter, async (req, res) => {
 // @route   POST /api/auth/verify-otp
 // @desc    Verify OTP and activate user account
 // @access  Public
-router.post('/verify-otp', async (req, res) => {
+router.post('/verify-otp', publicRateLimit(), async (req, res) => {
   try {
     const { email, otp } = req.body;
 
@@ -240,7 +246,7 @@ router.post('/verify-otp', async (req, res) => {
 // @route   POST /api/auth/resend-otp
 // @desc    Resend OTP to email
 // @access  Public
-router.post('/resend-otp', async (req, res) => {
+router.post('/resend-otp', publicRateLimit(), async (req, res) => {
   try {
     const { email } = req.body;
 
@@ -380,7 +386,7 @@ router.post('/register-admin', protect, authorize('admin', 'superadmin'), async 
 // @route   POST /api/auth/login
 // @desc    Login user
 // @access  Public
-router.post('/login', sanitizeInput, async (req, res) => {
+router.post('/login', loginRateLimit(), sanitizeInput, async (req, res) => {
   try {
     const { email, password } = req.body;
 
@@ -455,6 +461,10 @@ router.post('/login', sanitizeInput, async (req, res) => {
     await user.resetLoginAttempts();
     console.log('[Debug] Creating login log...');
     await createLoginLog(user, req, 'success');
+
+    // CRITICAL: Clear rate limit on successful login
+    const loginIp = getClientIp(req);
+    await clearLoginLimit(validatedEmail, loginIp);
 
     // Populate team info
     console.log('[Debug] Populating team...');
@@ -632,8 +642,7 @@ router.post('/logout', protect, async (req, res) => {
 // @route   POST /api/auth/refresh
 // @desc    Refresh access token using refresh token
 // @access  Public (requires refresh_token cookie)
-// Rate limited to prevent abuse - 60 requests per minute per IP
-router.post('/refresh', refreshTokenLimiter, async (req, res) => {
+router.post('/refresh', refreshTokenRateLimit(), async (req, res) => {
   try {
     const refreshToken = req.cookies.refresh_token;
 
