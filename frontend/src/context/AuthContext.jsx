@@ -301,7 +301,7 @@ export const AuthProvider = ({ children }) => {
       
       // Handle rate limiting (429) and lockout - always show backend message
       if (err.response?.status === 429) {
-        const message = err.response?.data?.error || 'Too many attempts.';
+        const message = err.response?.data?.error || err.response?.data?.message || 'Too many attempts.';
         setError(message);
         throw new Error(message);
       }
