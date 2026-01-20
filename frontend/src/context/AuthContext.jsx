@@ -299,9 +299,9 @@ export const AuthProvider = ({ children }) => {
     } catch (err) {
       console.error('Login error:', err);
       
-      // Handle rate limiting (429) - Check this FIRST before network errors
+      // Handle rate limiting (429) and lockout - always show backend message
       if (err.response?.status === 429) {
-        const message = err.response?.data?.message || 'Too many login attempts';
+        const message = err.response?.data?.error || 'Too many attempts.';
         setError(message);
         throw new Error(message);
       }

@@ -391,9 +391,7 @@ const loginRateLimit = () => {
         return res.status(429).json({
           success: false,
           error: 'Too many login attempts',
-          retryAfter: config.lockTime,
-          limit: result.limit,
-          window: config.window
+          retryAfter: config.lockTime
         });
       }
       
