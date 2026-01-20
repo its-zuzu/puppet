@@ -414,7 +414,11 @@ function ChallengeDetails() {
       if (err.code === 'ECONNABORTED') {
         throw new Error('Request timeout. Please try again.');
       }
-      throw new Error(err.response?.data?.message || 'Failed to submit flag');
+      // Show backend error (e.g., 'Slow down!') for rate limiting
+      if (err.response?.data?.error) {
+        throw new Error(err.response.data.error);
+      }
+      throw new Error('Failed to submit flag');
     }
   };
 
