@@ -321,7 +321,13 @@ export const AuthProvider = ({ children }) => {
       }
 
       // Handle network errors - only if there is truly no response
+      // But if status is 429, treat as rate limit
       if (!err.response || err.isNetworkError) {
+        if (err.status === 429 || err.code === 429) {
+          const message = 'Too many attempts.';
+          setError(message);
+          throw new Error(message);
+        }
         const errorMsg = 'Network connection failed. Please check your internet connection and try again.';
         setError(errorMsg);
         throw new Error(errorMsg);
