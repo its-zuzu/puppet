@@ -300,8 +300,8 @@ export const AuthProvider = ({ children }) => {
       console.error('Login error:', err);
       
       // Handle rate limiting (429) and lockout - always show backend message
-      if (err.response?.status === 429) {
-        const message = err.response?.data?.error || err.response?.data?.message || 'Too many attempts.';
+      if (err.response && err.response.status === 429) {
+        const message = err.response.data?.error || err.response.data?.message || 'Too many attempts.';
         setError(message);
         throw new Error(message);
       }
@@ -320,8 +320,8 @@ export const AuthProvider = ({ children }) => {
         throw new Error(errorMsg);
       }
 
-      // Handle network errors - Check this LAST
-      if (err.isNetworkError || !err.response) {
+      // Handle network errors - only if there is truly no response
+      if (!err.response || err.isNetworkError) {
         const errorMsg = 'Network connection failed. Please check your internet connection and try again.';
         setError(errorMsg);
         throw new Error(errorMsg);
