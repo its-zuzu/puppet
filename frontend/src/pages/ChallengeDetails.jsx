@@ -155,7 +155,7 @@ const FlagSubmissionModal = ({ challenge, onClose, onSubmit }) => {
           <div className="htb-modal-header">
             <div className="htb-modal-title">
               <Flag size={24} />
-              <h3>Submit Flag: {challenge.title}</h3>
+              <h3>Submit Flag:</h3>
             </div>
             
             <AnimatePresence>
