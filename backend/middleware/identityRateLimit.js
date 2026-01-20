@@ -73,8 +73,7 @@ const getConfig = () => ({
   flag: {
     window: parseInt(process.env.FLAG_RL_WINDOW) || 60,
     limit: parseInt(process.env.FLAG_RL_LIMIT) || 3,
-    failLock: parseInt(process.env.FLAG_FAIL_LOCK) || 10, // Failures before lock
-    lockTime: parseInt(process.env.FLAG_LOCK_TIME) || 300 // 5 min lockout
+    lockTime: parseInt(process.env.FLAG_LOCK_TIME) || 10 // Lockout duration in seconds
   },
   
   // JWT refresh - refresh token ID
@@ -503,31 +502,14 @@ const flagSubmitRateLimit = () => {
       const redisKey = `ctf:rl:${hashIdentity(identifier)}`;
       const lockKey = `ctf:rl:flag:lock:${hashIdentity(identifier)}`;
       
-      // Check lockout
-      const lockStatus = await checkLockout(lockKey);
-      if (lockStatus.locked) {
-        res.set('Retry-After', lockStatus.retryAfter);
-        return res.status(429).json({
-          success: false,
-          error: 'Too many incorrect submissions. Challenge temporarily locked.',
-          retryAfter: lockStatus.retryAfter,
-          lockedUntil: new Date(Date.now() + lockStatus.retryAfter * 1000).toISOString()
-        });
-      }
-      
-      // Check rate limit
+      // Only one layer: sliding window
       const result = await slidingWindowCheck(redisKey, config.window, config.limit);
-      
       res.set({
         'X-RateLimit-Limit': result.limit,
         'X-RateLimit-Remaining': result.remaining,
         'X-RateLimit-Reset': new Date(result.resetAt).toISOString()
       });
-      
       if (!result.allowed) {
-        // Set lockout
-        await setLockout(lockKey, config.lockTime, 'excessive_flag_attempts');
-        
         res.set('Retry-After', config.lockTime);
         return res.status(429).json({
           success: false,
@@ -535,14 +517,11 @@ const flagSubmitRateLimit = () => {
           retryAfter: config.lockTime
         });
       }
-      
-      // Attach for downstream use
       req.rateLimitKeys = {
         redisKey,
         lockKey,
         identifier
       };
-      
       next();
     } catch (error) {
       console.error('[RateLimit] Flag limiter error:', error);
