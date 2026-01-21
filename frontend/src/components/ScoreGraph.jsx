@@ -81,21 +81,12 @@ const ScoreGraph = ({ type = 'teams', limit = 10, height = '400px' }) => {
           itemStyle: { color: colors[index % colors.length] },
           lineStyle: {
             width: 3,
+            color: colors[index % colors.length],
             shadowColor: colors[index % colors.length], // Glow effect
             shadowBlur: 10
           },
           smooth: 0.3, // Slight curve for modern look
-          areaStyle: {
-            color: {
-              type: 'linear',
-              x: 0, y: 0, x2: 0, y2: 1,
-              colorStops: [{
-                offset: 0, color: colors[index % colors.length] + '33' // 20% opacity
-              }, {
-                offset: 1, color: 'transparent'
-              }]
-            }
-          }
+          areaStyle: undefined, // REMOVE area fill to ensure line is visible
         });
         legendData.push(team.name);
       });
