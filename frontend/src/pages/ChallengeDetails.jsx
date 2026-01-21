@@ -418,7 +418,7 @@ function ChallengeDetails() {
       if (err.response?.data?.error) {
         throw new Error(err.response.data.error);
       }
-      throw new Error('Failed to submit flag');
+      throw new Error('Slow Down!');
     }
   };
 
