@@ -91,27 +91,6 @@ const ScoreGraph = ({ type = 'teams', limit = 10, height = '400px' }) => {
         legendData.push(team.name);
       });
 
-      // DEBUG: Add a static test series to confirm line rendering
-      series.push({
-        name: 'TestLine',
-        type: 'line',
-        data: [
-          [minTime, 0],
-          [minTime + 1800000, 100],
-          [minTime + 3600000, 200]
-        ],
-        showSymbol: true,
-        symbolSize: 8,
-        itemStyle: { color: '#fff' },
-        lineStyle: {
-          width: 3,
-          color: '#fff',
-          shadowColor: '#fff',
-          shadowBlur: 10
-        },
-        smooth: 0.3
-      });
-      legendData.push('TestLine');
 
       const chartOption = {
         tooltip: {
