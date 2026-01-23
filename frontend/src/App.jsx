@@ -38,7 +38,6 @@ const AdminUserProfile = lazy(() => import('./pages/AdminUserProfile'))
 const ContactUs = lazy(() => import('./pages/ContactUs'))
 const AdminContactMessages = lazy(() => import('./pages/AdminContactMessages'))
 const AdminLoginLogs = lazy(() => import('./pages/AdminLoginLogs'))
-const PlatformControl = lazy(() => import('./pages/PlatformControl'))
 const PlatformReset = lazy(() => import('./pages/PlatformReset'))
 const UserBlocked = lazy(() => import('./pages/UserBlocked'))
 const ChallengeDetails = lazy(() => import('./pages/ChallengeDetails'))
@@ -181,11 +180,6 @@ function App() {
                 <Route path="/admin/users/:id" element={
                   <ProtectedRoute adminOnly={true}>
                     <AdminUserProfile />
-                  </ProtectedRoute>
-                } />
-                <Route path="/admin/platform-control" element={
-                  <ProtectedRoute adminOnly={true}>
-                    <PlatformControl />
                   </ProtectedRoute>
                 } />
                 <Route path="/admin/platform-reset" element={

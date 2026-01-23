@@ -309,7 +309,7 @@ function AdminDashboard() {
     { label: 'Submissions', path: '/admin/submissions', icon: Trophy },
     { label: 'Categories', path: '/admin/categories', icon: Tag },
     { label: 'Live Monitor', path: '/admin/live-monitor', icon: Activity },
-    { label: 'Platform Control', path: '/admin/platform-control', icon: Settings },
+
     { label: 'Messages', path: '/admin/messages', icon: Mail },
     { label: 'Login Logs', path: '/admin/login-logs', icon: Shield },
     { label: 'Platform Reset', path: '/admin/platform-reset', icon: AlertTriangle, danger: true },
