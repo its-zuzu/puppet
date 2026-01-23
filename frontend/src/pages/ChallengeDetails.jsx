@@ -415,6 +415,11 @@ function ChallengeDetails() {
         throw new Error('Request timeout. Please try again.');
       }
       
+      // Handle custom error object from axios interceptor (rate limit, etc.)
+      if (err.message && typeof err.message === 'string') {
+        throw new Error(err.message);
+      }
+      
       // Handle backend error responses (both 'error' and 'message' fields)
       if (err.response?.data?.error) {
         throw new Error(err.response.data.error);
