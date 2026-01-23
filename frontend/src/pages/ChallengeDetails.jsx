@@ -416,7 +416,7 @@ function ChallengeDetails() {
       }
       
       // Handle custom error object from axios interceptor (rate limit, etc.)
-      if (err.message && typeof err.message === 'string') {
+      if (err.message && typeof err.message === 'string' && err.type) {
         throw new Error(err.message);
       }
       
@@ -428,8 +428,13 @@ function ChallengeDetails() {
         throw new Error(err.response.data.message);
       }
       
-      // Fallback error
-      throw new Error('Flag submission failed. Please try again.');
+      // Handle status code errors
+      if (err.response?.status === 400) {
+        throw new Error('Incorrect flag');
+      }
+      
+      // Fallback error - extract message from error object if available
+      throw new Error(err.message || 'Flag submission failed. Please try again.');
     }
   };
 
