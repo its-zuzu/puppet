@@ -89,22 +89,24 @@ function AdminSubmissions() {
     <div className="htb-submissions-container">
       <div className="htb-submissions-grid-bg"></div>
 
-      <motion.div 
-        className="htb-submissions-header"
-        initial={{ opacity: 0, y: -20 }}
-        animate={{ opacity: 1, y: 0 }}
-      >
-        <div className="htb-submissions-title-section">
-          <h1 className="htb-submissions-title">
-            <Flag size={32} />
-            CHALLENGE <span className="htb-text-primary">SUBMISSIONS</span>
-          </h1>
-          <p className="htb-submissions-subtitle">Monitor challenge submission statistics and user attempts</p>
-        </div>
-        <button className="htb-back-btn" onClick={() => navigate('/admin')}>
-          <ChevronLeft size={18} /> Back to Dashboard
-        </button>
-      </motion.div>
+      {!selectedChallenge && (
+        <motion.div 
+          className="htb-submissions-header"
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+        >
+          <div className="htb-submissions-title-section">
+            <h1 className="htb-submissions-title">
+              <Flag size={32} />
+              CHALLENGE <span className="htb-text-primary">SUBMISSIONS</span>
+            </h1>
+            <p className="htb-submissions-subtitle">Monitor challenge submission statistics and user attempts</p>
+          </div>
+          <button className="htb-back-btn" onClick={() => navigate('/admin')}>
+            <ChevronLeft size={18} /> Back to Dashboard
+          </button>
+        </motion.div>
+      )}
 
       <AnimatePresence>
         {error && (

@@ -414,11 +414,17 @@ function ChallengeDetails() {
       if (err.code === 'ECONNABORTED') {
         throw new Error('Request timeout. Please try again.');
       }
-      // Show backend error (e.g., 'Slow down!') for rate limiting
+      
+      // Handle backend error responses (both 'error' and 'message' fields)
       if (err.response?.data?.error) {
         throw new Error(err.response.data.error);
       }
-      throw new Error('Slow Down!');
+      if (err.response?.data?.message) {
+        throw new Error(err.response.data.message);
+      }
+      
+      // Fallback error
+      throw new Error('Flag submission failed. Please try again.');
     }
   };
 
