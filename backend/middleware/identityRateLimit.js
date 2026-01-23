@@ -550,6 +550,10 @@ const flagSubmitRateLimit = () => {
         // Set lockout for repeated violations
         await setLockout(lockKey, config.lockTime, 'excessive_flag_attempts');
         
+        // CRITICAL: Clear the sliding window counter when locking out
+        // This prevents the old requests from blocking submissions after lockout expires
+        await redisClient.del(redisKey);
+        
         res.set('Retry-After', config.lockTime);
         return res.status(429).json({
           success: false,
