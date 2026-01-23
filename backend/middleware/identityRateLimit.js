@@ -132,8 +132,13 @@ const extractUserIdFromJWT = (req) => {
     // Decode without verification (faster, we just need user ID)
     // Rate limiting is not a security boundary - auth middleware handles that
     const decoded = jwt.decode(token);
-    return decoded?.id || null;
-  } catch {
+    if (!decoded?.id) {
+      console.warn('[RateLimit] JWT decoded but missing id field');
+      return null;
+    }
+    return decoded.id;
+  } catch (error) {
+    console.warn('[RateLimit] Failed to decode JWT:', error.message);
     return null;
   }
 };
@@ -148,7 +153,8 @@ const extractRefreshTokenId = (req) => {
   try {
     const decoded = jwt.decode(refreshToken);
     return decoded?.jti || decoded?.id || null; // JWT ID claim
-  } catch {
+  } catch (error) {
+    console.warn('[RateLimit] Failed to decode refresh token:', error.message);
     return null;
   }
 };
@@ -205,25 +211,31 @@ const slidingWindowCheck = async (redisKey, windowSeconds, maxRequests) => {
     
     const results = await pipeline.exec();
     
-    // results[1] is ZCARD result (count after removing expired)
+    // CRITICAL: Validate pipeline results structure before accessing
+    if (!results || !Array.isArray(results) || results.length < 4) {
+      throw new Error('Pipeline execution failed: unexpected result structure');
+    }
+    
+    // Check each result for errors
+    for (let i = 0; i < results.length; i++) {
+      if (results[i][0]) {  // results[i][0] is the error
+        throw new Error(`Redis pipeline error at index ${i}: ${results[i][0].message}`);
+      }
+    }
+    
+    // results[1][1] is ZCARD result (count after removing expired)
     const currentCount = results[1][1];
     
     // Check if limit exceeded (count BEFORE adding current request)
     const allowed = currentCount < maxRequests;
     const remaining = Math.max(0, maxRequests - currentCount - 1);
     
-    // Calculate retry after (oldest request timestamp + window)
+    // Calculate retry after
     let retryAfter = 0;
     if (!allowed) {
-      // Get oldest request in window
-      const oldestResult = await redisClient.zrange(redisKey, 0, 0, 'WITHSCORES');
-      if (oldestResult && oldestResult.length >= 2) {
-        const oldestTimestamp = parseInt(oldestResult[1]);
-        const resetTime = oldestTimestamp + (windowSeconds * 1000);
-        retryAfter = Math.ceil((resetTime - now) / 1000);
-      } else {
-        retryAfter = windowSeconds;
-      }
+      // The window always resets after windowSeconds
+      // No need for extra Redis call - window duration is fixed
+      retryAfter = Math.ceil(windowSeconds);
     }
     
     return {
@@ -253,17 +265,23 @@ const slidingWindowCheck = async (redisKey, windowSeconds, maxRequests) => {
 
 /**
  * Check if identity is locked out (e.g., after too many failed attempts)
+ * Uses PTTL to get milliseconds and avoid edge cases with TTL returning -1 or -2
  */
 const checkLockout = async (lockKey) => {
   try {
-    const locked = await redisClient.get(lockKey);
-    if (locked) {
-      const ttl = await redisClient.ttl(lockKey);
+    // PTTL returns:
+    // - positive milliseconds if key exists with expiry
+    // - -1 if key exists with no expiry (shouldn't happen for lockouts)
+    // - -2 if key doesn't exist
+    const pttl = await redisClient.pttl(lockKey);
+    
+    if (pttl > 0) {
       return {
         locked: true,
-        retryAfter: Math.max(0, ttl)
+        retryAfter: Math.ceil(pttl / 1000)  // Convert ms to seconds, round up
       };
     }
+    
     return { locked: false };
   } catch (error) {
     console.error('[RateLimit] Redis error in checkLockout:', error);
@@ -488,12 +506,19 @@ const flagSubmitRateLimit = () => {
   return async (req, res, next) => {
     try {
       const userId = extractUserIdFromJWT(req);
-      const challengeId = req.params.id || req.params.challengeId;
+      const challengeId = (req.params.id || req.params.challengeId || '').trim();
       
-      if (!userId || !challengeId) {
+      if (!userId) {
         return res.status(400).json({
           success: false,
-          error: 'Invalid request'
+          error: 'User ID required'
+        });
+      }
+      
+      if (!challengeId || challengeId.length < 10) {
+        return res.status(400).json({
+          success: false,
+          error: 'Challenge ID required'
         });
       }
       
@@ -502,14 +527,29 @@ const flagSubmitRateLimit = () => {
       const redisKey = `ctf:rl:${hashIdentity(identifier)}`;
       const lockKey = `ctf:rl:flag:lock:${hashIdentity(identifier)}`;
       
-      // Only one layer: sliding window
+      // Check lockout first (from previous excessive failures)
+      const lockStatus = await checkLockout(lockKey);
+      if (lockStatus.locked) {
+        res.set('Retry-After', lockStatus.retryAfter);
+        return res.status(429).json({
+          success: false,
+          error: 'Slow down!',
+          retryAfter: lockStatus.retryAfter
+        });
+      }
+      
+      // Then check rate limit (sliding window)
       const result = await slidingWindowCheck(redisKey, config.window, config.limit);
       res.set({
         'X-RateLimit-Limit': result.limit,
         'X-RateLimit-Remaining': result.remaining,
         'X-RateLimit-Reset': new Date(result.resetAt).toISOString()
       });
+      
       if (!result.allowed) {
+        // Set lockout for repeated violations
+        await setLockout(lockKey, config.lockTime, 'excessive_flag_attempts');
+        
         res.set('Retry-After', config.lockTime);
         return res.status(429).json({
           success: false,
@@ -517,10 +557,13 @@ const flagSubmitRateLimit = () => {
           retryAfter: config.lockTime
         });
       }
+      
+      // Attach for downstream cleanup on success
       req.rateLimitKeys = {
         redisKey,
         lockKey,
-        identifier
+        identifier,
+        type: 'flag'  // Mark as flag submission for logging
       };
       next();
     } catch (error) {

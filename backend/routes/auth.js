@@ -16,7 +16,6 @@ const {
 const {
   loginRateLimit,
   refreshTokenRateLimit,
-  publicRateLimit,
   clearLoginLimit,
   getClientIp
 } = require('../middleware/identityRateLimit');
@@ -161,7 +160,7 @@ const clearTokenCookie = (res) => {
 // @route   POST /api/auth/register
 // @desc    Public registration disabled - Admin only
 // @access  Public
-router.post('/register', publicRateLimit(), async (req, res) => {
+router.post('/register', async (req, res) => {
   return res.status(403).json({
     success: false,
     message: 'Public registration is currently disabled.',
@@ -172,7 +171,7 @@ router.post('/register', publicRateLimit(), async (req, res) => {
 // @route   POST /api/auth/verify-otp
 // @desc    Verify OTP and activate user account
 // @access  Public
-router.post('/verify-otp', publicRateLimit(), async (req, res) => {
+router.post('/verify-otp', async (req, res) => {
   try {
     const { email, otp } = req.body;
 
@@ -246,7 +245,7 @@ router.post('/verify-otp', publicRateLimit(), async (req, res) => {
 // @route   POST /api/auth/resend-otp
 // @desc    Resend OTP to email
 // @access  Public
-router.post('/resend-otp', publicRateLimit(), async (req, res) => {
+router.post('/resend-otp', async (req, res) => {
   try {
     const { email } = req.body;
 

@@ -32,12 +32,6 @@ const {
   secureFileUpload
 } = require('./middleware/security');
 
-// NEW: Identity-based rate limiting (NAT-safe for 400 concurrent users)
-const {
-  apiRateLimit,
-  publicRateLimit
-} = require('./middleware/identityRateLimit');
-
 const { concurrencyMiddleware } = require('./middleware/concurrency');
 const { cachingMiddleware, CACHE_CONFIG } = require('./middleware/caching');
 
@@ -71,10 +65,6 @@ app.use(requestIp.mw());
 
 // Security Headers
 app.use(secureHeaders);
-
-// NEW: Identity-based rate limiting
-// Apply to all API routes (uses user ID from JWT, falls back to IP for unauthenticated)
-app.use('/api/', apiRateLimit());
 
 // CORS with development-friendly configuration
 const corsOptions = {
