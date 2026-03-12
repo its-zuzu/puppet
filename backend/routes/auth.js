@@ -12,13 +12,6 @@ const {
   enhancedValidation
 } = require('../middleware/security');
 
-// NEW: Identity-based rate limiting (NAT-safe)
-const {
-  loginRateLimit,
-  refreshTokenRateLimit,
-  clearLoginLimit,
-  getClientIp
-} = require('../middleware/identityRateLimit');
 const { sendOTPEmail } = require('../utils/email');
 const requestIp = require('request-ip');
 const UAParser = require('ua-parser-js');
@@ -385,7 +378,7 @@ router.post('/register-admin', protect, authorize('admin', 'superadmin'), async 
 // @route   POST /api/auth/login
 // @desc    Login user
 // @access  Public
-router.post('/login', loginRateLimit(), sanitizeInput, async (req, res) => {
+router.post('/login', sanitizeInput, async (req, res) => {
   try {
     const { email, password } = req.body;
 
@@ -461,9 +454,7 @@ router.post('/login', loginRateLimit(), sanitizeInput, async (req, res) => {
     console.log('[Debug] Creating login log...');
     await createLoginLog(user, req, 'success');
 
-    // CRITICAL: Clear rate limit on successful login
-    const loginIp = getClientIp(req);
-    await clearLoginLimit(validatedEmail, loginIp);
+
 
     // Populate team info
     console.log('[Debug] Populating team...');
@@ -641,7 +632,7 @@ router.post('/logout', protect, async (req, res) => {
 // @route   POST /api/auth/refresh
 // @desc    Refresh access token using refresh token
 // @access  Public (requires refresh_token cookie)
-router.post('/refresh', refreshTokenRateLimit(), async (req, res) => {
+router.post('/refresh', async (req, res) => {
   try {
     const refreshToken = req.cookies.refresh_token;
 

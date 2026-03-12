@@ -112,8 +112,7 @@ axios.interceptors.response.use(
     if (error.response.status === 429) {
       const retryAfter = error.response.headers['retry-after'] ||
         error.response.data?.retryAfter || 60;
-      const message = error.response.data?.message ||
-        `Rate limit exceeded. Please try again in ${retryAfter} seconds.`;
+      const message = error.response.data?.error || 'Slow down!';
 
       console.error(`Rate limit exceeded. Try again in ${retryAfter} seconds.`);
       return Promise.reject({

@@ -8,11 +8,7 @@ const { protect, authorize } = require('../middleware/auth');
 const { checkEventState, checkEventNotEnded, isEventEnded } = require('../middleware/eventState');
 const { sanitizeInput, validateInput } = require('../middleware/security');
 
-// NEW: Identity-based rate limiting for flag submissions
-const {
-  flagSubmitRateLimit,
-  clearFlagLimit
-} = require('../middleware/identityRateLimit');
+
 const requestIp = require('request-ip');
 const UAParser = require('ua-parser-js');
 const crypto = require('crypto');
@@ -379,7 +375,7 @@ router.post('/', protect, authorize('admin', 'superadmin'), async (req, res) => 
 // @route   POST /api/challenges/:id/submit
 // @desc    Submit a flag for a challenge
 // @access  Private
-router.post('/:id/submit', protect, flagSubmitRateLimit(), sanitizeInput, checkEventNotEnded, async (req, res) => {
+router.post('/:id/submit', protect, sanitizeInput, checkEventNotEnded, async (req, res) => {
   try {
     const { flag } = req.body;
 
@@ -545,8 +541,7 @@ router.post('/:id/submit', protect, flagSubmitRateLimit(), sanitizeInput, checkE
       });
     }
 
-    // CRITICAL: Clear rate limit on successful flag submission (use user ID from JWT)
-    await clearFlagLimit(req.user.id, challenge._id.toString());
+
 
     // Use transaction for atomic operations to prevent race conditions
     const session = await mongoose.startSession();
