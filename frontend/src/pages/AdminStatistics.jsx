@@ -6,17 +6,19 @@ function AdminStatistics() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
-  const [matrix, setMatrix] = useState({ scoreboard: [], challenges: [] });
+  const [userMatrix, setUserMatrix] = useState({ scoreboard: [], challenges: [] });
+  const [teamMatrix, setTeamMatrix] = useState({ scoreboard: [], challenges: [] });
   const [solveCounts, setSolveCounts] = useState([]);
   const [solvePercentages, setSolvePercentages] = useState([]);
   const [submissionTypes, setSubmissionTypes] = useState({ correct: 0, incorrect: 0 });
   const [categoryCount, setCategoryCount] = useState({});
   const [categoryPoints, setCategoryPoints] = useState({});
   const [scoreDistribution, setScoreDistribution] = useState({ brackets: {} });
-  const [progressionMode, setProgressionMode] = useState('teams');
 
   const [userSearch, setUserSearch] = useState('');
-  const [challengeSearch, setChallengeSearch] = useState('');
+  const [userChallengeSearch, setUserChallengeSearch] = useState('');
+  const [teamSearch, setTeamSearch] = useState('');
+  const [teamChallengeSearch, setTeamChallengeSearch] = useState('');
 
   useEffect(() => {
     const load = async () => {
@@ -25,7 +27,8 @@ function AdminStatistics() {
         setError('');
 
         const [
-          matrixRes,
+          userMatrixRes,
+          teamMatrixRes,
           solvesRes,
           percentagesRes,
           submissionTypeRes,
@@ -33,7 +36,8 @@ function AdminStatistics() {
           categoryPointsRes,
           scoreDistributionRes
         ] = await Promise.all([
-          axios.get(`/api/analytics/progression/matrix?mode=${progressionMode}`),
+          axios.get('/api/analytics/progression/matrix?mode=users'),
+          axios.get('/api/analytics/progression/matrix?mode=teams'),
           axios.get('/api/analytics/statistics/challenges/solves'),
           axios.get('/api/analytics/statistics/challenges/solves/percentages'),
           axios.get('/api/analytics/statistics/submissions/type'),
@@ -42,7 +46,8 @@ function AdminStatistics() {
           axios.get('/api/analytics/statistics/scores/distribution')
         ]);
 
-        setMatrix(matrixRes.data?.data || { scoreboard: [], challenges: [] });
+        setUserMatrix(userMatrixRes.data?.data || { scoreboard: [], challenges: [] });
+        setTeamMatrix(teamMatrixRes.data?.data || { scoreboard: [], challenges: [] });
         setSolveCounts(solvesRes.data?.data || []);
         setSolvePercentages(percentagesRes.data?.data || []);
         setSubmissionTypes(submissionTypeRes.data?.data || { correct: 0, incorrect: 0 });
@@ -57,15 +62,23 @@ function AdminStatistics() {
     };
 
     load();
-  }, [progressionMode]);
+  }, []);
 
   const filteredUsers = useMemo(() => {
-    return (matrix.scoreboard || []).filter((u) => u.name.toLowerCase().includes(userSearch.toLowerCase()));
-  }, [matrix.scoreboard, userSearch]);
+    return (userMatrix.scoreboard || []).filter((u) => u.name.toLowerCase().includes(userSearch.toLowerCase()));
+  }, [userMatrix.scoreboard, userSearch]);
 
-  const filteredChallenges = useMemo(() => {
-    return (matrix.challenges || []).filter((c) => c.name.toLowerCase().includes(challengeSearch.toLowerCase()));
-  }, [matrix.challenges, challengeSearch]);
+  const filteredUserChallenges = useMemo(() => {
+    return (userMatrix.challenges || []).filter((c) => c.name.toLowerCase().includes(userChallengeSearch.toLowerCase()));
+  }, [userMatrix.challenges, userChallengeSearch]);
+
+  const filteredTeams = useMemo(() => {
+    return (teamMatrix.scoreboard || []).filter((t) => t.name.toLowerCase().includes(teamSearch.toLowerCase()));
+  }, [teamMatrix.scoreboard, teamSearch]);
+
+  const filteredTeamChallenges = useMemo(() => {
+    return (teamMatrix.challenges || []).filter((c) => c.name.toLowerCase().includes(teamChallengeSearch.toLowerCase()));
+  }, [teamMatrix.challenges, teamChallengeSearch]);
 
   const totalSubmissions = (submissionTypes.correct || 0) + (submissionTypes.incorrect || 0);
   const solveRate = totalSubmissions > 0 ? ((submissionTypes.correct / totalSubmissions) * 100).toFixed(1) : '0.0';
@@ -78,26 +91,11 @@ function AdminStatistics() {
       <h1>Statistics</h1>
 
       <section className="stats-card">
-        <h2>{progressionMode === 'teams' ? 'Team Progression (Top 100)' : 'Player Progression (Top 100)'}</h2>
-
-        <div className="stats-mode-switch" style={{ marginBottom: '0.75rem' }}>
-          <button
-            className={progressionMode === 'teams' ? 'mode-btn active' : 'mode-btn'}
-            onClick={() => setProgressionMode('teams')}
-          >
-            Teams
-          </button>
-          <button
-            className={progressionMode === 'users' ? 'mode-btn active' : 'mode-btn'}
-            onClick={() => setProgressionMode('users')}
-          >
-            Users
-          </button>
-        </div>
+        <h2>Player Progression (Top 100)</h2>
 
         <div className="stats-filters">
           <input value={userSearch} onChange={(e) => setUserSearch(e.target.value)} placeholder="Filter players" />
-          <input value={challengeSearch} onChange={(e) => setChallengeSearch(e.target.value)} placeholder="Filter challenges" />
+          <input value={userChallengeSearch} onChange={(e) => setUserChallengeSearch(e.target.value)} placeholder="Filter challenges" />
         </div>
 
         <div className="legend-row">
@@ -111,9 +109,9 @@ function AdminStatistics() {
             <thead>
               <tr>
                 <th className="sticky c1">Place</th>
-                <th className="sticky c2">{progressionMode === 'teams' ? 'Team' : 'User'}</th>
+                <th className="sticky c2">User</th>
                 <th className="sticky c3">Score</th>
-                {filteredChallenges.map((c) => (
+                {filteredUserChallenges.map((c) => (
                   <th key={c.id} title={`${c.name} (${c.category}) - ${c.value}pt`}>
                     <div>{c.name}</div>
                     <small>{c.category} • {c.value}</small>
@@ -130,11 +128,66 @@ function AdminStatistics() {
                     <td className="sticky c1">{u.place}</td>
                     <td className="sticky c2">{u.name}</td>
                     <td className="sticky c3">{u.score}</td>
-                    {filteredChallenges.map((c) => {
+                    {filteredUserChallenges.map((c) => {
                       const isSolved = solved.has(c.id);
                       const isAttempted = attempts.has(c.id);
                       return (
                         <td key={`${u.id}-${c.id}`} className={isSolved ? 'cell solved' : isAttempted ? 'cell attempted' : 'cell unopened'}>
+                          {isSolved ? '✓' : '•'}
+                        </td>
+                      );
+                    })}
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <section className="stats-card">
+        <h2>Team Progression (Top 100)</h2>
+
+        <div className="stats-filters">
+          <input value={teamSearch} onChange={(e) => setTeamSearch(e.target.value)} placeholder="Filter teams" />
+          <input value={teamChallengeSearch} onChange={(e) => setTeamChallengeSearch(e.target.value)} placeholder="Filter challenges" />
+        </div>
+
+        <div className="legend-row">
+          <span><i className="box solved" /> Solved</span>
+          <span><i className="box attempted" /> Attempted</span>
+          <span><i className="box unopened" /> Unopened</span>
+        </div>
+
+        <div className="matrix-wrap">
+          <table className="matrix-table">
+            <thead>
+              <tr>
+                <th className="sticky c1">Place</th>
+                <th className="sticky c2">Team</th>
+                <th className="sticky c3">Score</th>
+                {filteredTeamChallenges.map((c) => (
+                  <th key={c.id} title={`${c.name} (${c.category}) - ${c.value}pt`}>
+                    <div>{c.name}</div>
+                    <small>{c.category} • {c.value}</small>
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {filteredTeams.map((t) => {
+                const solved = new Set(t.solves || []);
+                const attempts = new Set(t.attempts || []);
+                return (
+                  <tr key={t.id}>
+                    <td className="sticky c1">{t.place}</td>
+                    <td className="sticky c2">{t.name}</td>
+                    <td className="sticky c3">{t.score}</td>
+                    {filteredTeamChallenges.map((c) => {
+                      const isSolved = solved.has(c.id);
+                      const isAttempted = attempts.has(c.id);
+                      return (
+                        <td key={`${t.id}-${c.id}`} className={isSolved ? 'cell solved' : isAttempted ? 'cell attempted' : 'cell unopened'}>
                           {isSolved ? '✓' : '•'}
                         </td>
                       );
