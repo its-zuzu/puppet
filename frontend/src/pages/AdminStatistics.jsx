@@ -13,6 +13,7 @@ function AdminStatistics() {
   const [categoryCount, setCategoryCount] = useState({});
   const [categoryPoints, setCategoryPoints] = useState({});
   const [scoreDistribution, setScoreDistribution] = useState({ brackets: {} });
+  const [progressionMode, setProgressionMode] = useState('teams');
 
   const [userSearch, setUserSearch] = useState('');
   const [challengeSearch, setChallengeSearch] = useState('');
@@ -32,7 +33,7 @@ function AdminStatistics() {
           categoryPointsRes,
           scoreDistributionRes
         ] = await Promise.all([
-          axios.get('/api/analytics/progression/matrix'),
+          axios.get(`/api/analytics/progression/matrix?mode=${progressionMode}`),
           axios.get('/api/analytics/statistics/challenges/solves'),
           axios.get('/api/analytics/statistics/challenges/solves/percentages'),
           axios.get('/api/analytics/statistics/submissions/type'),
@@ -56,7 +57,7 @@ function AdminStatistics() {
     };
 
     load();
-  }, []);
+  }, [progressionMode]);
 
   const filteredUsers = useMemo(() => {
     return (matrix.scoreboard || []).filter((u) => u.name.toLowerCase().includes(userSearch.toLowerCase()));
@@ -77,7 +78,22 @@ function AdminStatistics() {
       <h1>Statistics</h1>
 
       <section className="stats-card">
-        <h2>Player Progression (Top 100)</h2>
+        <h2>{progressionMode === 'teams' ? 'Team Progression (Top 100)' : 'Player Progression (Top 100)'}</h2>
+
+        <div className="stats-mode-switch" style={{ marginBottom: '0.75rem' }}>
+          <button
+            className={progressionMode === 'teams' ? 'mode-btn active' : 'mode-btn'}
+            onClick={() => setProgressionMode('teams')}
+          >
+            Teams
+          </button>
+          <button
+            className={progressionMode === 'users' ? 'mode-btn active' : 'mode-btn'}
+            onClick={() => setProgressionMode('users')}
+          >
+            Users
+          </button>
+        </div>
 
         <div className="stats-filters">
           <input value={userSearch} onChange={(e) => setUserSearch(e.target.value)} placeholder="Filter players" />
@@ -95,7 +111,7 @@ function AdminStatistics() {
             <thead>
               <tr>
                 <th className="sticky c1">Place</th>
-                <th className="sticky c2">User</th>
+                <th className="sticky c2">{progressionMode === 'teams' ? 'Team' : 'User'}</th>
                 <th className="sticky c3">Score</th>
                 {filteredChallenges.map((c) => (
                   <th key={c.id} title={`${c.name} (${c.category}) - ${c.value}pt`}>

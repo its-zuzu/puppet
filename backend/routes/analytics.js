@@ -516,19 +516,8 @@ router.get('/challenge-submissions/:id', protect, authorize('admin'), async (req
 router.get('/progression/matrix', protect, authorize('admin'), async (req, res) => {
   try {
     const Submission = require('../models/Submission');
-
-    // Top 100 visible, non-banned users by score (CTFd-style scope)
-    const topUsers = await User.find({
-      role: 'user',
-      hidden: { $ne: true },
-      banned: { $ne: true }
-    })
-      .select('_id username points')
-      .sort({ points: -1, createdAt: 1, _id: 1 })
-      .limit(100)
-      .lean();
-
-    const userIds = topUsers.map((u) => u._id);
+    const Team = require('../models/Team');
+    const mode = (req.query.mode || 'users').toString() === 'teams' ? 'teams' : 'users';
 
     // Visible challenges ordered like CTFd progression matrix
     const challenges = await Challenge.find({
@@ -561,69 +550,176 @@ router.get('/progression/matrix', protect, authorize('admin'), async (req, res) 
         category: challenge.category || 'misc'
       }));
 
-    const matrixByUser = new Map();
-    userIds.forEach((id) => {
-      matrixByUser.set(String(id), {
-        solves: new Set(),
-        attempts: new Set()
+    let scoreboard = [];
+
+    if (mode === 'teams') {
+      const topTeams = await Team.find({
+        hidden: { $ne: true },
+        banned: { $ne: true }
+      })
+        .select('_id name points')
+        .sort({ points: -1, createdAt: 1, _id: 1 })
+        .limit(100)
+        .lean();
+
+      const teamIds = topTeams.map((team) => team._id);
+      const matrixByTeam = new Map();
+
+      topTeams.forEach((team) => {
+        matrixByTeam.set(String(team._id), {
+          solves: new Set(),
+          attempts: new Set()
+        });
       });
-    });
 
-    if (userIds.length > 0) {
-      const userObjectIds = userIds.map((id) => new mongoose.Types.ObjectId(id));
+      if (teamIds.length > 0) {
+        const teamObjectIds = teamIds.map((id) => new mongoose.Types.ObjectId(id));
 
-      const matrixRows = await Submission.aggregate([
-        {
-          $match: {
-            user: { $in: userObjectIds }
-          }
-        },
-        {
-          $group: {
-            _id: '$user',
-            solves: {
-              $addToSet: {
-                $cond: [
-                  { $eq: ['$isCorrect', true] },
-                  '$challenge',
-                  '$$REMOVE'
-                ]
+        const teamMembers = await User.find({
+          role: 'user',
+          hidden: { $ne: true },
+          banned: { $ne: true },
+          team: { $in: teamObjectIds }
+        })
+          .select('_id team')
+          .lean();
+
+        const memberIds = teamMembers.map((member) => member._id);
+        const userToTeam = new Map(teamMembers.map((member) => [String(member._id), String(member.team)]));
+
+        if (memberIds.length > 0) {
+          const matrixRows = await Submission.aggregate([
+            {
+              $match: {
+                user: { $in: memberIds.map((id) => new mongoose.Types.ObjectId(id)) }
               }
             },
-            attempts: {
-              $addToSet: {
-                $cond: [
-                  { $eq: ['$isCorrect', false] },
-                  '$challenge',
-                  '$$REMOVE'
-                ]
+            {
+              $group: {
+                _id: '$user',
+                solves: {
+                  $addToSet: {
+                    $cond: [
+                      { $eq: ['$isCorrect', true] },
+                      '$challenge',
+                      '$$REMOVE'
+                    ]
+                  }
+                },
+                attempts: {
+                  $addToSet: {
+                    $cond: [
+                      { $eq: ['$isCorrect', false] },
+                      '$challenge',
+                      '$$REMOVE'
+                    ]
+                  }
+                }
+              }
+            }
+          ]);
+
+          for (const row of matrixRows) {
+            const userId = String(row._id);
+            const teamId = userToTeam.get(userId);
+            if (!teamId || !matrixByTeam.has(teamId)) continue;
+
+            const teamMatrix = matrixByTeam.get(teamId);
+            (row.solves || []).forEach((challengeId) => teamMatrix.solves.add(String(challengeId)));
+            (row.attempts || []).forEach((challengeId) => teamMatrix.attempts.add(String(challengeId)));
+          }
+        }
+      }
+
+      scoreboard = topTeams.map((team, index) => {
+        const matrix = matrixByTeam.get(String(team._id)) || { solves: new Set(), attempts: new Set() };
+        return {
+          id: String(team._id),
+          name: team.name,
+          score: team.points || 0,
+          place: index + 1,
+          solves: Array.from(matrix.solves),
+          attempts: Array.from(matrix.attempts)
+        };
+      });
+    } else {
+      // Top 100 visible, non-banned users by score (CTFd-style scope)
+      const topUsers = await User.find({
+        role: 'user',
+        hidden: { $ne: true },
+        banned: { $ne: true }
+      })
+        .select('_id username points')
+        .sort({ points: -1, createdAt: 1, _id: 1 })
+        .limit(100)
+        .lean();
+
+      const userIds = topUsers.map((u) => u._id);
+
+      const matrixByUser = new Map();
+      userIds.forEach((id) => {
+        matrixByUser.set(String(id), {
+          solves: new Set(),
+          attempts: new Set()
+        });
+      });
+
+      if (userIds.length > 0) {
+        const userObjectIds = userIds.map((id) => new mongoose.Types.ObjectId(id));
+
+        const matrixRows = await Submission.aggregate([
+          {
+            $match: {
+              user: { $in: userObjectIds }
+            }
+          },
+          {
+            $group: {
+              _id: '$user',
+              solves: {
+                $addToSet: {
+                  $cond: [
+                    { $eq: ['$isCorrect', true] },
+                    '$challenge',
+                    '$$REMOVE'
+                  ]
+                }
+              },
+              attempts: {
+                $addToSet: {
+                  $cond: [
+                    { $eq: ['$isCorrect', false] },
+                    '$challenge',
+                    '$$REMOVE'
+                  ]
+                }
               }
             }
           }
+        ]);
+
+        for (const row of matrixRows) {
+          const userId = String(row._id);
+          matrixByUser.set(userId, {
+            solves: new Set((row.solves || []).map((challengeId) => String(challengeId))),
+            attempts: new Set((row.attempts || []).map((challengeId) => String(challengeId)))
+          });
         }
-      ]);
-
-      for (const row of matrixRows) {
-        const userId = String(row._id);
-        matrixByUser.set(userId, {
-          solves: new Set((row.solves || []).map((challengeId) => String(challengeId))),
-          attempts: new Set((row.attempts || []).map((challengeId) => String(challengeId)))
-        });
       }
+
+      scoreboard = topUsers.map((user, index) => {
+        const matrix = matrixByUser.get(String(user._id)) || { solves: new Set(), attempts: new Set() };
+
+        return {
+          id: String(user._id),
+          name: user.username,
+          score: user.points || 0,
+          place: index + 1,
+          solves: Array.from(matrix.solves),
+          attempts: Array.from(matrix.attempts)
+        };
+      });
     }
-
-    const scoreboard = topUsers.map((user, index) => {
-      const matrix = matrixByUser.get(String(user._id)) || { solves: new Set(), attempts: new Set() };
-
-      return {
-        id: String(user._id),
-        name: user.username,
-        score: user.points || 0,
-        place: index + 1,
-        solves: Array.from(matrix.solves),
-        attempts: Array.from(matrix.attempts)
-      };
-    });
 
     res.json({
       success: true,
@@ -631,9 +727,9 @@ router.get('/progression/matrix', protect, authorize('admin'), async (req, res) 
         scoreboard,
         challenges: challengeData,
         meta: {
-          users: scoreboard.length,
+          entries: scoreboard.length,
           challenges: challengeData.length,
-          mode: 'users'
+          mode
         }
       }
     });
