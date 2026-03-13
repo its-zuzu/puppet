@@ -464,6 +464,7 @@ function AdminDashboard() {
                   <tr>
                     <th>Username</th>
                     <th>Email</th>
+                    <th>Team</th>
                     <th>Admin</th>
                     <th>Verified</th>
                     <th>Hidden</th>
@@ -487,6 +488,7 @@ function AdminDashboard() {
                         {(u.banned || u.isBlocked) && <span className="htb-blocked-badge">🚫</span>}
                       </td>
                       <td className="htb-text-muted">{u.email}</td>
+                      <td className="htb-text-info">{u.team?.name || '—'}</td>
                       <td>
                         <input
                           type="checkbox"
@@ -595,7 +597,11 @@ function AdminDashboard() {
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ delay: idx * 0.02 }}
                     >
-                      <td><strong>{t.name}</strong></td>
+                      <td>
+                        <Link to={`/teams/${t._id}`} className="htb-team-link">
+                          <strong>{t.name}</strong>
+                        </Link>
+                      </td>
                       <td>{t.members?.length || 0}/2</td>
                       <td>
                         <input

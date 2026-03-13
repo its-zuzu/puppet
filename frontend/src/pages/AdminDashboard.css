@@ -403,6 +403,16 @@
   border-bottom: none;
 }
 
+.htb-team-link {
+  color: #e6edf5;
+  text-decoration: none;
+}
+
+.htb-team-link:hover {
+  color: #00d4ff;
+  text-decoration: underline;
+}
+
 .htb-actions {
   display: flex;
   gap: 0.5rem;
