@@ -88,7 +88,7 @@ function Navbar() {
     { path: '/admin/messages', label: 'Messages' },
     { path: '/admin/login-logs', label: 'Login Logs' },
 
-    { path: '/admin/analytics', label: 'Analytics' },
+    { path: '/admin/statistics', label: 'Statistics' },
     { path: '/admin/live-monitor', label: 'Live Monitor' },
     { path: '/admin/submissions', label: 'Submissions' },
   ];

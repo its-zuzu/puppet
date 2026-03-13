@@ -42,7 +42,7 @@ const PlatformReset = lazy(() => import('./pages/PlatformReset'))
 const UserBlocked = lazy(() => import('./pages/UserBlocked'))
 const ChallengeDetails = lazy(() => import('./pages/ChallengeDetails'))
 const Notice = lazy(() => import('./pages/Notice'))
-const Analytics = lazy(() => import('./pages/Analytics'))
+const AdminStatistics = lazy(() => import('./pages/AdminStatistics'))
 const AdminSubmissions = lazy(() => import('./pages/AdminSubmissions'))
 const UserProfile = lazy(() => import('./pages/UserProfile'))
 const AdminLiveMonitor = lazy(() => import('./pages/AdminLiveMonitor'))
@@ -190,9 +190,9 @@ function App() {
                     <PlatformReset />
                   </ProtectedRoute>
                 } />
-                <Route path="/admin/analytics" element={
+                <Route path="/admin/statistics" element={
                   <ProtectedRoute adminOnly={true}>
-                    <Analytics />
+                    <AdminStatistics />
                   </ProtectedRoute>
                 } />
                 <Route path="/admin/submissions" element={

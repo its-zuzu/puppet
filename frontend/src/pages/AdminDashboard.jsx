@@ -332,7 +332,7 @@ function AdminDashboard() {
 
   const navItems = [
     { label: 'Event Status', path: '/admin/event-status', icon: Settings },
-    { label: 'Analytics', path: '/admin/analytics', icon: Activity },
+    { label: 'Statistics', path: '/admin/statistics', icon: Activity },
     { label: 'Submissions', path: '/admin/submissions', icon: Trophy },
     { label: 'Categories', path: '/admin/categories', icon: Tag },
     { label: 'Live Monitor', path: '/admin/live-monitor', icon: Activity },

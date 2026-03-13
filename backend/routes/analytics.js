@@ -647,4 +647,213 @@ router.get('/progression/matrix', protect, authorize('admin'), async (req, res) 
   }
 });
 
+// @route   GET /api/analytics/statistics/challenges/solves
+// @desc    CTFd-style challenge solve counts
+// @access  Private/Admin
+router.get('/statistics/challenges/solves', protect, authorize('admin'), async (req, res) => {
+  try {
+    const Submission = require('../models/Submission');
+
+    const challenges = await Challenge.find({ state: { $ne: 'hidden' } })
+      .select('_id title points')
+      .lean();
+
+    const solveAgg = await Submission.aggregate([
+      { $match: { isCorrect: true } },
+      {
+        $group: {
+          _id: '$challenge',
+          solves: { $sum: 1 }
+        }
+      }
+    ]);
+
+    const solveMap = new Map(solveAgg.map((row) => [String(row._id), row.solves]));
+
+    const data = challenges.map((challenge) => ({
+      id: String(challenge._id),
+      name: challenge.title,
+      solves: solveMap.get(String(challenge._id)) || 0,
+      value: challenge.points || 0
+    }));
+
+    res.json({ success: true, data });
+  } catch (err) {
+    console.error('Error fetching challenge solve statistics:', err);
+    res.status(500).json({ success: false, message: 'Server error', error: err.message });
+  }
+});
+
+// @route   GET /api/analytics/statistics/challenges/solves/percentages
+// @desc    CTFd-style solve percentages per challenge
+// @access  Private/Admin
+router.get('/statistics/challenges/solves/percentages', protect, authorize('admin'), async (req, res) => {
+  try {
+    const Submission = require('../models/Submission');
+
+    const challenges = await Challenge.find({ state: { $ne: 'hidden' } })
+      .select('_id title points')
+      .sort({ points: 1, title: 1 })
+      .lean();
+
+    const activeUsersWithPoints = await User.countDocuments({
+      role: 'user',
+      hidden: { $ne: true },
+      banned: { $ne: true },
+      points: { $gt: 0 }
+    });
+
+    const solveAgg = await Submission.aggregate([
+      { $match: { isCorrect: true } },
+      {
+        $group: {
+          _id: '$challenge',
+          solves: { $sum: 1 }
+        }
+      }
+    ]);
+
+    const solveMap = new Map(solveAgg.map((row) => [String(row._id), row.solves]));
+
+    const data = challenges.map((challenge) => {
+      const solves = solveMap.get(String(challenge._id)) || 0;
+      const percentage = activeUsersWithPoints > 0 ? (solves / activeUsersWithPoints) * 100 : 0;
+      return {
+        id: String(challenge._id),
+        name: challenge.title,
+        solves,
+        percentage: Number(percentage.toFixed(2))
+      };
+    });
+
+    res.json({ success: true, data });
+  } catch (err) {
+    console.error('Error fetching challenge solve percentages:', err);
+    res.status(500).json({ success: false, message: 'Server error', error: err.message });
+  }
+});
+
+// @route   GET /api/analytics/statistics/challenges/category
+// @desc    CTFd-style challenge category breakdown (count/sum)
+// @access  Private/Admin
+router.get('/statistics/challenges/category', protect, authorize('admin'), async (req, res) => {
+  try {
+    const fn = (req.query.function || 'count').toString();
+    const target = (req.query.target || 'id').toString();
+
+    const challenges = await Challenge.find({ state: { $ne: 'hidden' } })
+      .select('category points')
+      .lean();
+
+    const result = {};
+    for (const challenge of challenges) {
+      const category = challenge.category || 'misc';
+      if (!Object.prototype.hasOwnProperty.call(result, category)) {
+        result[category] = 0;
+      }
+
+      if (fn === 'sum') {
+        if (target === 'points' || target === 'value') {
+          result[category] += Number(challenge.points || 0);
+        } else {
+          result[category] += 1;
+        }
+      } else {
+        result[category] += 1;
+      }
+    }
+
+    res.json({ success: true, data: result });
+  } catch (err) {
+    console.error('Error fetching category statistics:', err);
+    res.status(500).json({ success: false, message: 'Server error', error: err.message });
+  }
+});
+
+// @route   GET /api/analytics/statistics/submissions/type
+// @desc    CTFd-style submission percentage base data
+// @access  Private/Admin
+router.get('/statistics/submissions/type', protect, authorize('admin'), async (req, res) => {
+  try {
+    const Submission = require('../models/Submission');
+
+    const submissionAgg = await Submission.aggregate([
+      {
+        $group: {
+          _id: '$isCorrect',
+          count: { $sum: 1 }
+        }
+      }
+    ]);
+
+    const data = { correct: 0, incorrect: 0 };
+    submissionAgg.forEach((row) => {
+      if (row._id === true) data.correct = row.count;
+      if (row._id === false) data.incorrect = row.count;
+    });
+
+    res.json({ success: true, data });
+  } catch (err) {
+    console.error('Error fetching submission type statistics:', err);
+    res.status(500).json({ success: false, message: 'Server error', error: err.message });
+  }
+});
+
+// @route   GET /api/analytics/statistics/scores/distribution
+// @desc    CTFd-style score distribution brackets
+// @access  Private/Admin
+router.get('/statistics/scores/distribution', protect, authorize('admin'), async (req, res) => {
+  try {
+    const users = await User.find({
+      role: 'user',
+      hidden: { $ne: true },
+      banned: { $ne: true }
+    })
+      .select('points')
+      .lean();
+
+    const scores = users.map((u) => Number(u.points || 0)).filter((v) => Number.isFinite(v) && v >= 0);
+    const step = 100;
+    const brackets = {};
+
+    if (scores.length > 0) {
+      const maxScore = Math.max(...scores);
+      let upper = Math.max(step, Math.ceil(maxScore / step) * step);
+
+      for (let bound = step; bound <= upper; bound += step) {
+        brackets[bound] = 0;
+      }
+
+      for (const score of scores) {
+        let placed = false;
+        for (let bound = step; bound <= upper; bound += step) {
+          if (score < bound) {
+            brackets[bound] += 1;
+            placed = true;
+            break;
+          }
+        }
+
+        if (!placed) {
+          while (score >= upper) {
+            upper += step;
+            brackets[upper] = brackets[upper] || 0;
+          }
+          brackets[upper] += 1;
+        }
+      }
+    }
+
+    res.json({
+      success: true,
+      data: {
+        brackets
+      }
+    });
+  } catch (err) {
+    console.error('Error fetching score distribution:', err);
+    res.status(500).json({ success: false, message: 'Server error', error: err.message });
+  }
+});
+
 module.exports = router;
