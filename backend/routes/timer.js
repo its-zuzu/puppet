@@ -34,7 +34,7 @@ router.get('/', async (req, res) => {
 // @route   POST /api/timer/start
 // @desc    Start competition timer
 // @access  Private/Admin
-router.post('/start', protect, authorize('admin', 'superadmin'), async (req, res) => {
+router.post('/start', protect, authorize('admin'), async (req, res) => {
   try {
     const { durationMinutes } = req.body;
     const duration = durationMinutes || 120; // Default 2 hours
@@ -74,7 +74,7 @@ router.post('/start', protect, authorize('admin', 'superadmin'), async (req, res
 // @route   POST /api/timer/stop
 // @desc    Stop competition timer
 // @access  Private/Admin
-router.post('/stop', protect, authorize('admin', 'superadmin'), async (req, res) => {
+router.post('/stop', protect, authorize('admin'), async (req, res) => {
   try {
     let timer = await CompetitionTimer.findOne();
     
@@ -107,7 +107,7 @@ router.post('/stop', protect, authorize('admin', 'superadmin'), async (req, res)
 // @route   POST /api/timer/extend
 // @desc    Extend competition timer
 // @access  Private/Admin
-router.post('/extend', protect, authorize('admin', 'superadmin'), async (req, res) => {
+router.post('/extend', protect, authorize('admin'), async (req, res) => {
   try {
     const { additionalMinutes } = req.body;
     

@@ -8,12 +8,12 @@ const { protect, authorize } = require('../middleware/auth');
 // @route   POST /api/teams
 // @desc    Create a new team (Admin only)
 // @access  Private/Admin
-router.post('/', protect, authorize('admin', 'superadmin'), async (req, res) => {
+router.post('/', protect, authorize('admin'), async (req, res) => {
   const mongoose = require('mongoose');
   const session = await mongoose.startSession();
   
   try {
-    const { name, description, members, captain, maxMembers } = req.body;
+    const { name, description, members, captain, maxMembers, hidden, banned, verified } = req.body;
     const MAX_TEAM_MEMBERS = maxMembers || parseInt(process.env.MAX_TEAM_MEMBERS) || 2;
 
     if (!name) {
@@ -56,6 +56,9 @@ router.post('/', protect, authorize('admin', 'superadmin'), async (req, res) => 
         description,
         members: members || [],
         captain: captain || null,
+        hidden: !!hidden,
+        banned: !!banned,
+        verified: !!verified,
         createdBy: req.user._id || req.user.id
       }], { session });
       
@@ -143,7 +146,14 @@ router.get('/', protect, async (req, res) => {
     const total = await Team.countDocuments(query);
     
     // Check if user is admin
-    const isAdmin = req.user.role === 'admin' || req.user.role === 'superadmin';
+    const isAdmin = req.user.role === 'admin';
+    const view = (req.query.view || '').toString().trim();
+
+    // CTFd-style: hidden/banned are available only in admin view
+    if (!(isAdmin && view === 'admin')) {
+      query.hidden = { $ne: true };
+      query.banned = { $ne: true };
+    }
     
     // Hide emails only, keep solvedChallenges visible for transparency
     const memberFields = isAdmin ? 'username email points' : 'username points';
@@ -178,7 +188,7 @@ router.get('/', protect, async (req, res) => {
 // @access  Private
 router.get('/:id', protect, async (req, res) => {
   try {
-    const isAdmin = req.user.role === 'admin' || req.user.role === 'superadmin';
+    const isAdmin = req.user.role === 'admin';
     
     // Hide emails only, show solvedChallenges and unlockedHints for transparency
     const memberFields = isAdmin 
@@ -194,6 +204,14 @@ router.get('/:id', protect, async (req, res) => {
       .populate('createdBy', 'username');
 
     if (!team) {
+      return res.status(404).json({
+        success: false,
+        message: 'Team not found'
+      });
+    }
+
+    // CTFd-style visibility rule
+    if (!isAdmin && (team.hidden || team.banned)) {
       return res.status(404).json({
         success: false,
         message: 'Team not found'
@@ -401,14 +419,15 @@ router.get('/:id', protect, async (req, res) => {
 // @route   PUT /api/teams/:id
 // @desc    Update team (Admin only)
 // @access  Private/Admin
-router.put('/:id', protect, authorize('admin', 'superadmin'), async (req, res) => {
+router.put('/:id', protect, authorize('admin'), async (req, res) => {
   try {
-    const { name, description, members } = req.body;
+    const { name, description, members, hidden, banned, verified, captain } = req.body;
 
-    if (members && members.length !== 2) {
+    const MAX_TEAM_MEMBERS = parseInt(process.env.MAX_TEAM_MEMBERS) || 2;
+    if (members && members.length > MAX_TEAM_MEMBERS) {
       return res.status(400).json({
         success: false,
-        message: 'A team must have exactly 2 members'
+        message: `A team can have maximum ${MAX_TEAM_MEMBERS} members`
       });
     }
 
@@ -425,6 +444,31 @@ router.put('/:id', protect, authorize('admin', 'superadmin'), async (req, res) =
 
     if (name) team.name = name;
     if (description) team.description = description;
+    if (hidden !== undefined) team.hidden = !!hidden;
+    if (verified !== undefined) team.verified = !!verified;
+    if (banned !== undefined) {
+      team.banned = !!banned;
+      team.isBlocked = !!banned;
+      team.blockedReason = banned ? 'Banned by admin' : null;
+      team.blockedAt = banned ? new Date() : null;
+    }
+
+    if (captain !== undefined) {
+      if (captain === null) {
+        team.captain = null;
+      } else {
+        const captainId = captain.toString();
+        const captainInMembers = (members || team.members).some(m => m.toString() === captainId);
+        if (!captainInMembers) {
+          return res.status(400).json({
+            success: false,
+            message: 'Captain must be in team members'
+          });
+        }
+        team.captain = captain;
+      }
+    }
+
     if (members) {
       team.members = members;
 
@@ -457,7 +501,7 @@ router.put('/:id', protect, authorize('admin', 'superadmin'), async (req, res) =
 // @route   DELETE /api/teams/:id
 // @desc    Delete team (Admin only)
 // @access  Private/Admin
-router.delete('/:id', protect, authorize('admin', 'superadmin'), async (req, res) => {
+router.delete('/:id', protect, authorize('admin'), async (req, res) => {
   try {
     const team = await Team.findById(req.params.id);
 
@@ -490,7 +534,7 @@ router.delete('/:id', protect, authorize('admin', 'superadmin'), async (req, res
 // @route   POST /api/teams/:id/members/:userId
 // @desc    Add member to team (Admin only)
 // @access  Private/Admin
-router.post('/:id/members/:userId', protect, authorize('admin', 'superadmin'), async (req, res) => {
+router.post('/:id/members/:userId', protect, authorize('admin'), async (req, res) => {
   try {
     const team = await Team.findById(req.params.id);
 
@@ -547,7 +591,7 @@ router.post('/:id/members/:userId', protect, authorize('admin', 'superadmin'), a
 // @route   DELETE /api/teams/:id/members/:userId
 // @desc    Remove member from team (Admin only)
 // @access  Private/Admin
-router.delete('/:id/members/:userId', protect, authorize('admin', 'superadmin'), async (req, res) => {
+router.delete('/:id/members/:userId', protect, authorize('admin'), async (req, res) => {
   try {
     const team = await Team.findById(req.params.id);
 

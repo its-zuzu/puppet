@@ -12,7 +12,11 @@ function AdminCreateUser() {
     username: '',
     email: '',
     password: '',
-    confirmPassword: ''
+    confirmPassword: '',
+    type: 'user',
+    verified: false,
+    hidden: false,
+    banned: false
   });
 
   const [error, setError] = useState('');
@@ -33,6 +37,12 @@ function AdminCreateUser() {
       ...formData,
       [name]: value
     });
+    setError('');
+  };
+
+  const handleCheckboxChange = (e) => {
+    const { name, checked } = e.target;
+    setFormData(prev => ({ ...prev, [name]: checked }));
     setError('');
   };
 
@@ -82,7 +92,11 @@ function AdminCreateUser() {
         {
           username: formData.username,
           email: formData.email,
-          password: formData.password
+          password: formData.password,
+          type: formData.type,
+          verified: formData.verified,
+          hidden: formData.hidden,
+          banned: formData.banned
         }
       );
 
@@ -91,7 +105,11 @@ function AdminCreateUser() {
         username: '',
         email: '',
         password: '',
-        confirmPassword: ''
+        confirmPassword: '',
+        type: 'user',
+        verified: false,
+        hidden: false,
+        banned: false
       });
 
       setTimeout(() => {
@@ -170,6 +188,34 @@ function AdminCreateUser() {
                 autoComplete="new-password"
                 required
               />
+            </div>
+          </div>
+
+          <div className="form-row">
+            <div className="form-group">
+              <label htmlFor="type">Type</label>
+              <select id="type" name="type" value={formData.type} onChange={handleChange}>
+                <option value="user">User</option>
+                <option value="admin">Admin</option>
+              </select>
+            </div>
+          </div>
+
+          <div className="form-row">
+            <div className="form-group">
+              <label>
+                <input type="checkbox" name="verified" checked={formData.verified} onChange={handleCheckboxChange} /> Verified
+              </label>
+            </div>
+            <div className="form-group">
+              <label>
+                <input type="checkbox" name="hidden" checked={formData.hidden} onChange={handleCheckboxChange} /> Hidden
+              </label>
+            </div>
+            <div className="form-group">
+              <label>
+                <input type="checkbox" name="banned" checked={formData.banned} onChange={handleCheckboxChange} /> Banned
+              </label>
             </div>
           </div>
 

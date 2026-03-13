@@ -23,7 +23,7 @@ function AdminEventControl() {
   useEffect(() => {
     if (!isAuthenticated) {
       navigate('/login');
-    } else if (user && user.role !== 'admin' && user.role !== 'superadmin') {
+    } else if (user && user.role !== 'admin') {
       navigate('/');
     }
   }, [isAuthenticated, user, navigate]);

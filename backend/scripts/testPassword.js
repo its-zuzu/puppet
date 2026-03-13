@@ -5,7 +5,7 @@ require('dotenv').config();
 
 mongoose.connect(process.env.MONGO_URI || 'mongodb://localhost:27017/cyberctf')
   .then(async () => {
-    const user = await User.findOne({ email: 'superadmin@pwngrid.com' }).select('+password');
+    const user = await User.findOne({ email: 'admin@pwngrid.com' }).select('+password');
     if (user) {
       console.log('User found');
       const isMatch = await user.matchPassword('SuperAdmin');

@@ -11,20 +11,29 @@ function Analytics() {
   const [challengeStats, setChallengeStats] = useState(null);
   const [traffic, setTraffic] = useState(null);
   const [scoreboard, setScoreboard] = useState(null);
+  const [progression, setProgression] = useState(null);
+  const [userSearch, setUserSearch] = useState('');
+  const [challengeSearch, setChallengeSearch] = useState('');
   const [dataLoading, setDataLoading] = useState(true);
   const [error, setError] = useState(null);
+
+  const isAdminUser = user && user.role === 'admin';
 
   useEffect(() => {
     if (!isAuthenticated) {
       return;
     }
 
-    if (user && user.role !== 'admin') {
+    if (user && !isAdminUser) {
       return;
     }
-  }, [isAuthenticated, user]);
+  }, [isAuthenticated, user, isAdminUser]);
 
   useEffect(() => {
+    if (!isAuthenticated || !isAdminUser) {
+      return;
+    }
+
     const fetchAnalytics = async () => {
       try {
         setDataLoading(true);
@@ -34,13 +43,15 @@ function Analytics() {
           engagementRes,
           challengeRes,
           trafficRes,
-          scoreboardRes
+          scoreboardRes,
+          progressionRes
         ] = await Promise.all([
           axios.get('/api/analytics/overview'),
           axios.get('/api/analytics/user-engagement'),
           axios.get('/api/analytics/challenge-stats'),
           axios.get('/api/analytics/traffic'),
-          axios.get('/api/analytics/scoreboard-stats')
+          axios.get('/api/analytics/scoreboard-stats'),
+          axios.get('/api/analytics/progression/matrix')
         ]);
 
         setOverview(overviewRes.data.data);
@@ -48,6 +59,7 @@ function Analytics() {
         setChallengeStats(challengeRes.data.data);
         setTraffic(trafficRes.data.data);
         setScoreboard(scoreboardRes.data.data);
+        setProgression(progressionRes.data.data);
       } catch (err) {
         console.error('Error fetching analytics:', err);
         setError('Failed to load analytics data');
@@ -57,13 +69,13 @@ function Analytics() {
     };
 
     fetchAnalytics();
-  }, []);
+  }, [isAuthenticated, isAdminUser]);
 
   if (!loading && !isAuthenticated) {
     return <Navigate to="/login" />;
   }
 
-  if (!loading && user && user.role !== 'admin') {
+  if (!loading && user && !isAdminUser) {
     return <Navigate to="/" />;
   }
 
@@ -115,6 +127,91 @@ function Analytics() {
               <div className="stat-value">{overview.submissions.total}</div>
               <div className="stat-sublabel">Total Points: {overview.submissions.totalPoints}</div>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Player Progression */}
+      {progression && (
+        <div className="analytics-section">
+          <h2>Player Progression <span className="subtle">(Top 100)</span></h2>
+
+          <div className="progression-controls">
+            <input
+              type="text"
+              placeholder="Filter players..."
+              value={userSearch}
+              onChange={(e) => setUserSearch(e.target.value)}
+              className="progression-search"
+            />
+            <input
+              type="text"
+              placeholder="Filter challenges..."
+              value={challengeSearch}
+              onChange={(e) => setChallengeSearch(e.target.value)}
+              className="progression-search"
+            />
+          </div>
+
+          <div className="progression-legend">
+            <span className="legend-item"><span className="legend-box solved" />Solved</span>
+            <span className="legend-item"><span className="legend-box attempted" />Attempted</span>
+            <span className="legend-item"><span className="legend-box unopened" />Unopened</span>
+          </div>
+
+          <div className="progression-meta">
+            Showing {progression.scoreboard.filter((u) => u.name.toLowerCase().includes(userSearch.toLowerCase())).length} players and {progression.challenges.filter((c) => c.name.toLowerCase().includes(challengeSearch.toLowerCase())).length} challenges
+          </div>
+
+          <div className="progression-table-wrap">
+            <table className="progression-table">
+              <thead>
+                <tr>
+                  <th className="sticky-col sticky-place">Place</th>
+                  <th className="sticky-col sticky-name">User</th>
+                  <th className="sticky-col sticky-score">Score</th>
+                  {progression.challenges
+                    .filter((challenge) => challenge.name.toLowerCase().includes(challengeSearch.toLowerCase()))
+                    .map((challenge) => (
+                      <th key={challenge.id} className="challenge-header" title={`${challenge.name} (${challenge.category}) - ${challenge.value} pts`}>
+                        <div>{challenge.name}</div>
+                        <small>{challenge.category} • {challenge.value}</small>
+                      </th>
+                    ))}
+                </tr>
+              </thead>
+              <tbody>
+                {progression.scoreboard
+                  .filter((entry) => entry.name.toLowerCase().includes(userSearch.toLowerCase()))
+                  .map((entry) => {
+                    const solvedSet = new Set(entry.solves || []);
+                    const attemptSet = new Set(entry.attempts || []);
+
+                    return (
+                      <tr key={entry.id}>
+                        <td className="sticky-col sticky-place">{entry.place}</td>
+                        <td className="sticky-col sticky-name">{entry.name}</td>
+                        <td className="sticky-col sticky-score">{entry.score}</td>
+                        {progression.challenges
+                          .filter((challenge) => challenge.name.toLowerCase().includes(challengeSearch.toLowerCase()))
+                          .map((challenge) => {
+                            const isSolved = solvedSet.has(challenge.id);
+                            const isAttempted = attemptSet.has(challenge.id);
+
+                            return (
+                              <td
+                                key={`${entry.id}-${challenge.id}`}
+                                className={`progression-cell ${isSolved ? 'cell-solved' : isAttempted ? 'cell-attempted' : 'cell-unopened'}`}
+                              >
+                                {isSolved ? '✓' : '•'}
+                              </td>
+                            );
+                          })}
+                      </tr>
+                    );
+                  })}
+              </tbody>
+            </table>
           </div>
         </div>
       )}

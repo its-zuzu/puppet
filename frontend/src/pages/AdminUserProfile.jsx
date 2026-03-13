@@ -87,7 +87,11 @@ function AdminUserProfile() {
         }
       );
 
-      setUser(response.data.user);
+      setUser(response.data.user || response.data.data || {
+        ...user,
+        isBlocked: isBlocking,
+        blockedReason: isBlocking ? blockReason : null
+      });
       setShowBlockForm(false);
       setBlockReason('');
     } catch (err) {

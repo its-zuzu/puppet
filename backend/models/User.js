@@ -31,8 +31,35 @@ const UserSchema = new mongoose.Schema({
   },
   role: {
     type: String,
-    enum: ['user', 'admin', 'superadmin'],
+    enum: ['user', 'admin'],
     default: 'user'
+  },
+  hidden: {
+    type: Boolean,
+    default: false
+  },
+  banned: {
+    type: Boolean,
+    default: false
+  },
+  verified: {
+    type: Boolean,
+    default: false
+  },
+  website: {
+    type: String,
+    default: '',
+    trim: true
+  },
+  affiliation: {
+    type: String,
+    default: '',
+    trim: true
+  },
+  country: {
+    type: String,
+    default: '',
+    trim: true
   },
   points: {
     type: Number,
@@ -281,5 +308,8 @@ UserSchema.index({ email: 1, lockUntil: 1 }, { sparse: true }); // For login att
 UserSchema.index({ isBlocked: 1 }); // For blocked users queries
 UserSchema.index({ canSubmitFlags: 1 }); // For submission control queries
 UserSchema.index({ showInScoreboard: 1 }); // For scoreboard visibility queries
+UserSchema.index({ hidden: 1 }); // CTFd-style hidden users
+UserSchema.index({ banned: 1 }); // CTFd-style banned users
+UserSchema.index({ verified: 1 }); // CTFd-style verified users
 
 module.exports = mongoose.model('User', UserSchema);

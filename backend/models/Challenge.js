@@ -124,7 +124,7 @@ ChallengeSchema.methods.getCurrentValue = function () {
   // For dynamic challenges, we need initial, minimum, and decay
   const initial = this.initial || this.points;
   const minimum = this.minimum || this.points;
-  const decay = this.decay || 0;
+  let decay = this.decay || 0;
   const solveCount = this.solvedBy?.length || 0;
 
   // CTFd-exact: First solver gets maximum points (solve_count - 1 adjustment)

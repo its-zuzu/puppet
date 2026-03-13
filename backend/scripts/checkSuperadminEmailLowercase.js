@@ -4,8 +4,8 @@ require('dotenv').config();
 
 mongoose.connect(process.env.MONGO_URI || 'mongodb://localhost:27017/cyberctf')
   .then(async () => {
-    const users = await User.find({ role: 'superadmin' }).select('email').lean();
-    console.log('Raw superadmin emails:');
+    const users = await User.find({ role: 'admin' }).select('email').lean();
+    console.log('Raw admin emails:');
     users.forEach(u => {
       const email = u.email;
       console.log('Email:', email);

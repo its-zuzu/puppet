@@ -11,7 +11,7 @@ const { clearScoreboardCache } = require('../utils/redis');
  * @desc    Get all awards (admin only)
  * @access  Private (Admin)
  */
-router.get('/', protect, authorize('admin', 'superadmin'), async (req, res) => {
+router.get('/', protect, authorize('admin'), async (req, res) => {
   try {
     const awards = await Award.find()
       .populate('user', 'username email')
@@ -42,7 +42,7 @@ router.get('/user/:userId', protect, async (req, res) => {
     const { userId } = req.params;
 
     // Check permission: user can only see their own awards, unless admin
-    if (req.user.id !== userId && req.user.role !== 'admin' && req.user.role !== 'superadmin') {
+    if (req.user.id !== userId && req.user.role !== 'admin') {
       return res.status(403).json({
         success: false,
         error: 'Not authorized to view these awards'
@@ -77,7 +77,7 @@ router.get('/team/:teamId', protect, async (req, res) => {
 
     // Check permission: user must be in the team or be admin
     const user = await User.findById(req.user.id);
-    if (user.team?.toString() !== teamId && req.user.role !== 'admin' && req.user.role !== 'superadmin') {
+    if (user.team?.toString() !== teamId && req.user.role !== 'admin') {
       return res.status(403).json({
         success: false,
         error: 'Not authorized to view these awards'
@@ -106,7 +106,7 @@ router.get('/team/:teamId', protect, async (req, res) => {
  * @desc    Create a new award
  * @access  Private (Admin only)
  */
-router.post('/', protect, authorize('admin', 'superadmin'), async (req, res) => {
+router.post('/', protect, authorize('admin'), async (req, res) => {
   try {
     const { userId, teamId, name, value, description, category, icon } = req.body;
 
@@ -189,7 +189,7 @@ router.post('/', protect, authorize('admin', 'superadmin'), async (req, res) => 
  * @desc    Update an award
  * @access  Private (Admin only)
  */
-router.put('/:id', protect, authorize('admin', 'superadmin'), async (req, res) => {
+router.put('/:id', protect, authorize('admin'), async (req, res) => {
   try {
     const { name, value, description, category, icon } = req.body;
 
@@ -241,7 +241,7 @@ router.put('/:id', protect, authorize('admin', 'superadmin'), async (req, res) =
  * @desc    Delete an award
  * @access  Private (Admin only)
  */
-router.delete('/:id', protect, authorize('admin', 'superadmin'), async (req, res) => {
+router.delete('/:id', protect, authorize('admin'), async (req, res) => {
   try {
     const award = await Award.findById(req.params.id);
     if (!award) {

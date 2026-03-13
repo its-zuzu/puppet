@@ -8,7 +8,7 @@ dotenv.config();
 
 // Admin credentials to check
 const adminCredentials = {
-  email: 'superadmin@cyberctf.com',
+  email: 'admin@cyberctf.com',
   password: 'admin123'
 };
 

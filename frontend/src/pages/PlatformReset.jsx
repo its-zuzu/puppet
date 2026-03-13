@@ -167,7 +167,7 @@ function PlatformReset() {
               </ul>
               <h4>Will Preserve:</h4>
               <ul>
-                <li>Admin and superadmin accounts only</li>
+                <li>Admin accounts only</li>
                 <li>Admin points reset to 0</li>
               </ul>
             </div>

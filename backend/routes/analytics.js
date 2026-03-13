@@ -1,5 +1,6 @@
 const express = require('express');
 const router = express.Router();
+const mongoose = require('mongoose');
 const User = require('../models/User');
 const Challenge = require('../models/Challenge');
 const { protect, authorize } = require('../middleware/auth');
@@ -8,7 +9,7 @@ const { getCacheStats } = require('../utils/teamPointsCache');
 // @route   GET /api/analytics/cache-stats
 // @desc    Get cache performance statistics
 // @access  Private/Admin
-router.get('/cache-stats', protect, authorize('admin', 'superadmin'), async (req, res) => {
+router.get('/cache-stats', protect, authorize('admin'), async (req, res) => {
   try {
     const teamPointsCacheStats = getCacheStats();
     
@@ -31,7 +32,7 @@ router.get('/cache-stats', protect, authorize('admin', 'superadmin'), async (req
 // @route   GET /api/analytics/overview
 // @desc    Get platform overview metrics
 // @access  Private/Admin
-router.get('/overview', protect, authorize('admin', 'superadmin'), async (req, res) => {
+router.get('/overview', protect, authorize('admin'), async (req, res) => {
   try {
     const totalUsers = await User.countDocuments();
     const activeUsers = await User.countDocuments({ createdAt: { $gte: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000) } });
@@ -79,7 +80,7 @@ router.get('/overview', protect, authorize('admin', 'superadmin'), async (req, r
 // @route   GET /api/analytics/user-engagement
 // @desc    Get user engagement metrics
 // @access  Private/Admin
-router.get('/user-engagement', protect, authorize('admin', 'superadmin'), async (req, res) => {
+router.get('/user-engagement', protect, authorize('admin'), async (req, res) => {
   try {
     const users = await User.find()
       .select('username createdAt solvedChallenges points isBlocked')
@@ -121,7 +122,7 @@ router.get('/user-engagement', protect, authorize('admin', 'superadmin'), async 
 // @route   GET /api/analytics/challenge-stats
 // @desc    Get challenge statistics with solved users
 // @access  Private/Admin
-router.get('/challenge-stats', protect, authorize('admin', 'superadmin'), async (req, res) => {
+router.get('/challenge-stats', protect, authorize('admin'), async (req, res) => {
   try {
     const challenges = await Challenge.find()
       .select('title category difficulty points solvedBy isVisible')
@@ -200,7 +201,7 @@ router.get('/challenge-stats', protect, authorize('admin', 'superadmin'), async 
 // @route   GET /api/analytics/traffic
 // @desc    Get traffic statistics
 // @access  Private/Admin
-router.get('/traffic', protect, authorize('admin', 'superadmin'), async (req, res) => {
+router.get('/traffic', protect, authorize('admin'), async (req, res) => {
   try {
     const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
     const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
@@ -241,7 +242,7 @@ router.get('/traffic', protect, authorize('admin', 'superadmin'), async (req, re
 // @route   GET /api/analytics/scoreboard-stats
 // @desc    Get scoreboard statistics
 // @access  Private/Admin
-router.get('/scoreboard-stats', protect, authorize('admin', 'superadmin'), async (req, res) => {
+router.get('/scoreboard-stats', protect, authorize('admin'), async (req, res) => {
   try {
     const topUsers = await User.find()
       .select('username points solvedChallenges')
@@ -273,7 +274,7 @@ router.get('/scoreboard-stats', protect, authorize('admin', 'superadmin'), async
 // @route   GET /api/analytics/submissions
 // @desc    Get detailed submission analytics with all attempts
 // @access  Private/Admin
-router.get('/submissions', protect, authorize('admin', 'superadmin'), async (req, res) => {
+router.get('/submissions', protect, authorize('admin'), async (req, res) => {
   try {
     const Submission = require('../models/Submission');
     
@@ -392,7 +393,7 @@ router.get('/submissions', protect, authorize('admin', 'superadmin'), async (req
 // @route   GET /api/analytics/challenge-submissions
 // @desc    Get all challenges with their submission details
 // @access  Private/Admin
-router.get('/challenge-submissions', protect, authorize('admin', 'superadmin'), async (req, res) => {
+router.get('/challenge-submissions', protect, authorize('admin'), async (req, res) => {
   try {
     const Submission = require('../models/Submission');
     
@@ -441,7 +442,7 @@ router.get('/challenge-submissions', protect, authorize('admin', 'superadmin'), 
 // @route   GET /api/analytics/challenge-submissions/:id
 // @desc    Get detailed submissions for a specific challenge
 // @access  Private/Admin
-router.get('/challenge-submissions/:id', protect, authorize('admin', 'superadmin'), async (req, res) => {
+router.get('/challenge-submissions/:id', protect, authorize('admin'), async (req, res) => {
   try {
     const Submission = require('../models/Submission');
     
@@ -501,6 +502,143 @@ router.get('/challenge-submissions/:id', protect, authorize('admin', 'superadmin
     });
   } catch (err) {
     console.error('Error fetching challenge submission details:', err);
+    res.status(500).json({
+      success: false,
+      message: 'Server error',
+      error: err.message
+    });
+  }
+});
+
+// @route   GET /api/analytics/progression/matrix
+// @desc    CTFd-style player progression matrix (Top 100)
+// @access  Private/Admin
+router.get('/progression/matrix', protect, authorize('admin'), async (req, res) => {
+  try {
+    const Submission = require('../models/Submission');
+
+    // Top 100 visible, non-banned users by score (CTFd-style scope)
+    const topUsers = await User.find({
+      role: 'user',
+      hidden: { $ne: true },
+      banned: { $ne: true }
+    })
+      .select('_id username points')
+      .sort({ points: -1, createdAt: 1, _id: 1 })
+      .limit(100)
+      .lean();
+
+    const userIds = topUsers.map((u) => u._id);
+
+    // Visible challenges ordered like CTFd progression matrix
+    const challenges = await Challenge.find({
+      state: 'visible'
+    })
+      .select('_id title category points position')
+      .lean();
+
+    const challengeData = challenges
+      .sort((a, b) => {
+        const posA = typeof a.position === 'number' ? a.position : 0;
+        const posB = typeof b.position === 'number' ? b.position : 0;
+
+        // position=0 goes last
+        if (posA === 0 && posB !== 0) return 1;
+        if (posB === 0 && posA !== 0) return -1;
+
+        return (
+          posA - posB ||
+          (a.points || 0) - (b.points || 0) ||
+          (a.category || '').localeCompare(b.category || '') ||
+          String(a._id).localeCompare(String(b._id))
+        );
+      })
+      .map((challenge) => ({
+        id: String(challenge._id),
+        name: challenge.title,
+        value: challenge.points || 0,
+        position: typeof challenge.position === 'number' ? challenge.position : 0,
+        category: challenge.category || 'misc'
+      }));
+
+    const matrixByUser = new Map();
+    userIds.forEach((id) => {
+      matrixByUser.set(String(id), {
+        solves: new Set(),
+        attempts: new Set()
+      });
+    });
+
+    if (userIds.length > 0) {
+      const userObjectIds = userIds.map((id) => new mongoose.Types.ObjectId(id));
+
+      const matrixRows = await Submission.aggregate([
+        {
+          $match: {
+            user: { $in: userObjectIds }
+          }
+        },
+        {
+          $group: {
+            _id: '$user',
+            solves: {
+              $addToSet: {
+                $cond: [
+                  { $eq: ['$isCorrect', true] },
+                  '$challenge',
+                  '$$REMOVE'
+                ]
+              }
+            },
+            attempts: {
+              $addToSet: {
+                $cond: [
+                  { $eq: ['$isCorrect', false] },
+                  '$challenge',
+                  '$$REMOVE'
+                ]
+              }
+            }
+          }
+        }
+      ]);
+
+      for (const row of matrixRows) {
+        const userId = String(row._id);
+        matrixByUser.set(userId, {
+          solves: new Set((row.solves || []).map((challengeId) => String(challengeId))),
+          attempts: new Set((row.attempts || []).map((challengeId) => String(challengeId)))
+        });
+      }
+    }
+
+    const scoreboard = topUsers.map((user, index) => {
+      const matrix = matrixByUser.get(String(user._id)) || { solves: new Set(), attempts: new Set() };
+
+      return {
+        id: String(user._id),
+        name: user.username,
+        score: user.points || 0,
+        place: index + 1,
+        solves: Array.from(matrix.solves),
+        attempts: Array.from(matrix.attempts)
+      };
+    });
+
+    res.json({
+      success: true,
+      data: {
+        scoreboard,
+        challenges: challengeData,
+        meta: {
+          users: scoreboard.length,
+          challenges: challengeData.length,
+          mode: 'users'
+        }
+      }
+    });
+  } catch (err) {
+    console.error('Error fetching progression matrix:', err);
     res.status(500).json({
       success: false,
       message: 'Server error',

@@ -167,12 +167,12 @@ exports.authorize = (...roles) => {
   };
 };
 
-// Authorize superadmin only
+// Legacy helper kept for compatibility: admin-only authorization
 exports.authorizeSuperadmin = (req, res, next) => {
-  if (req.user.role !== 'superadmin') {
+  if (req.user.role !== 'admin') {
     return res.status(403).json({
       success: false,
-      message: 'Only superadmin can access this route'
+      message: 'Only admin can access this route'
     });
   }
   next();

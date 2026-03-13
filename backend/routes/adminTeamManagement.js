@@ -20,7 +20,7 @@ const redisClient = getRedisClient();
 // @route   PUT /api/admin/teams/:teamId/member/:userId/password
 // @desc    Change password for a team member (Admin only)
 // @access  Private/Admin
-router.put('/:teamId/member/:userId/password', protect, authorize('admin', 'superadmin'), async (req, res) => {
+router.put('/:teamId/member/:userId/password', protect, authorize('admin'), async (req, res) => {
   try {
     const { teamId, userId } = req.params;
     const { newPassword } = req.body;
@@ -89,7 +89,7 @@ router.put('/:teamId/member/:userId/password', protect, authorize('admin', 'supe
 // @route   PUT /api/admin/teams/:teamId/members/add
 // @desc    Add a new member to a team (Admin only)
 // @access  Private/Admin
-router.put('/:teamId/members/add', protect, authorize('admin', 'superadmin'), async (req, res) => {
+router.put('/:teamId/members/add', protect, authorize('admin'), async (req, res) => {
   const session = await mongoose.startSession();
   
   try {
@@ -167,7 +167,7 @@ router.put('/:teamId/members/add', protect, authorize('admin', 'superadmin'), as
 // @route   PUT /api/admin/teams/:teamId/members/remove
 // @desc    Remove a member from a team (Admin only)
 // @access  Private/Admin
-router.put('/:teamId/members/remove', protect, authorize('admin', 'superadmin'), async (req, res) => {
+router.put('/:teamId/members/remove', protect, authorize('admin'), async (req, res) => {
   const session = await mongoose.startSession();
   
   try {
@@ -244,7 +244,7 @@ router.put('/:teamId/members/remove', protect, authorize('admin', 'superadmin'),
 // @route   PUT /api/admin/teams/:teamId/block
 // @desc    Block/unblock an entire team (Admin only)
 // @access  Private/Admin
-router.put('/:teamId/block', protect, authorize('admin', 'superadmin'), async (req, res) => {
+router.put('/:teamId/block', protect, authorize('admin'), async (req, res) => {
   const session = await mongoose.startSession();
   
   try {
@@ -268,6 +268,7 @@ router.put('/:teamId/block', protect, authorize('admin', 'superadmin'), async (r
 
       // Update team blocked status
       team.isBlocked = isBlocked;
+      team.banned = isBlocked;
       team.blockedReason = isBlocked ? (blockedReason || 'Blocked by admin') : null;
       team.blockedAt = isBlocked ? new Date() : null;
       await team.save({ session });
@@ -278,6 +279,7 @@ router.put('/:teamId/block', protect, authorize('admin', 'superadmin'), async (r
         { _id: { $in: memberIds } },
         {
           isBlocked: isBlocked,
+          banned: isBlocked,
           blockedReason: isBlocked ? (blockedReason || 'Team blocked by admin') : null,
           blockedAt: isBlocked ? new Date() : null
         },
@@ -322,7 +324,7 @@ router.put('/:teamId/block', protect, authorize('admin', 'superadmin'), async (r
 // @route   PUT /api/admin/teams/:teamId
 // @desc    Update team details (name, description, captain) (Admin only)
 // @access  Private/Admin
-router.put('/:teamId', protect, authorize('admin', 'superadmin'), async (req, res) => {
+router.put('/:teamId', protect, authorize('admin'), async (req, res) => {
   try {
     const { teamId } = req.params;
     const { name, description, captain } = req.body;
@@ -377,7 +379,7 @@ router.put('/:teamId', protect, authorize('admin', 'superadmin'), async (req, re
 // @route   GET /api/admin/teams/:teamId
 // @desc    Get detailed team information (Admin only)
 // @access  Private/Admin
-router.get('/:teamId', protect, authorize('admin', 'superadmin'), async (req, res) => {
+router.get('/:teamId', protect, authorize('admin'), async (req, res) => {
   try {
     const team = await Team.findById(req.params.teamId)
       .populate('members', 'username email points solvedChallenges isBlocked blockedReason')

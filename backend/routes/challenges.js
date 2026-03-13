@@ -19,6 +19,7 @@ const fs = require('fs');
 const { getRedisClient } = require('../utils/redis');
 const { clearScoreboardCache } = require('../utils/redis');
 const monitoring = require('../utils/monitoring');
+const scoringService = require('../services/scoringService');
 const { 
   upload, 
   handleMulterError, 
@@ -56,7 +57,7 @@ router.get('/', protect, sanitizeInput, async (req, res) => {
 
     const query = {};
     // Show all challenges to admins, only visible challenges to others
-    const isAdmin = user && (user.role === 'admin' || user.role === 'superadmin');
+    const isAdmin = user && user.role === 'admin';
 
     if (!isAdmin) {
       query.isVisible = true;
@@ -76,22 +77,10 @@ router.get('/', protect, sanitizeInput, async (req, res) => {
 
     // Add current dynamic value and solved status to each challenge
     const enrichedChallenges = challenges.map(challenge => {
-      // Calculate current value based on function
-      let currentValue = challenge.points;
-      if (challenge.function && (challenge.function === 'linear' || challenge.function === 'logarithmic')) {
-        const solveCount = challenge.solvedBy?.length || 0;
-        if (challenge.function === 'linear') {
-          const decay = challenge.decay || 0;
-          currentValue = Math.max(challenge.minimum || 1, challenge.initial - (decay * solveCount));
-        } else if (challenge.function === 'logarithmic') {
-          const decay = challenge.decay || 0;
-          currentValue = Math.max(
-            challenge.minimum || 1,
-            Math.round(challenge.initial - decay * Math.log2(solveCount + 1))
-          );
-        }
-      }
-      
+      // CTFd-style current value calculation (single source of truth)
+      const solveCount = challenge.solvedBy?.length || 0;
+      const currentValue = scoringService.calculateChallengeValue(challenge, solveCount);
+
       challenge.currentValue = currentValue;
       challenge.isSolved = userSolvedIds.some(id => id.toString() === challenge._id.toString());
       return challenge;
@@ -223,7 +212,7 @@ router.get('/:id', async (req, res) => {
       try {
         const decoded = jwt.verify(token, process.env.JWT_SECRET);
         const user = await User.findById(decoded.id).select('role').populate('team');
-        isAdmin = user && (user.role === 'admin' || user.role === 'superadmin');
+        isAdmin = user && user.role === 'admin';
         
         if (user) {
           userId = user._id;
@@ -235,7 +224,7 @@ router.get('/:id', async (req, res) => {
     }
     
     // If challenge is not visible and user is not admin, return 404
-    if (!challenge.isVisible && !isAdmin) {
+      if (!challenge.isVisible && req.user.role !== 'admin') {
       return res.status(404).json({
         success: false,
         message: 'Challenge not found'
@@ -330,10 +319,33 @@ router.get('/:id', async (req, res) => {
 // @route   POST /api/challenges
 // @desc    Create a challenge
 // @access  Private/Admin
-router.post('/', protect, authorize('admin', 'superadmin'), async (req, res) => {
+router.post('/', protect, authorize('admin'), async (req, res) => {
   try {
     console.log('Creating challenge with data:', req.body);
-    const challenge = await Challenge.create(req.body);
+
+    const payload = { ...req.body };
+
+    // CTFd-style validation for dynamic challenge parameters
+    if (payload.function === 'linear' || payload.function === 'logarithmic') {
+      for (const attr of ['initial', 'minimum', 'decay']) {
+        if (payload[attr] === undefined || payload[attr] === null || payload[attr] === '') {
+          return res.status(400).json({
+            success: false,
+            message: `Missing '${attr}' but function is ${payload.function}`
+          });
+        }
+      }
+
+      // CTFd behavior: dynamic challenge current value starts at initial
+      payload.points = Number(payload.initial);
+    }
+
+    const challenge = await Challenge.create(payload);
+
+    // Ensure dynamic challenge value is recalculated through CTFd formula pipeline
+    if (challenge.function === 'linear' || challenge.function === 'logarithmic') {
+      await scoringService.updateChallengeValue(challenge._id);
+    }
 
     // Invalidate public challenges cache
     try {
@@ -586,7 +598,7 @@ router.post('/:id/submit', protect, sanitizeInput, checkEventNotEnded, async (re
           { session, new: true }
         );
 
-        // Calculate user's total points from all solved challenges
+        // Calculate user's total points from all solved challenges (CTFd-style solve component)
         const userSubmissions = await Submission.aggregate([
           { $match: { user: req.user._id, isCorrect: true } },
           {
@@ -606,7 +618,22 @@ router.post('/:id/submit', protect, sanitizeInput, checkEventNotEnded, async (re
           }
         ]);
 
-        const totalPoints = userSubmissions.length > 0 ? userSubmissions[0].totalPoints : 0;
+        const solvePoints = userSubmissions.length > 0 ? userSubmissions[0].totalPoints : 0;
+
+        // Add user awards (CTFd-style award component)
+        const Award = require('../models/Award');
+        const userAwards = await Award.aggregate([
+          { $match: { user: req.user._id, value: { $ne: 0 } } },
+          {
+            $group: {
+              _id: null,
+              totalAwardPoints: { $sum: '$value' }
+            }
+          }
+        ]);
+
+        const awardPoints = userAwards.length > 0 ? userAwards[0].totalAwardPoints : 0;
+        const totalPoints = solvePoints + awardPoints;
         
         // Update user.points field for display in profile pages
         await User.findByIdAndUpdate(
@@ -625,7 +652,6 @@ router.post('/:id/submit', protect, sanitizeInput, checkEventNotEnded, async (re
         // For dynamic challenges: Update challenge.points value
         // This automatically updates ALL users' scores (calculated via JOIN)
         if (challenge.function === 'linear' || challenge.function === 'logarithmic') {
-          const scoringService = require('../services/scoringService');
           await scoringService.updateChallengeValue(challenge._id);
         }
 
@@ -742,7 +768,7 @@ router.post('/:id/submit', protect, sanitizeInput, checkEventNotEnded, async (re
 // @route   DELETE /api/challenges/:id
 // @desc    Delete a challenge
 // @access  Private/Admin
-router.delete('/:id', protect, authorize('admin', 'superadmin'), async (req, res) => {
+router.delete('/:id', protect, authorize('admin'), async (req, res) => {
   try {
     // Validate ObjectId format
     if (!isValidObjectId(req.params.id)) {
@@ -786,7 +812,7 @@ router.delete('/:id', protect, authorize('admin', 'superadmin'), async (req, res
 // @route   PUT /api/challenges/:id
 // @desc    Update a challenge
 // @access  Private/Admin
-router.put('/:id', protect, authorize('admin', 'superadmin'), async (req, res) => {
+router.put('/:id', protect, authorize('admin'), async (req, res) => {
   try {
     console.log('Update challenge request:', {
       id: req.params.id,
@@ -819,14 +845,44 @@ router.put('/:id', protect, authorize('admin', 'superadmin'), async (req, res) =
       });
     }
 
+    const updateData = { ...req.body };
+
+    const incomingFunction = updateData.function !== undefined ? updateData.function : challenge.function;
+    const isDynamicFunction = incomingFunction === 'linear' || incomingFunction === 'logarithmic';
+
+    // CTFd-style: moving to dynamic requires all dynamic parameters
+    if (isDynamicFunction) {
+      const nextInitial = updateData.initial !== undefined ? updateData.initial : challenge.initial;
+      const nextMinimum = updateData.minimum !== undefined ? updateData.minimum : challenge.minimum;
+      const nextDecay = updateData.decay !== undefined ? updateData.decay : challenge.decay;
+
+      if (nextInitial === undefined || nextInitial === null || nextInitial === '') {
+        return res.status(400).json({ success: false, message: `Missing 'initial' but function is ${incomingFunction}` });
+      }
+      if (nextMinimum === undefined || nextMinimum === null || nextMinimum === '') {
+        return res.status(400).json({ success: false, message: `Missing 'minimum' but function is ${incomingFunction}` });
+      }
+      if (nextDecay === undefined || nextDecay === null || nextDecay === '') {
+        return res.status(400).json({ success: false, message: `Missing 'decay' but function is ${incomingFunction}` });
+      }
+
+      // CTFd-style: manual value/points override should be ignored for dynamic updates
+      delete updateData.points;
+    }
+
     const updatedChallenge = await Challenge.findByIdAndUpdate(
       req.params.id,
-      req.body,
+      updateData,
       {
         new: true,
         runValidators: true
       }
     );
+
+    // Recalculate dynamic value from formula after update (CTFd behavior)
+    if (updatedChallenge.function === 'linear' || updatedChallenge.function === 'logarithmic') {
+      await scoringService.updateChallengeValue(updatedChallenge._id);
+    }
 
     console.log('Challenge updated successfully:', {
       challengeId: updatedChallenge._id,
@@ -859,7 +915,7 @@ router.put('/:id', protect, authorize('admin', 'superadmin'), async (req, res) =
 router.post(
   '/:challengeId/files',
   protect,
-  authorize('admin', 'superadmin'),
+  authorize('admin'),
   upload.array('files', 10), // Max 10 files
   handleMulterError,
   async (req, res) => {
@@ -966,7 +1022,7 @@ router.post(
 router.get(
   '/:challengeId/files',
   protect,
-  authorize('admin', 'superadmin'),
+  authorize('admin'),
   async (req, res) => {
     try {
       const { challengeId } = req.params;
@@ -1007,7 +1063,7 @@ router.get(
 router.delete(
   '/:challengeId/files/:filename',
   protect,
-  authorize('admin', 'superadmin'),
+  authorize('admin'),
   async (req, res) => {
     try {
       const { challengeId } = req.params;
@@ -1096,7 +1152,7 @@ router.get(
       }
 
       // Check if challenge is visible (unless admin)
-      if (challenge.state !== 'visible' && req.user.role !== 'admin' && req.user.role !== 'superadmin') {
+      if (challenge.state !== 'visible' && req.user.role !== 'admin') {
         return res.status(403).json({
           success: false,
           message: 'Challenge is not accessible'

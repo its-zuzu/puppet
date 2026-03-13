@@ -1,7 +1,7 @@
 const axios = require('axios');
 
 const credentials = {
-  email: 'superadmin@cyberctf.com',
+  email: 'admin@cyberctf.com',
   password: 'admin123'
 };
 

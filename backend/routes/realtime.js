@@ -57,7 +57,7 @@ router.get('/', async (req, res) => {
             });
         }
 
-        if (user.role !== 'admin' && user.role !== 'superadmin') {
+        if (user.role !== 'admin') {
             return res.status(403).json({ 
                 success: false,
                 message: 'Access denied. Admin role required.' 

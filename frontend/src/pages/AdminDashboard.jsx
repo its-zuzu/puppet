@@ -73,12 +73,12 @@ function AdminDashboard() {
       try {
         let usersRes;
         if (debouncedSearchTerm) {
-          usersRes = await axios.get(`/api/auth/users?all=true&search=${encodeURIComponent(debouncedSearchTerm)}`);
+          usersRes = await axios.get(`/api/auth/users?all=true&view=admin&search=${encodeURIComponent(debouncedSearchTerm)}`);
           setUsers(usersRes.data.users || []);
           setUserTotal(usersRes.data.users?.length || 0);
         } else {
           // Fetch ALL users without pagination
-          usersRes = await axios.get(`/api/auth/users?all=true`);
+          usersRes = await axios.get(`/api/auth/users?all=true&view=admin`);
           setUsers(usersRes.data.users || []);
           setUserTotal(usersRes.data.users?.length || 0);
         }
@@ -87,7 +87,7 @@ function AdminDashboard() {
           const [challengesRes, subscribersRes, teamsRes, noticesRes] = await Promise.all([
             axios.get(`/api/challenges?page=${challengePage}&limit=${itemsPerPage}`),
             axios.get('/api/newsletter/subscribers').catch(() => ({ data: [] })),
-            axios.get(`/api/teams?page=${teamPage}&limit=${itemsPerPage}`).catch(() => ({ data: { data: [] } })),
+            axios.get(`/api/teams?page=${teamPage}&limit=${itemsPerPage}&view=admin`).catch(() => ({ data: { data: [] } })),
             axios.get('/api/notices').catch(() => ({ data: { data: [] } }))
           ]);
 
@@ -229,8 +229,8 @@ function AdminDashboard() {
   const filteredUsers = users.filter(u => {
     const matchesRole = userRoleFilter === 'all' || u.role === userRoleFilter;
     const matchesStatus = userStatusFilter === 'all' ||
-      (userStatusFilter === 'active' && !u.isBlocked) ||
-      (userStatusFilter === 'blocked' && u.isBlocked);
+      (userStatusFilter === 'active' && !(u.isBlocked || u.banned)) ||
+      (userStatusFilter === 'blocked' && (u.isBlocked || u.banned));
     return matchesRole && matchesStatus;
   }).sort((a, b) => {
     switch (userSortBy) {
@@ -283,6 +283,32 @@ function AdminDashboard() {
       setTimeout(() => setSuccessMessage(''), 3000);
     } catch (err) {
       setError(err.response?.data?.message || 'Failed to delete user');
+      setTimeout(() => setError(null), 3000);
+    }
+  };
+
+  const handleUpdateUserCtfdFields = async (userId, updates) => {
+    try {
+      const res = await axios.patch(`/api/auth/users/${userId}`, updates);
+      const updated = res.data?.data || updates;
+      setUsers(users.map(u => u._id === userId ? { ...u, ...updated } : u));
+      setSuccessMessage('User updated');
+      setTimeout(() => setSuccessMessage(''), 2000);
+    } catch (err) {
+      setError(err.response?.data?.message || 'Failed to update user');
+      setTimeout(() => setError(null), 3000);
+    }
+  };
+
+  const handleUpdateTeamCtfdFields = async (teamId, updates) => {
+    try {
+      const res = await axios.put(`/api/teams/${teamId}`, updates);
+      const updated = res.data?.data || updates;
+      setTeams(teams.map(t => t._id === teamId ? { ...t, ...updated } : t));
+      setSuccessMessage('Team updated');
+      setTimeout(() => setSuccessMessage(''), 2000);
+    } catch (err) {
+      setError(err.response?.data?.message || 'Failed to update team');
       setTimeout(() => setError(null), 3000);
     }
   };
@@ -438,9 +464,11 @@ function AdminDashboard() {
                   <tr>
                     <th>Username</th>
                     <th>Email</th>
-                    <th>Role</th>
+                    <th>Admin</th>
+                    <th>Verified</th>
+                    <th>Hidden</th>
+                    <th>Banned</th>
                     <th>Points</th>
-                    <th>Status</th>
                     <th>Solved</th>
                     <th>Joined</th>
                     <th>Actions</th>
@@ -456,23 +484,49 @@ function AdminDashboard() {
                     >
                       <td>
                         <strong>{u.username}</strong>
-                        {u.isBlocked && <span className="htb-blocked-badge">🚫</span>}
+                        {(u.banned || u.isBlocked) && <span className="htb-blocked-badge">🚫</span>}
                       </td>
                       <td className="htb-text-muted">{u.email}</td>
-                      <td><span className={`htb-badge htb-badge-${u.role}`}>{u.role}</span></td>
-                      <td className="htb-text-primary"><strong>{u.points}</strong></td>
                       <td>
-                        <span className={`htb-status ${u.isBlocked ? 'blocked' : 'active'}`}>
-                          {u.isBlocked ? 'Blocked' : 'Active'}
-                        </span>
+                        <input
+                          type="checkbox"
+                          checked={u.role === 'admin'}
+                          onChange={(e) => handleUpdateUserCtfdFields(u._id, { type: e.target.checked ? 'admin' : 'user' })}
+                          disabled={false}
+                        />
                       </td>
+                      <td>
+                        <input
+                          type="checkbox"
+                          checked={!!(u.verified || u.isEmailVerified)}
+                          onChange={(e) => handleUpdateUserCtfdFields(u._id, { verified: e.target.checked })}
+                          disabled={false}
+                        />
+                      </td>
+                      <td>
+                        <input
+                          type="checkbox"
+                          checked={!!u.hidden}
+                          onChange={(e) => handleUpdateUserCtfdFields(u._id, { hidden: e.target.checked })}
+                          disabled={false}
+                        />
+                      </td>
+                      <td>
+                        <input
+                          type="checkbox"
+                          checked={!!(u.banned || u.isBlocked)}
+                          onChange={(e) => handleUpdateUserCtfdFields(u._id, { banned: e.target.checked })}
+                          disabled={false}
+                        />
+                      </td>
+                      <td className="htb-text-primary"><strong>{u.points}</strong></td>
                       <td className="htb-text-info">{u.solvedChallenges?.length || 0}</td>
                       <td className="htb-text-muted">{new Date(u.createdAt).toLocaleDateString()}</td>
                       <td className="htb-actions">
                         <button className="htb-btn-icon" onClick={() => handleUserClick(u._id)}>
                           <Eye size={16} />
                         </button>
-                        {user?.role === 'admin' && u.role !== 'superadmin' && (
+                        {user?.role === 'admin' && (
                           <>
                             <button 
                               className="htb-btn-icon" 
@@ -527,6 +581,8 @@ function AdminDashboard() {
                   <tr>
                     <th>Team Name</th>
                     <th>Members</th>
+                    <th>Hidden</th>
+                    <th>Banned</th>
                     <th>Points</th>
                     <th>Actions</th>
                   </tr>
@@ -541,6 +597,20 @@ function AdminDashboard() {
                     >
                       <td><strong>{t.name}</strong></td>
                       <td>{t.members?.length || 0}/2</td>
+                      <td>
+                        <input
+                          type="checkbox"
+                          checked={!!t.hidden}
+                          onChange={(e) => handleUpdateTeamCtfdFields(t._id, { hidden: e.target.checked })}
+                        />
+                      </td>
+                      <td>
+                        <input
+                          type="checkbox"
+                          checked={!!(t.banned || t.isBlocked)}
+                          onChange={(e) => handleUpdateTeamCtfdFields(t._id, { banned: e.target.checked })}
+                        />
+                      </td>
                       <td className="htb-text-primary"><strong>{t.points || 0}</strong></td>
                       <td className="htb-actions">
                         <button className="htb-btn-icon danger" onClick={() => handleDeleteTeam(t._id)}>

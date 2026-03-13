@@ -14,7 +14,6 @@ mongoose.connect(process.env.MONGO_URI || 'mongodb://localhost:27017/cyberctf')
       console.log('=== Role System Verification ===\n');
       
       const roles = {
-        superadmin: [],
         admin: [],
         user: []
       };
@@ -26,15 +25,6 @@ mongoose.connect(process.env.MONGO_URI || 'mongodb://localhost:27017/cyberctf')
       });
       
       console.log(`📊 Total Users: ${users.length}\n`);
-      
-      console.log(`👑 SUPERADMIN (${roles.superadmin.length}):`);
-      if (roles.superadmin.length > 0) {
-        roles.superadmin.forEach(u => {
-          console.log(`   - ${u.username} (${u.email}) - Created: ${u.createdAt.toLocaleDateString()}`);
-        });
-      } else {
-        console.log('   No superadmins found');
-      }
       
       console.log(`\n🔧 ADMIN (${roles.admin.length}):`);
       if (roles.admin.length > 0) {
@@ -58,7 +48,6 @@ mongoose.connect(process.env.MONGO_URI || 'mongodb://localhost:27017/cyberctf')
       }
       
       console.log('\n=== Role System Status ===');
-      console.log('✓ Superadmin role: Available');
       console.log('✓ Admin role: Available');
       console.log('✓ User role: Available');
       console.log('\n================================\n');

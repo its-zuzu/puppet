@@ -38,7 +38,7 @@ const getFreezeTime = async () => {
 router.get('/', async (req, res) => {
   try {
     const type = req.query.type === 'users' ? 'users' : 'teams';
-    const isAdmin = req.user && (req.user.role === 'admin' || req.user.role === 'superadmin');
+    const isAdmin = req.user && req.user.role === 'admin';
 
     // Cache Key
     const cacheKey = `scoreboard:${type}:${isAdmin ? 'admin' : 'public'}`;
@@ -82,7 +82,7 @@ router.get('/top/:count', async (req, res) => {
   try {
     const count = parseInt(req.params.count) || 10;
     const type = req.query.type === 'users' ? 'users' : 'teams';
-    const isAdmin = req.user && (req.user.role === 'admin' || req.user.role === 'superadmin');
+    const isAdmin = req.user && req.user.role === 'admin';
 
     // Use a different cache key for detailed view if needed, or just partial?
     // CTFd returns a dict: { "1": { id, name, score, solves: [...] }, "2": ... }
@@ -143,7 +143,7 @@ router.get('/top/:count', async (req, res) => {
 router.get('/graph', async (req, res) => {
   try {
     const type = req.query.type === 'users' ? 'users' : 'teams';
-    const isAdmin = req.user && (req.user.role === 'admin' || req.user.role === 'superadmin');
+    const isAdmin = req.user && req.user.role === 'admin';
 
     const cacheKey = `scoreboard:graph:${type}:${isAdmin ? 'admin' : 'public'}`;
     const cached = await redisClient.get(cacheKey);
@@ -245,7 +245,7 @@ async function aggregateUserStandings(isAdmin, freezeTime, limit = null) {
   ]);
 
   // 2. Build User Map (Challenge points only - no awards)
-  // Individual user rankings should only reflect challenge solves, not team deductions
+  // CTFd-style user ranking includes solves + user awards
   const userMap = new Map();
 
   // Process Submissions
@@ -254,6 +254,37 @@ async function aggregateUserStandings(isAdmin, freezeTime, limit = null) {
       score: sub.score,
       lastDate: new Date(sub.lastSolve)
     });
+  }
+
+  // Merge user awards into user map
+  const userAwardMatch = {
+    value: { $ne: 0 },
+    user: { $exists: true, $ne: null }
+  };
+
+  if (freezeTime) {
+    userAwardMatch.date = { $lt: new Date(freezeTime) };
+  }
+
+  const userAwardsAgg = await Award.aggregate([
+    { $match: userAwardMatch },
+    {
+      $group: {
+        _id: '$user',
+        score: { $sum: '$value' },
+        lastAward: { $max: '$date' }
+      }
+    }
+  ]);
+
+  for (const award of userAwardsAgg) {
+    const uid = award._id.toString();
+    const existing = userMap.get(uid) || { score: 0, lastDate: new Date(0) };
+    existing.score += award.score;
+    if (award.lastAward && new Date(award.lastAward) > existing.lastDate) {
+      existing.lastDate = new Date(award.lastAward);
+    }
+    userMap.set(uid, existing);
   }
 
   // Filter Users (Hidden/Banned/Admin)

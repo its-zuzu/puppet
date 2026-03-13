@@ -30,6 +30,33 @@ const TeamSchema = new mongoose.Schema({
     type: Number,
     default: 0
   },
+  hidden: {
+    type: Boolean,
+    default: false
+  },
+  banned: {
+    type: Boolean,
+    default: false
+  },
+  verified: {
+    type: Boolean,
+    default: false
+  },
+  website: {
+    type: String,
+    default: '',
+    trim: true
+  },
+  affiliation: {
+    type: String,
+    default: '',
+    trim: true
+  },
+  country: {
+    type: String,
+    default: '',
+    trim: true
+  },
   solvedChallenges: [{
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Challenge'
@@ -55,5 +82,7 @@ const TeamSchema = new mongoose.Schema({
 TeamSchema.index({ points: -1 });
 TeamSchema.index({ createdBy: 1 });
 TeamSchema.index({ members: 1 });
+TeamSchema.index({ hidden: 1 });
+TeamSchema.index({ banned: 1 });
 
 module.exports = mongoose.model('Team', TeamSchema);

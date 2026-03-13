@@ -298,9 +298,9 @@ router.post('/resend-otp', async (req, res) => {
 // @route   POST /api/auth/register-admin
 // @desc    Register a user (Admin only)
 // @access  Private/Admin
-router.post('/register-admin', protect, authorize('admin', 'superadmin'), async (req, res) => {
+router.post('/register-admin', protect, authorize('admin'), async (req, res) => {
   try {
-    const { username, email, password, teamId } = req.body;
+    const { username, email, password, teamId, type, verified, hidden, banned } = req.body;
 
     // Validate input
     if (!username || !email || !password) {
@@ -338,6 +338,14 @@ router.post('/register-admin', protect, authorize('admin', 'superadmin'), async 
       username,
       email,
       password,
+      role: type === 'admin' ? 'admin' : 'user',
+      verified: !!verified,
+      isEmailVerified: !!verified,
+      hidden: !!hidden,
+      banned: !!banned,
+      isBlocked: !!banned,
+      blockedReason: banned ? 'Banned by admin' : null,
+      blockedAt: banned ? new Date() : null,
       team: teamId || undefined
     });
 
@@ -897,8 +905,7 @@ router.get('/me', protect, async (req, res) => {
       } else {
         // Calculate rank efficiently
         rank = await User.countDocuments({ 
-          points: { $gt: totalPoints },
-          role: { $ne: 'superadmin' }
+          points: { $gt: totalPoints }
         }) + 1;
         
         // Cache for 1 minute
@@ -907,8 +914,7 @@ router.get('/me', protect, async (req, res) => {
     } catch (cacheError) {
       console.error('Redis error, calculating rank directly:', cacheError);
       rank = await User.countDocuments({ 
-        points: { $gt: totalPoints },
-        role: { $ne: 'superadmin' }
+        points: { $gt: totalPoints }
       }) + 1;
     }
 
@@ -978,19 +984,35 @@ router.get('/me', protect, async (req, res) => {
 // @route   GET /api/auth/users
 // @desc    Get all users with pagination (admin only)
 // @access  Private/Admin
-router.get('/users', protect, authorize('admin', 'superadmin'), async (req, res) => {
+router.get('/users', protect, authorize('admin'), async (req, res) => {
   try {
-    const { all, search } = req.query;
+    const { all, search, q, field, view } = req.query;
 
     // Build search query
     let query = {};
-    if (search) {
+    const searchValue = (search || q || '').toString().trim();
+    const searchField = (field || '').toString().trim();
+
+    if (searchValue) {
       // Sanitize regex input to prevent ReDoS attacks
-      const sanitized = search.replace(/[.*+?^${}()|[\]\\]/g, '\\$&').substring(0, 50);
-      query.$or = [
-        { username: { $regex: sanitized, $options: 'i' } },
-        { email: { $regex: sanitized, $options: 'i' } }
-      ];
+      const sanitized = searchValue.replace(/[.*+?^${}()|[\]\\]/g, '\\$&').substring(0, 50);
+      const allowedFields = ['username', 'email', 'affiliation', 'country', 'website'];
+      if (searchField && allowedFields.includes(searchField)) {
+        query[searchField] = { $regex: sanitized, $options: 'i' };
+      } else {
+        query.$or = [
+          { username: { $regex: sanitized, $options: 'i' } },
+          { email: { $regex: sanitized, $options: 'i' } },
+          { affiliation: { $regex: sanitized, $options: 'i' } },
+          { country: { $regex: sanitized, $options: 'i' } }
+        ];
+      }
+    }
+
+    // CTFd-style: only include hidden/banned users for admin view
+    if (view !== 'admin') {
+      query.hidden = { $ne: true };
+      query.banned = { $ne: true };
     }
 
     if (all === 'true') {
@@ -1043,7 +1065,7 @@ router.get('/users/:id', protect, async (req, res) => {
   try {
     // Allow users to view their own profile or admins to view any profile
     const isOwnProfile = req.user._id.toString() === req.params.id; // Fixed: added .toString()
-    const isAdmin = req.user.role === 'admin' || req.user.role === 'superadmin';
+    const isAdmin = req.user.role === 'admin';
 
     if (!isOwnProfile && !isAdmin) {
       return res.status(403).json({
@@ -1055,6 +1077,14 @@ router.get('/users/:id', protect, async (req, res) => {
     const user = await User.findById(req.params.id).select('-password');
 
     if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: 'User not found'
+      });
+    }
+
+    // CTFd-style visibility: hidden/banned users are admin-only unless self
+    if (!isAdmin && !isOwnProfile && (user.hidden || user.banned)) {
       return res.status(404).json({
         success: false,
         message: 'User not found'
@@ -1078,11 +1108,19 @@ router.get('/users/:id', protect, async (req, res) => {
 // @access  Private
 router.get('/user/:id', protect, async (req, res) => {
   try {
+    const isAdmin = req.user.role === 'admin';
     const user = await User.findById(req.params.id)
-      .select('username unlockedHints team createdAt')
+      .select('username unlockedHints team createdAt hidden banned')
       .populate('team', 'name');
 
     if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: 'User not found'
+      });
+    }
+
+    if (!isAdmin && (user.hidden || user.banned)) {
       return res.status(404).json({
         success: false,
         message: 'User not found'
@@ -1227,11 +1265,11 @@ router.get('/user/:id', protect, async (req, res) => {
 // See backend/routes/adminReset.js for implementation
 
 // @route   PUT /api/auth/users/:id/role
-// @desc    Change user role (Admin/Superadmin)
+// @desc    Change user role (Admin/User)
 // @access  Private/Admin
 router.put('/users/:id/role', protect, async (req, res) => {
   try {
-    if (req.user.role !== 'admin' && req.user.role !== 'superadmin') {
+    if (req.user.role !== 'admin') {
       return res.status(403).json({
         success: false,
         message: 'Only admin can change user roles'
@@ -1253,13 +1291,6 @@ router.put('/users/:id/role', protect, async (req, res) => {
       return res.status(404).json({
         success: false,
         message: 'User not found'
-      });
-    }
-
-    if (user.role === 'superadmin') {
-      return res.status(400).json({
-        success: false,
-        message: 'Cannot change superadmin role'
       });
     }
 
@@ -1288,10 +1319,10 @@ router.put('/users/:id/role', protect, async (req, res) => {
   }
 });
 
-// @route   DELETE /api/auth/users/:id
-// @desc    Delete a user (Admin only)
+// @route   PATCH /api/auth/users/:id
+// @desc    CTFd-style admin user management update
 // @access  Private/Admin
-router.delete('/users/:id', protect, authorize('admin', 'superadmin'), async (req, res) => {
+router.patch('/users/:id', protect, authorize('admin'), async (req, res) => {
   try {
     const user = await User.findById(req.params.id);
 
@@ -1302,10 +1333,102 @@ router.delete('/users/:id', protect, authorize('admin', 'superadmin'), async (re
       });
     }
 
-    if (user.role === 'superadmin') {
-      return res.status(400).json({
+    const {
+      username,
+      email,
+      password,
+      type,
+      role,
+      verified,
+      hidden,
+      banned,
+      canSubmitFlags,
+      showInScoreboard
+    } = req.body;
+
+    if (username !== undefined) user.username = username;
+    if (email !== undefined) user.email = email;
+    if (password !== undefined && password !== '') user.password = password;
+
+    const nextRole = type !== undefined ? (type === 'admin' ? 'admin' : 'user') : role;
+    if (nextRole !== undefined) {
+      if (!['user', 'admin'].includes(nextRole)) {
+        return res.status(400).json({ success: false, message: 'Invalid user type/role' });
+      }
+      user.role = nextRole;
+    }
+
+    if (verified !== undefined) {
+      user.verified = !!verified;
+      user.isEmailVerified = !!verified;
+    }
+
+    if (hidden !== undefined) {
+      user.hidden = !!hidden;
+      if (hidden) {
+        user.showInScoreboard = false;
+      }
+    }
+
+    if (banned !== undefined) {
+      // CTFd-style safety: admin cannot ban themselves
+      const isSelf = req.user._id.toString() === user._id.toString();
+      if (isSelf && !!banned) {
+        return res.status(400).json({
+          success: false,
+          message: 'You cannot ban yourself'
+        });
+      }
+      user.banned = !!banned;
+      user.isBlocked = !!banned;
+      user.blockedReason = banned ? 'Banned by admin' : null;
+      user.blockedAt = banned ? new Date() : null;
+      if (banned) {
+        user.showInScoreboard = false;
+      }
+    }
+
+    if (canSubmitFlags !== undefined) user.canSubmitFlags = !!canSubmitFlags;
+    if (showInScoreboard !== undefined) user.showInScoreboard = !!showInScoreboard;
+
+    await user.save();
+
+    return res.json({
+      success: true,
+      data: {
+        id: user._id,
+        username: user.username,
+        email: user.email,
+        role: user.role,
+        type: user.role === 'admin' ? 'admin' : 'user',
+        verified: !!user.verified,
+        hidden: !!user.hidden,
+        banned: !!user.banned,
+        isBlocked: !!user.isBlocked,
+        canSubmitFlags: !!user.canSubmitFlags,
+        showInScoreboard: !!user.showInScoreboard
+      }
+    });
+  } catch (error) {
+    console.error('Error patching user:', error);
+    return res.status(500).json({
+      success: false,
+      message: process.env.NODE_ENV === 'development' ? error.message : 'Error updating user'
+    });
+  }
+});
+
+// @route   DELETE /api/auth/users/:id
+// @desc    Delete a user (Admin only)
+// @access  Private/Admin
+router.delete('/users/:id', protect, authorize('admin'), async (req, res) => {
+  try {
+    const user = await User.findById(req.params.id);
+
+    if (!user) {
+      return res.status(404).json({
         success: false,
-        message: 'Cannot delete superadmin user'
+        message: 'User not found'
       });
     }
 
@@ -1334,7 +1457,7 @@ router.delete('/users/:id', protect, authorize('admin', 'superadmin'), async (re
 // @route   PUT /api/auth/users/:id/block
 // @desc    Block or unblock a user (Admin only)
 // @access  Private/Admin
-router.put('/users/:id/block', protect, authorize('admin', 'superadmin'), async (req, res) => {
+router.put('/users/:id/block', protect, authorize('admin'), async (req, res) => {
   try {
     const { isBlocked, reason } = req.body;
 
@@ -1354,16 +1477,13 @@ router.put('/users/:id/block', protect, authorize('admin', 'superadmin'), async 
       });
     }
 
-    if (user.role === 'superadmin') {
-      return res.status(400).json({
-        success: false,
-        message: 'Cannot block superadmin user'
-      });
-    }
-
     user.isBlocked = isBlocked;
+    user.banned = isBlocked;
     user.blockedReason = isBlocked ? reason || 'No reason provided' : null;
     user.blockedAt = isBlocked ? new Date() : null;
+    if (isBlocked) {
+      user.showInScoreboard = false;
+    }
     await user.save();
 
     res.json({
@@ -1391,7 +1511,7 @@ router.put('/users/:id/block', protect, authorize('admin', 'superadmin'), async 
 // @route   PUT /api/auth/users/:id/submission-permission
 // @desc    Update user submission permission (Admin only)
 // @access  Private/Admin
-router.put('/users/:id/submission-permission', protect, authorize('admin', 'superadmin'), async (req, res) => {
+router.put('/users/:id/submission-permission', protect, authorize('admin'), async (req, res) => {
   try {
     const { canSubmitFlags } = req.body;
 
@@ -1438,7 +1558,7 @@ router.put('/users/:id/submission-permission', protect, authorize('admin', 'supe
 // @route   PUT /api/auth/users/:id/scoreboard-visibility
 // @desc    Update user scoreboard visibility (Admin only)
 // @access  Private/Admin
-router.put('/users/:id/scoreboard-visibility', protect, authorize('admin', 'superadmin'), async (req, res) => {
+router.put('/users/:id/scoreboard-visibility', protect, authorize('admin'), async (req, res) => {
   try {
     const { showInScoreboard } = req.body;
 
@@ -1487,7 +1607,7 @@ router.put('/users/:id/scoreboard-visibility', protect, authorize('admin', 'supe
 // @route   GET /api/auth/admin/login-logs
 // @desc    Get login logs (Admin only)
 // @access  Private/Admin
-router.get('/admin/login-logs', protect, authorize('admin', 'superadmin'), async (req, res) => {
+router.get('/admin/login-logs', protect, authorize('admin'), async (req, res) => {
   try {
     const page = parseInt(req.query.page) || 1;
     const limit = parseInt(req.query.limit) || 20;
@@ -1532,7 +1652,7 @@ router.get('/admin/login-logs', protect, authorize('admin', 'superadmin'), async
 // @route   GET /api/auth/admin/login-logs/:userId
 // @desc    Get login logs for specific user (Admin only)
 // @access  Private/Admin
-router.get('/admin/login-logs/:userId', protect, authorize('admin', 'superadmin'), async (req, res) => {
+router.get('/admin/login-logs/:userId', protect, authorize('admin'), async (req, res) => {
   try {
     const { userId } = req.params;
     const page = parseInt(req.query.page) || 1;
@@ -1566,7 +1686,7 @@ router.get('/admin/login-logs/:userId', protect, authorize('admin', 'superadmin'
 // @route   DELETE /api/auth/admin/login-logs
 // @desc    Clear all login logs (Admin only)
 // @access  Private/Admin
-router.delete('/admin/login-logs', protect, authorize('admin', 'superadmin'), async (req, res) => {
+router.delete('/admin/login-logs', protect, authorize('admin'), async (req, res) => {
   try {
     // Delete all login logs
     const result = await LoginLog.deleteMany({});
@@ -1588,7 +1708,7 @@ router.delete('/admin/login-logs', protect, authorize('admin', 'superadmin'), as
 // @route   POST /api/auth/admin/login-logs/view-password
 // @desc    View failed password attempt (Admin only - requires security code)
 // @access  Private/Admin
-router.post('/admin/login-logs/view-password', protect, authorize('admin', 'superadmin'), async (req, res) => {
+router.post('/admin/login-logs/view-password', protect, authorize('admin'), async (req, res) => {
   try {
     const { logId } = req.body;
 
@@ -1655,7 +1775,7 @@ router.post('/admin/login-logs/view-password', protect, authorize('admin', 'supe
 // @route   PUT /api/auth/admin/change-password
 // @desc    Change admin password (Admin only - can only change own password)
 // @access  Private/Admin
-router.put('/admin/change-password', protect, authorize('admin', 'superadmin'), async (req, res) => {
+router.put('/admin/change-password', protect, authorize('admin'), async (req, res) => {
   try {
     const { currentPassword, newPassword } = req.body;
 

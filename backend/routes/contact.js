@@ -45,7 +45,7 @@ router.post(
 // @route   GET /api/contact
 // @desc    Get all contact messages (admin only)
 // @access  Private/Admin
-router.get('/', protect, authorize('admin', 'superadmin'), async (req, res) => {
+router.get('/', protect, authorize('admin'), async (req, res) => {
   try {
     const messages = await Contact.find().sort({ createdAt: -1 });
     res.json(messages);
@@ -58,7 +58,7 @@ router.get('/', protect, authorize('admin', 'superadmin'), async (req, res) => {
 // @route   PUT /api/contact/:id/status
 // @desc    Update message status (admin only)
 // @access  Private/Admin
-router.put('/:id/status', protect, authorize('admin', 'superadmin'), async (req, res) => {
+router.put('/:id/status', protect, authorize('admin'), async (req, res) => {
   try {
     const { status } = req.body;
     if (!['unread', 'read', 'replied'].includes(status)) {
@@ -85,7 +85,7 @@ router.put('/:id/status', protect, authorize('admin', 'superadmin'), async (req,
 // @route   DELETE /api/contact/:id
 // @desc    Delete a contact message (admin only)
 // @access  Private/Admin
-router.delete('/:id', protect, authorize('admin', 'superadmin'), async (req, res) => {
+router.delete('/:id', protect, authorize('admin'), async (req, res) => {
   try {
     const message = await Contact.findByIdAndDelete(req.params.id);
 

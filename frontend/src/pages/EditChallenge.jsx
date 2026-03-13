@@ -37,7 +37,7 @@ function EditChallenge() {
   useEffect(() => {
     if (!isAuthenticated) {
       navigate('/login');
-    } else if (user && user.role !== 'admin' && user.role !== 'superadmin') {
+    } else if (user && user.role !== 'admin') {
       navigate('/challenges');
     }
   }, [isAuthenticated, user, navigate]);

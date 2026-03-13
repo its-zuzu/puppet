@@ -10,10 +10,10 @@ const { clearRedisCache } = require('../utils/redis');
 /**
  * @route   POST /api/admin/reset/full-platform
  * @desc    Perform full platform reset - deletes all data except admin accounts
- * @access  Private/Admin/Superadmin
+ * @access  Private/Admin
  * @body    { securityCode: string }
  */
-router.post('/full-platform', protect, authorize('admin', 'superadmin'), async (req, res) => {
+router.post('/full-platform', protect, authorize('admin'), async (req, res) => {
   try {
     const { securityCode } = req.body;
 
@@ -71,10 +71,10 @@ router.post('/full-platform', protect, authorize('admin', 'superadmin'), async (
 /**
  * @route   POST /api/admin/reset/competition-progress
  * @desc    Reset competition progress - clears scores and submissions but keeps users/challenges
- * @access  Private/Admin/Superadmin
+ * @access  Private/Admin
  * @body    { securityCode: string }
  */
-router.post('/competition-progress', protect, authorize('admin', 'superadmin'), async (req, res) => {
+router.post('/competition-progress', protect, authorize('admin'), async (req, res) => {
   try {
     const { securityCode } = req.body;
 

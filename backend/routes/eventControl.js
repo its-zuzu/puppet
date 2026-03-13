@@ -82,7 +82,7 @@ router.get('/status', async (req, res) => {
   }
 });
 
-router.post('/set-times', protect, authorize('admin', 'superadmin'), async (req, res) => {
+router.post('/set-times', protect, authorize('admin'), async (req, res) => {
   try {
     const { startTime, endTime, freezeTime } = req.body;
 
@@ -123,7 +123,7 @@ router.post('/set-times', protect, authorize('admin', 'superadmin'), async (req,
   }
 });
 
-router.post('/start', protect, authorize('admin', 'superadmin'), async (req, res) => {
+router.post('/start', protect, authorize('admin'), async (req, res) => {
   try {
     const now = new Date();
 
@@ -174,7 +174,7 @@ router.post('/start', protect, authorize('admin', 'superadmin'), async (req, res
   }
 });
 
-router.post('/end', protect, authorize('admin', 'superadmin'), async (req, res) => {
+router.post('/end', protect, authorize('admin'), async (req, res) => {
   try {
     const now = new Date();
     const currentState = await getEventState();
@@ -226,7 +226,7 @@ router.post('/end', protect, authorize('admin', 'superadmin'), async (req, res) 
   }
 });
 
-router.post('/freeze', protect, authorize('admin', 'superadmin'), async (req, res) => {
+router.post('/freeze', protect, authorize('admin'), async (req, res) => {
   try {
     const now = new Date();
     const currentState = await getEventState();
@@ -278,7 +278,7 @@ router.post('/freeze', protect, authorize('admin', 'superadmin'), async (req, re
   }
 });
 
-router.post('/pause', protect, authorize('admin', 'superadmin'), async (req, res) => {
+router.post('/pause', protect, authorize('admin'), async (req, res) => {
   try {
     const now = new Date();
     const currentState = await getEventState();
@@ -333,7 +333,7 @@ router.post('/pause', protect, authorize('admin', 'superadmin'), async (req, res
   }
 });
 
-router.post('/resume', protect, authorize('admin', 'superadmin'), async (req, res) => {
+router.post('/resume', protect, authorize('admin'), async (req, res) => {
   try {
     const now = new Date();
     const currentState = await getEventState();
@@ -388,7 +388,7 @@ router.post('/resume', protect, authorize('admin', 'superadmin'), async (req, re
   }
 });
 
-router.post('/set-message', protect, authorize('admin', 'superadmin'), async (req, res) => {
+router.post('/set-message', protect, authorize('admin'), async (req, res) => {
   try {
     const { message } = req.body;
 

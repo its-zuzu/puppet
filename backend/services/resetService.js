@@ -35,7 +35,7 @@ const validateSecurityCode = (providedCode) => {
  * This resets the platform to a fresh install state
  * 
  * Preserves:
- * - Admin and superadmin accounts
+ * - Admin accounts
  * 
  * Deletes:
  * - All regular users
@@ -63,9 +63,9 @@ const fullPlatformReset = async (adminId, securityCode) => {
   try {
     await session.startTransaction();
 
-    // Delete all regular users (preserve admins and superadmins)
+    // Delete all regular users (preserve admins)
     const userDeleteResult = await User.deleteMany(
-      { role: { $nin: ['admin', 'superadmin'] } },
+      { role: { $nin: ['admin'] } },
       { session }
     );
 
@@ -116,7 +116,7 @@ const fullPlatformReset = async (adminId, securityCode) => {
 
     // Reset admin accounts' solved challenges and points (keep the accounts)
     await User.updateMany(
-      { role: { $in: ['admin', 'superadmin'] } },
+      { role: { $in: ['admin'] } },
       {
         $set: {
           points: 0,

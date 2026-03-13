@@ -5,11 +5,11 @@ const User = require('../models/User');
 
 dotenv.config();
 
-const superadminUser = {
-  username: 'superadmin',
-  email: 'superadmin@pwngrid.com',
+const adminUser = {
+  username: 'admin',
+  email: 'admin@pwngrid.com',
   password: 'SuperAdmin',
-  role: 'superadmin'
+  role: 'admin'
 };
 
 mongoose.connect(process.env.MONGO_URI || 'mongodb://localhost:27017/cyberctf')
@@ -17,21 +17,21 @@ mongoose.connect(process.env.MONGO_URI || 'mongodb://localhost:27017/cyberctf')
     console.log('MongoDB connected successfully');
     
     try {
-      await User.deleteMany({ role: 'superadmin' });
-      console.log('Deleted existing superadmins');
+      await User.deleteMany({ role: 'admin' });
+      console.log('Deleted existing admins');
       
-      const newSuperadmin = new User({
-        username: superadminUser.username,
-        email: superadminUser.email,
-        password: superadminUser.password,
-        role: superadminUser.role
+      const newAdmin = new User({
+        username: adminUser.username,
+        email: adminUser.email,
+        password: adminUser.password,
+        role: adminUser.role
       });
       
-      await newSuperadmin.save();
-      console.log('Superadmin created successfully');
-      console.log('Email:', superadminUser.email);
-      console.log('Password:', superadminUser.password);
-      console.log('Role:', superadminUser.role);
+      await newAdmin.save();
+      console.log('Admin created successfully');
+      console.log('Email:', adminUser.email);
+      console.log('Password:', adminUser.password);
+      console.log('Role:', adminUser.role);
       
     } catch (error) {
       console.error('Error:', error.message);

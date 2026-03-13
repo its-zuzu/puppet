@@ -27,7 +27,7 @@ router.get('/', async (req, res) => {
 // @route   POST /api/categories
 // @desc    Create a new category
 // @access  Private/Admin
-router.post('/', protect, authorize('admin', 'superadmin'), async (req, res) => {
+router.post('/', protect, authorize('admin'), async (req, res) => {
   try {
     const { id, name } = req.body;
 
@@ -66,7 +66,7 @@ router.post('/', protect, authorize('admin', 'superadmin'), async (req, res) => 
 // @route   PUT /api/categories/:id
 // @desc    Update a category
 // @access  Private/Admin
-router.put('/:id', protect, authorize('admin', 'superadmin'), async (req, res) => {
+router.put('/:id', protect, authorize('admin'), async (req, res) => {
   try {
     const { name } = req.body;
 
@@ -106,7 +106,7 @@ router.put('/:id', protect, authorize('admin', 'superadmin'), async (req, res) =
 // @route   DELETE /api/categories/:id
 // @desc    Delete a category
 // @access  Private/Admin
-router.delete('/:id', protect, authorize('admin', 'superadmin'), async (req, res) => {
+router.delete('/:id', protect, authorize('admin'), async (req, res) => {
   try {
     const category = await Category.findOneAndDelete({ id: req.params.id });
 

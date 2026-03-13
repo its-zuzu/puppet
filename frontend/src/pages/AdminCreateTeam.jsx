@@ -14,7 +14,9 @@ function AdminCreateTeam() {
     description: '',
     members: [],
     captain: '',
-    maxMembers: DEFAULT_MAX_MEMBERS
+    maxMembers: DEFAULT_MAX_MEMBERS,
+    hidden: false,
+    banned: false
   });
 
   const [users, setUsers] = useState([]);
@@ -70,6 +72,12 @@ function AdminCreateTeam() {
       ...formData,
       [name]: value
     });
+    setError('');
+  };
+
+  const handleCheckboxChange = (e) => {
+    const { name, checked } = e.target;
+    setFormData(prev => ({ ...prev, [name]: checked }));
     setError('');
   };
 
@@ -149,7 +157,9 @@ function AdminCreateTeam() {
           description: formData.description,
           members: formData.members,
           captain: formData.captain,
-          maxMembers: formData.maxMembers
+          maxMembers: formData.maxMembers,
+          hidden: formData.hidden,
+          banned: formData.banned
         }
       );
 
@@ -159,7 +169,9 @@ function AdminCreateTeam() {
         description: '',
         members: [],
         captain: '',
-        maxMembers: DEFAULT_MAX_MEMBERS
+        maxMembers: DEFAULT_MAX_MEMBERS,
+        hidden: false,
+        banned: false
       });
 
       setTimeout(() => {
@@ -234,6 +246,19 @@ function AdminCreateTeam() {
             <span className="form-hint">
               Set the maximum number of members allowed in this team (1-10)
             </span>
+          </div>
+
+          <div className="form-row">
+            <div className="form-group">
+              <label>
+                <input type="checkbox" name="hidden" checked={formData.hidden} onChange={handleCheckboxChange} /> Hidden
+              </label>
+            </div>
+            <div className="form-group">
+              <label>
+                <input type="checkbox" name="banned" checked={formData.banned} onChange={handleCheckboxChange} /> Banned
+              </label>
+            </div>
           </div>
 
           <div className="form-group">

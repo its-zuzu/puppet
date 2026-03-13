@@ -51,6 +51,159 @@
   padding-bottom: 1rem;
 }
 
+.analytics-section .subtle {
+  color: #8aa1a8;
+  font-size: 0.9rem;
+  font-weight: 400;
+}
+
+.progression-controls {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+}
+
+.progression-search {
+  background: rgba(15, 25, 35, 0.8);
+  border: 1px solid rgba(0, 255, 170, 0.2);
+  color: #e0e0e0;
+  border-radius: 6px;
+  padding: 0.65rem 0.75rem;
+}
+
+.progression-search:focus {
+  outline: none;
+  border-color: rgba(0, 255, 170, 0.55);
+}
+
+.progression-legend {
+  display: flex;
+  gap: 1rem;
+  flex-wrap: wrap;
+  margin-bottom: 0.75rem;
+}
+
+.legend-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  color: #b9c6ca;
+  font-size: 0.85rem;
+}
+
+.legend-box {
+  width: 14px;
+  height: 14px;
+  border-radius: 3px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.legend-box.solved {
+  background: #28a745;
+}
+
+.legend-box.attempted {
+  background: #ffc107;
+}
+
+.legend-box.unopened {
+  background: #f8f9fa;
+}
+
+.progression-meta {
+  color: #8fa2a9;
+  font-size: 0.82rem;
+  margin-bottom: 0.75rem;
+}
+
+.progression-table-wrap {
+  overflow: auto;
+  border: 1px solid rgba(0, 255, 170, 0.15);
+  border-radius: 6px;
+  max-height: 70vh;
+}
+
+.progression-table {
+  width: max-content;
+  min-width: 100%;
+  border-collapse: collapse;
+}
+
+.progression-table th,
+.progression-table td {
+  border: 1px solid rgba(0, 255, 170, 0.08);
+  padding: 0.45rem;
+  text-align: center;
+  font-size: 0.78rem;
+}
+
+.progression-table thead th {
+  background: rgba(10, 18, 26, 0.98);
+  color: #d8eff0;
+  position: sticky;
+  top: 0;
+  z-index: 4;
+}
+
+.challenge-header {
+  min-width: 130px;
+  max-width: 130px;
+}
+
+.challenge-header div {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.challenge-header small {
+  color: #7eaab0;
+}
+
+.progression-cell {
+  font-weight: 700;
+  min-width: 35px;
+}
+
+.cell-solved {
+  background: #28a745;
+  color: #fff;
+}
+
+.cell-attempted {
+  background: #ffc107;
+  color: #1f2124;
+}
+
+.cell-unopened {
+  background: #f8f9fa;
+  color: #6c757d;
+}
+
+.sticky-col {
+  position: sticky;
+  background: rgba(15, 25, 35, 0.98);
+  z-index: 3;
+}
+
+.sticky-place {
+  left: 0;
+  min-width: 70px;
+}
+
+.sticky-name {
+  left: 70px;
+  min-width: 190px;
+  text-align: left !important;
+  padding-left: 0.75rem !important;
+}
+
+.sticky-score {
+  left: 260px;
+  min-width: 90px;
+}
+
 .cards-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));

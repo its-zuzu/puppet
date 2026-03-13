@@ -5,11 +5,11 @@ const User = require('../models/User');
 
 dotenv.config();
 
-const superadminUser = {
-  username: 'superadmin',
-  email: 'superadmin@pwngrid.com',
+const adminUser = {
+  username: 'admin',
+  email: 'admin@pwngrid.com',
   password: 'SuperAdmin',
-  role: 'superadmin'
+  role: 'admin'
 };
 
 mongoose.connect(process.env.MONGO_URI || 'mongodb://localhost:27017/cyberctf')
@@ -18,33 +18,33 @@ mongoose.connect(process.env.MONGO_URI || 'mongodb://localhost:27017/cyberctf')
     
     try {
       const existingUser = await User.findOne({ 
-        $or: [{ email: superadminUser.email }, { username: superadminUser.username }] 
+        $or: [{ email: adminUser.email }, { username: adminUser.username }] 
       });
       
       if (existingUser) {
-        console.log('User already exists. Updating to superadmin...');
-        existingUser.role = 'superadmin';
-        existingUser.password = superadminUser.password;
+        console.log('User already exists. Updating to admin...');
+        existingUser.role = 'admin';
+        existingUser.password = adminUser.password;
         await existingUser.save();
-        console.log('Superadmin updated successfully');
+        console.log('Admin updated successfully');
       } else {
         const salt = await bcrypt.genSalt(10);
-        const hashedPassword = await bcrypt.hash(superadminUser.password, salt);
+        const hashedPassword = await bcrypt.hash(adminUser.password, salt);
         
-        const newSuperadmin = new User({
-          username: superadminUser.username,
-          email: superadminUser.email,
+        const newAdmin = new User({
+          username: adminUser.username,
+          email: adminUser.email,
           password: hashedPassword,
-          role: superadminUser.role
+          role: adminUser.role
         });
         
-        await newSuperadmin.save();
-        console.log('Superadmin created successfully');
+        await newAdmin.save();
+        console.log('Admin created successfully');
       }
       
-      console.log('Email:', superadminUser.email);
-      console.log('Password:', superadminUser.password);
-      console.log('Role:', superadminUser.role);
+      console.log('Email:', adminUser.email);
+      console.log('Password:', adminUser.password);
+      console.log('Role:', adminUser.role);
       
     } catch (error) {
       console.error('Error:', error.message);
