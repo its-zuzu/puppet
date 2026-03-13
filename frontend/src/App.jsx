@@ -48,6 +48,7 @@ const UserProfile = lazy(() => import('./pages/UserProfile'))
 const AdminLiveMonitor = lazy(() => import('./pages/AdminLiveMonitor'))
 const MyTeam = lazy(() => import('./pages/MyTeam'))
 const AdminCategories = lazy(() => import('./pages/AdminCategories'))
+const AdminEventControl = lazy(() => import('./pages/AdminEventControl'))
 
 function App() {
   useEffect(() => {
@@ -205,6 +206,11 @@ function App() {
                 <Route path="/admin/live-monitor" element={
                   <ProtectedRoute adminOnly={true}>
                     <AdminLiveMonitor />
+                  </ProtectedRoute>
+                } />
+                <Route path="/admin/event-control" element={
+                  <ProtectedRoute adminOnly={true}>
+                    <AdminEventControl />
                   </ProtectedRoute>
                 } />
                 <Route path="/blocked" element={<UserBlocked />} />

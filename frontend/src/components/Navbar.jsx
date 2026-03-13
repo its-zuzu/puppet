@@ -81,6 +81,7 @@ function Navbar() {
 
   const adminLinks = [
     { path: '/admin', label: 'Dashboard' },
+    { path: '/admin/event-control', label: 'Event Control' },
     { path: '/admin/create-user', label: 'Create User' },
     { path: '/admin/create-team', label: 'Create Team' },
     { path: '/admin/categories', label: 'Categories' },
@@ -119,7 +120,7 @@ function Navbar() {
               );
             })}
 
-            {user?.role === 'admin' && (
+            {(user?.role === 'admin' || user?.role === 'superadmin') && (
               <div className="cyber-navbar-dropdown" ref={adminMenuRef}>
                 <button
                   className="cyber-navbar-link cyber-navbar-link--dropdown"

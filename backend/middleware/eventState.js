@@ -3,7 +3,43 @@ const { getRedisClient } = require('../utils/redis');
 
 const redisClient = getRedisClient();
 const CACHE_KEY = 'ctf:event:state';
-const CACHE_TTL = 3600; // 1 hour in seconds
+const CACHE_TTL = 3600; 
+
+const deriveState = (rawState = {}) => {
+  const now = new Date();
+  const startTime = rawState.startedAt ? new Date(rawState.startedAt) : null;
+  const endTime = rawState.endedAt ? new Date(rawState.endedAt) : null;
+  const freezeTime = rawState.freezeAt ? new Date(rawState.freezeAt) : null;
+
+  let status = 'not_started';
+  if (startTime && now >= startTime) {
+    status = 'started';
+  }
+  if (endTime && now >= endTime) {
+    status = 'ended';
+  }
+
+  const isFrozen = !!(freezeTime && now >= freezeTime);
+  const isPaused = status === 'started' && !!rawState.isPaused;
+  const isSubmissionAllowed = status === 'started' && !isPaused;
+
+  return {
+    status,
+    startedAt: rawState.startedAt || null,
+    endedAt: rawState.endedAt || null,
+    freezeAt: rawState.freezeAt || null,
+    isPaused,
+    pausedAt: rawState.pausedAt || null,
+    pausedBy: rawState.pausedBy || null,
+    resumedAt: rawState.resumedAt || null,
+    resumedBy: rawState.resumedBy || null,
+    startedBy: rawState.startedBy || null,
+    endedBy: rawState.endedBy || null,
+    customMessage: rawState.customMessage || null,
+    isFrozen,
+    isSubmissionAllowed
+  };
+};
 
 /**
  * Get event state from cache or MongoDB
@@ -14,7 +50,7 @@ async function getEventState() {
     // Try Redis cache first
     const cached = await redisClient.get(CACHE_KEY);
     if (cached) {
-      return JSON.parse(cached);
+      return deriveState(JSON.parse(cached));
     }
   } catch (err) {
     console.warn('[EventState] Redis cache miss or error:', err.message);
@@ -27,8 +63,15 @@ async function getEventState() {
       status: eventState.status,
       startedAt: eventState.startedAt,
       endedAt: eventState.endedAt,
+      freezeAt: eventState.freezeAt,
+      isPaused: eventState.isPaused,
+      pausedAt: eventState.pausedAt,
+      pausedBy: eventState.pausedBy,
+      resumedAt: eventState.resumedAt,
+      resumedBy: eventState.resumedBy,
       startedBy: eventState.startedBy,
-      endedBy: eventState.endedBy
+      endedBy: eventState.endedBy,
+      customMessage: eventState.customMessage
     };
 
     // Cache in Redis for future requests
@@ -38,11 +81,19 @@ async function getEventState() {
       console.warn('[EventState] Failed to cache state in Redis:', err.message);
     }
 
-    return stateObj;
+    return deriveState(stateObj);
   } catch (err) {
     console.error('[EventState] Error fetching event state from MongoDB:', err);
-    // Default to 'not_started' if database error
-    return { status: 'not_started' };
+    // Default to locked-down behavior if database error
+    return {
+      status: 'not_started',
+      startedAt: null,
+      endedAt: null,
+      freezeAt: null,
+      isPaused: false,
+      isFrozen: false,
+      isSubmissionAllowed: false
+    };
   }
 }
 
@@ -65,13 +116,20 @@ async function refreshEventStateCache(stateObj) {
 exports.checkEventStarted = async (req, res, next) => {
   try {
     const eventState = await getEventState();
-    
-    if (eventState.status !== 'started') {
+
+    if (!eventState.isSubmissionAllowed) {
+      let message = 'Submissions are currently unavailable.';
+      if (eventState.status === 'not_started') {
+        message = 'CTF event has not started yet.';
+      } else if (eventState.status === 'ended') {
+        message = 'CTF event has ended. Submissions are no longer accepted.';
+      } else if (eventState.isPaused) {
+        message = 'CTF is paused by admin. Submissions are temporarily disabled.';
+      }
+
       return res.status(403).json({
         success: false,
-        message: eventState.status === 'ended' 
-          ? 'CTF event has ended. Submissions are no longer accepted.'
-          : 'CTF event has not started yet.',
+        message,
         eventStatus: eventState.status
       });
     }
@@ -95,12 +153,21 @@ exports.checkEventStarted = async (req, res, next) => {
 exports.checkEventNotEnded = async (req, res, next) => {
   try {
     const eventState = await getEventState();
-    
-    if (eventState.status === 'ended') {
+
+    if (!eventState.isSubmissionAllowed) {
+      let message = 'Submissions are currently unavailable.';
+      if (eventState.status === 'not_started') {
+        message = 'CTF event has not started yet.';
+      } else if (eventState.status === 'ended') {
+        message = 'CTF event has ended. Submissions are no longer accepted.';
+      } else if (eventState.isPaused) {
+        message = 'CTF is paused by admin. Submissions are temporarily disabled.';
+      }
+
       return res.status(403).json({
         success: false,
-        message: 'CTF event has ended. Submissions are no longer accepted.',
-        eventStatus: 'ended',
+        message,
+        eventStatus: eventState.status,
         endedAt: eventState.endedAt
       });
     }
@@ -140,6 +207,19 @@ exports.isEventEnded = async () => {
   } catch (error) {
     console.error('[EventState] Error checking if event ended:', error);
     // Default to false (allow operations) if check fails
+    return false;
+  }
+};
+
+/**
+ * Check if submissions are currently allowed (started + not paused + before end)
+ */
+exports.isSubmissionAllowed = async () => {
+  try {
+    const eventState = await getEventState();
+    return eventState.isSubmissionAllowed;
+  } catch (error) {
+    console.error('[EventState] Error checking submission availability:', error);
     return false;
   }
 };

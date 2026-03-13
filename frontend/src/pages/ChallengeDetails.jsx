@@ -108,7 +108,7 @@ const FlagSubmissionModal = ({ challenge, onClose, onSubmit }) => {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const { isEnded } = useEventState();
+  const { isEnded, isPaused, isNotStarted, isSubmissionAllowed } = useEventState();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -159,8 +159,30 @@ const FlagSubmissionModal = ({ challenge, onClose, onSubmit }) => {
             </div>
             
             <AnimatePresence>
-              {(error || success || isEnded) && (
+              {(error || success || isEnded || isPaused || isNotStarted) && (
                 <div className="htb-modal-status">
+                  {isNotStarted && (
+                    <motion.div 
+                      className="htb-status-badge htb-status-warning"
+                      initial={{ opacity: 0, scale: 0.8 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      exit={{ opacity: 0, scale: 0.8 }}
+                    >
+                      <AlertCircle size={16} />
+                      Event Not Started
+                    </motion.div>
+                  )}
+                  {isPaused && (
+                    <motion.div 
+                      className="htb-status-badge htb-status-warning"
+                      initial={{ opacity: 0, scale: 0.8 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      exit={{ opacity: 0, scale: 0.8 }}
+                    >
+                      <AlertCircle size={16} />
+                      Event Paused
+                    </motion.div>
+                  )}
                   {isEnded && (
                     <motion.div 
                       className="htb-status-badge htb-status-warning"
@@ -223,7 +245,7 @@ const FlagSubmissionModal = ({ challenge, onClose, onSubmit }) => {
                     onChange={(e) => setFlag(e.target.value)}
                     placeholder="SECE{flag_here}"
                     autoComplete="off"
-                    disabled={isSubmitting || success || isEnded}
+                    disabled={isSubmitting || success || !isSubmissionAllowed}
                     className="htb-flag-input"
                   />
                   <div className="htb-input-border"></div>
@@ -233,11 +255,15 @@ const FlagSubmissionModal = ({ challenge, onClose, onSubmit }) => {
               <motion.button
                 type="submit"
                 className="htb-submit-flag-btn"
-                disabled={isSubmitting || success || isEnded}
-                whileHover={!isSubmitting && !success && !isEnded ? { scale: 1.05 } : {}}
-                whileTap={!isSubmitting && !success && !isEnded ? { scale: 0.95 } : {}}
+                disabled={isSubmitting || success || !isSubmissionAllowed}
+                whileHover={!isSubmitting && !success && isSubmissionAllowed ? { scale: 1.05 } : {}}
+                whileTap={!isSubmitting && !success && isSubmissionAllowed ? { scale: 0.95 } : {}}
               >
-                {isEnded ? (
+                {isNotStarted ? (
+                  'Event Not Started'
+                ) : isPaused ? (
+                  'Event Paused'
+                ) : isEnded ? (
                   'Event Ended'
                 ) : isSubmitting ? (
                   <>
@@ -354,7 +380,7 @@ function ChallengeDetails() {
   const [showHintConfirm, setShowHintConfirm] = useState(false);
   const [pendingHintUnlock, setPendingHintUnlock] = useState(null);
   const { user, isAuthenticated, updateUserData } = useContext(AuthContext);
-  const { eventState, isEnded } = useEventState();
+  const { eventState, isEnded, isPaused, isNotStarted } = useEventState();
 
   useEffect(() => {
     const fetchChallenge = async () => {
@@ -579,14 +605,18 @@ function ChallengeDetails() {
     <div className="htb-challenge-container">
       <div className="htb-challenge-grid-bg"></div>
       
-      {isEnded && (
+      {(isEnded || isPaused || isNotStarted) && (
         <motion.div 
           className="htb-event-ended-banner"
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
         >
           <AlertCircle size={20} />
-          CTF Event Has Ended - Flag submissions are no longer accepted
+          {isNotStarted
+            ? 'CTF Event Has Not Started - Flag submissions are disabled'
+            : isPaused
+              ? 'CTF Event Is Paused - Flag submissions are temporarily disabled'
+              : 'CTF Event Has Ended - Flag submissions are no longer accepted'}
         </motion.div>
       )}
 

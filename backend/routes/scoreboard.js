@@ -8,6 +8,7 @@ const Team = require('../models/Team');
 const Submission = require('../models/Submission');
 const Award = require('../models/Award');
 const Challenge = require('../models/Challenge');
+const EventState = require('../models/EventState');
 
 const redisClient = getRedisClient();
 
@@ -20,8 +21,13 @@ const GRAPH_CACHE_TTL = 300; // 5 minutes for graph
  * In a real implementation, this would come from a config/settings model
  */
 const getFreezeTime = async () => {
-  // TODO: Fetch from EventState or Config model
-  return null;
+  try {
+    const eventState = await EventState.getEventState();
+    return eventState.freezeAt || null;
+  } catch (error) {
+    console.warn('[Scoreboard] Failed to read freeze time:', error.message);
+    return null;
+  }
 };
 
 /**

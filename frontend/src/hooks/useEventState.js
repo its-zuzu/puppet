@@ -19,7 +19,7 @@ export function useEventState() {
       console.error('Error fetching event state:', err);
       setError(err.response?.data?.message || 'Failed to fetch event state');
       // Set default state on error
-      setEventState({ status: 'not_started' });
+      setEventState({ status: 'not_started', isPaused: false, isFrozen: false, isSubmissionAllowed: false });
     } finally {
       setLoading(false);
     }
@@ -40,6 +40,10 @@ export function useEventState() {
     isStarted: eventState?.status === 'started',
     isEnded: eventState?.status === 'ended',
     isNotStarted: eventState?.status === 'not_started',
+    isPaused: !!eventState?.isPaused,
+    isFrozen: !!eventState?.isFrozen,
+    isSubmissionAllowed: !!eventState?.isSubmissionAllowed,
+    freezeAt: eventState?.freezeAt,
     loading,
     error,
     refresh: fetchEventState

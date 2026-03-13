@@ -6,7 +6,7 @@ const Challenge = require('../models/Challenge');
 const User = require('../models/User');
 const Submission = require('../models/Submission');
 const { protect, authorize } = require('../middleware/auth');
-const { checkEventState, checkEventNotEnded, isEventEnded } = require('../middleware/eventState');
+const { checkEventNotEnded, getEventState } = require('../middleware/eventState');
 const { sanitizeInput, validateInput } = require('../middleware/security');
 
 
@@ -534,11 +534,17 @@ router.post('/:id/submit', protect, sanitizeInput, checkEventNotEnded, async (re
     }
 
     // Check event state again before processing scoring (double-check for race conditions)
-    const eventEnded = await isEventEnded();
-    if (eventEnded) {
+    const eventStateNow = await getEventState();
+    if (!eventStateNow.isSubmissionAllowed) {
+      const message = eventStateNow.status === 'ended'
+        ? 'CTF event has ended.'
+        : eventStateNow.status === 'not_started'
+          ? 'CTF event has not started yet.'
+          : 'CTF is paused by admin. Submissions are temporarily disabled.';
+
       return res.status(403).json({
         success: false,
-        message: 'CTF event has ended.'
+        message
       });
     }
 
@@ -548,10 +554,16 @@ router.post('/:id/submit', protect, sanitizeInput, checkEventNotEnded, async (re
     const session = await mongoose.startSession();
     try {
       await session.withTransaction(async () => {
-        // Final check inside transaction to prevent any scoring writes if event ended
-        const eventEndedInTransaction = await isEventEnded();
-        if (eventEndedInTransaction) {
-          throw new Error('CTF event has ended.');
+        // Final check inside transaction to prevent any scoring writes if submissions are disabled
+        const eventStateInTransaction = await getEventState();
+        if (!eventStateInTransaction.isSubmissionAllowed) {
+          if (eventStateInTransaction.status === 'ended') {
+            throw new Error('CTF event has ended.');
+          }
+          if (eventStateInTransaction.status === 'not_started') {
+            throw new Error('CTF event has not started yet.');
+          }
+          throw new Error('CTF is paused by admin.');
         }
         
         // CTFd-style: Update solvedBy arrays + user.points for display

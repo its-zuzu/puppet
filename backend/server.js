@@ -386,8 +386,15 @@ mongoose.connect(MONGODB_URI, mongoOptions)
         status: eventState.status,
         startedAt: eventState.startedAt,
         endedAt: eventState.endedAt,
+        freezeAt: eventState.freezeAt,
+        isPaused: eventState.isPaused,
+        pausedAt: eventState.pausedAt,
+        pausedBy: eventState.pausedBy,
+        resumedAt: eventState.resumedAt,
+        resumedBy: eventState.resumedBy,
         startedBy: eventState.startedBy,
-        endedBy: eventState.endedBy
+        endedBy: eventState.endedBy,
+        customMessage: eventState.customMessage
       };
 
       await refreshEventStateCache(stateObj);
@@ -406,8 +413,15 @@ mongoose.connect(MONGODB_URI, mongoOptions)
               status: eventState.status,
               startedAt: eventState.startedAt,
               endedAt: eventState.endedAt,
+              freezeAt: eventState.freezeAt,
+              isPaused: eventState.isPaused,
+              pausedAt: eventState.pausedAt,
+              pausedBy: eventState.pausedBy,
+              resumedAt: eventState.resumedAt,
+              resumedBy: eventState.resumedBy,
               startedBy: eventState.startedBy,
-              endedBy: eventState.endedBy
+              endedBy: eventState.endedBy,
+              customMessage: eventState.customMessage
             };
             await refreshEventStateCache(stateObj);
             console.log(`[EventState] Initialized (existing): status=${eventState.status}`);

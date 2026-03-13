@@ -1,0 +1,92 @@
+.admin-event-control-page {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 24px;
+  color: #e5eefc;
+}
+
+.admin-event-control-page .subtitle {
+  opacity: 0.85;
+  margin-bottom: 16px;
+}
+
+.alert {
+  padding: 10px 12px;
+  border-radius: 8px;
+  margin-bottom: 12px;
+}
+
+.alert.success { background: rgba(16, 185, 129, 0.2); border: 1px solid #10b981; }
+.alert.error { background: rgba(239, 68, 68, 0.2); border: 1px solid #ef4444; }
+
+.status-card,
+.times-form,
+.action-card {
+  background: rgba(8, 20, 40, 0.8);
+  border: 1px solid rgba(56, 189, 248, 0.25);
+  border-radius: 12px;
+  padding: 16px;
+  margin-bottom: 16px;
+}
+
+.status-card ul {
+  margin: 0;
+  padding-left: 18px;
+  line-height: 1.8;
+}
+
+.times-form {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 12px;
+}
+
+.times-form h2,
+.times-form .hint {
+  grid-column: 1 / -1;
+}
+
+.times-form label {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.times-form input {
+  background: #0f172a;
+  color: #e5eefc;
+  border: 1px solid #334155;
+  border-radius: 8px;
+  padding: 10px;
+}
+
+button {
+  background: #0ea5e9;
+  color: #001018;
+  border: none;
+  border-radius: 8px;
+  padding: 10px 12px;
+  cursor: pointer;
+  font-weight: 700;
+}
+
+button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+button.danger {
+  background: #ef4444;
+  color: #fff;
+}
+
+.actions-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 12px;
+}
+
+.action-card p {
+  min-height: 48px;
+  opacity: 0.9;
+}
