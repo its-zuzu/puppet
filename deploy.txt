@@ -1,0 +1,923 @@
+================================================================================
+CTF QUEST PLATFORM - PRODUCTION DEPLOYMENT GUIDE FOR EC2
+================================================================================
+PROJECT: Capture The Flag (CTF) Platform
+TECHNOLOGY STACK: Node.js (Backend), React (Frontend), MongoDB, Redis, Nginx
+DEPLOYMENT TARGET: AWS EC2 (Linux/Ubuntu 22.04+)
+LAST UPDATED: January 2026
+
+================================================================================
+PRE-DEPLOYMENT CHECKLIST
+================================================================================
+
+1. AWS EC2 Instance Setup:
+   - Instance Type: t3.medium or higher (2 vCPU, 4GB RAM minimum)
+   - OS: Ubuntu 22.04 LTS
+   - Storage: 100GB gp3 EBS volume minimum
+   - Security Groups:
+     * Port 22 (SSH) - from your IP only
+     * Port 80 (HTTP) - from 0.0.0.0/0
+     * Port 443 (HTTPS) - from 0.0.0.0/0
+     * Port 6379 (Redis) - INTERNAL ONLY (if local Redis)
+     * Port 27017 (MongoDB) - INTERNAL ONLY (if local MongoDB)
+   - IAM Role: EC2InstanceProfileForSSM (for Systems Manager access)
+   - Elastic IP: Allocate and associate for persistent IP
+
+2. Domain Setup:
+   - DNS A record pointing to EC2 Elastic IP
+   - Update CORS_ORIGIN in .env with your domain
+   - Update nginx.conf with correct domain name
+
+3. SSL Certificate Preparation:
+   - Certbot will auto-generate Let's Encrypt certificates
+   - Ensure domain is accessible and DNS is propagated
+
+================================================================================
+STEP 1: SYSTEM UPDATES AND CORE DEPENDENCIES
+================================================================================
+
+SSH into EC2 instance:
+$ ssh -i /path/to/key.pem ubuntu@YOUR_ELASTIC_IP
+
+Update system packages:
+$ sudo apt update && sudo apt upgrade -y
+
+Install required system packages:
+$ sudo apt install -y \
+    curl \
+    wget \
+    git \
+    build-essential \
+    python3-dev \
+    python3-pip \
+    software-properties-common \
+    apt-transport-https \
+    ca-certificates \
+    gnupg \
+    lsb-release \
+    ufw
+
+Configure UFW (Uncomplicated Firewall):
+$ sudo ufw default deny incoming
+$ sudo ufw default allow outgoing
+$ sudo ufw allow 22/tcp
+$ sudo ufw allow 80/tcp
+$ sudo ufw allow 443/tcp
+$ sudo ufw enable
+
+================================================================================
+STEP 2: NODE.JS INSTALLATION
+================================================================================
+
+Install Node.js v20 (LTS):
+$ curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
+$ sudo apt install -y nodejs
+
+Verify installation:
+$ node --version  # Should be v20.x.x
+$ npm --version   # Should be 10.x.x
+
+Install npm globally available packages:
+$ sudo npm install -g pm2
+$ sudo npm install -g npm@latest
+
+Setup PM2 to run on system startup:
+$ sudo pm2 startup
+$ sudo pm2 save
+
+================================================================================
+STEP 3: MONGODB INSTALLATION AND CONFIGURATION
+================================================================================
+
+OPTION A: Local MongoDB Installation
+------------------------------------
+
+Import MongoDB GPG key:
+$ curl -fsSL https://www.mongodb.org/static/pgp/server-7.0.asc | sudo apt-key add -
+
+Add MongoDB repository:
+$ echo "deb [ arch=amd64,arm64 ] https://repo.mongodb.org/apt/ubuntu jammy/mongodb-org/7.0 multiverse" | \
+  sudo tee /etc/apt/sources.list.d/mongodb-org-7.0.list
+
+Update apt cache:
+$ sudo apt update
+
+Install MongoDB:
+$ sudo apt install -y mongodb-org
+
+Start MongoDB service:
+$ sudo systemctl start mongod
+$ sudo systemctl enable mongod
+
+Verify MongoDB is running:
+$ sudo systemctl status mongod
+$ mongosh --eval "db.adminCommand('ping')"
+
+Create MongoDB Database and User:
+$ mongosh
+  > use ctfquest
+  > db.createUser({
+      user: "ctf_admin",
+      pwd: "YOUR_SECURE_PASSWORD_HERE",
+      roles: ["dbOwner"]
+    })
+  > db.adminCommand('ping')
+  > exit
+
+Create indexes for performance:
+$ mongosh
+  > use ctfquest
+  > db.users.createIndex({ email: 1 }, { unique: true })
+  > db.challenges.createIndex({ category: 1 })
+  > db.submissions.createIndex({ user_id: 1, challenge_id: 1 })
+  > db.teams.createIndex({ name: 1 }, { unique: true })
+  > exit
+
+OPTION B: MongoDB Atlas (Cloud Hosted)
+--------------------------------------
+
+1. Create account at mongodb.com/cloud/atlas
+2. Create a cluster (M2 Free or M10 paid minimum for production)
+3. Configure IP Whitelist (allow EC2 security group or 0.0.0.0/0)
+4. Create database user with strong password
+5. Copy connection string: mongodb+srv://user:password@cluster.mongodb.net/ctfquest?retryWrites=true&w=majority
+
+Update MONGODB_URI in .env with connection string
+
+================================================================================
+STEP 4: REDIS INSTALLATION AND CONFIGURATION
+================================================================================
+
+OPTION A: Local Redis Installation
+----------------------------------
+
+Install Redis:
+$ sudo apt install -y redis-server
+
+Edit Redis configuration for production:
+$ sudo nano /etc/redis/redis.conf
+
+Key changes to make:
+- Find line "supervised no" and change to "supervised systemd"
+- Find line "port 6379" and keep as is
+- Add line "bind 127.0.0.1" (restrict to localhost only)
+- Add line "requirepass YOUR_REDIS_PASSWORD" (set strong password)
+- Find line "maxmemory <bytes>" and set to "maxmemory 2gb"
+- Find line "maxmemory-policy" and set to "maxmemory-policy allkeys-lru"
+- Find line "save 900 1" and comment it with #
+- Find line "appendonly no" and change to "appendonly yes"
+- Set "appendfsync everysec"
+
+After saving, restart Redis:
+$ sudo systemctl restart redis-server
+$ sudo systemctl enable redis-server
+$ sudo systemctl status redis-server
+
+Test Redis connection:
+$ redis-cli ping
+  # Should return PONG
+
+Verify password works:
+$ redis-cli -a YOUR_REDIS_PASSWORD ping
+
+OPTION B: Redis Cloud (Recommended for Production)
+--------------------------------------------------
+
+1. Sign up at redislabs.com
+2. Create a Redis Cloud database (redis-30.upstash.com or redis-cloud)
+3. Configure TLS (enable for security)
+4. Get connection string: redis://:password@host:port
+
+Update REDIS_URL in .env with connection string
+
+================================================================================
+STEP 5: NGINX INSTALLATION AND CONFIGURATION
+================================================================================
+
+Install Nginx:
+$ sudo apt install -y nginx
+
+Verify Nginx is running:
+$ sudo systemctl start nginx
+$ sudo systemctl enable nginx
+$ sudo systemctl status nginx
+
+Copy project nginx configuration:
+$ cd /path/to/project/backend
+$ sudo cp nginx.conf /etc/nginx/sites-available/ctfquest
+
+Edit the Nginx configuration for your domain:
+$ sudo nano /etc/nginx/sites-available/ctfquest
+
+Key updates needed:
+- Replace "ctfquest.ddns.net" with your actual domain
+- Replace "/home/ubuntu/ctf-server1/frontend/dist" with actual frontend build path
+- Verify proxy_pass points to correct backend port (http://localhost:10000)
+
+Enable the site:
+$ sudo ln -s /etc/nginx/sites-available/ctfquest /etc/nginx/sites-enabled/ctfquest
+
+Remove default site:
+$ sudo rm /etc/nginx/sites-enabled/default
+
+Test Nginx configuration:
+$ sudo nginx -t
+
+Reload Nginx:
+$ sudo systemctl reload nginx
+
+================================================================================
+STEP 6: SSL CERTIFICATE SETUP WITH CERTBOT
+================================================================================
+
+Install Certbot and Nginx plugin:
+$ sudo apt install -y certbot python3-certbot-nginx
+
+Generate SSL certificate (interactive):
+$ sudo certbot certonly --nginx -d YOUR_DOMAIN
+
+Choose "standalone" during the process when prompted
+
+Certbot will:
+- Verify domain ownership
+- Generate certificate files in /etc/letsencrypt/live/YOUR_DOMAIN/
+- Create SSL dhparams file
+
+Verify certificate files exist:
+$ ls /etc/letsencrypt/live/YOUR_DOMAIN/
+
+Setup auto-renewal:
+$ sudo systemctl enable certbot.timer
+$ sudo systemctl start certbot.timer
+
+Test renewal:
+$ sudo certbot renew --dry-run
+
+Update nginx.conf with certificate paths:
+$ sudo nano /etc/nginx/sites-available/ctfquest
+
+Verify these paths are correct:
+- ssl_certificate /etc/letsencrypt/live/YOUR_DOMAIN/fullchain.pem;
+- ssl_certificate_key /etc/letsencrypt/live/YOUR_DOMAIN/privkey.pem;
+- include /etc/letsencrypt/options-ssl-nginx.conf;
+- ssl_dhparam /etc/letsencrypt/ssl-dhparams.pem;
+
+Reload Nginx:
+$ sudo nginx -t && sudo systemctl reload nginx
+
+================================================================================
+STEP 7: APPLICATION SETUP AND CONFIGURATION
+================================================================================
+
+Create application directory:
+$ sudo mkdir -p /var/www/ctfquest
+$ sudo chown -R $USER:$USER /var/www/ctfquest
+
+Clone project repository:
+$ cd /var/www/ctfquest
+$ git clone https://github.com/YOUR_REPO/ctf-quest.git .
+$ git checkout main
+
+Or if not using git, upload files via SCP/FTP to /var/www/ctfquest
+
+Change to backend directory:
+$ cd backend
+
+Install backend dependencies:
+$ npm install --production
+
+Build frontend:
+$ cd ../frontend
+$ npm install
+$ npm run build
+
+Verify frontend build created dist folder:
+$ ls -la dist/
+
+================================================================================
+STEP 8: ENVIRONMENT CONFIGURATION
+================================================================================
+
+Create .env file in backend directory:
+$ cd /var/www/ctfquest/backend
+$ nano .env
+
+Add the following configuration (update values as needed):
+
+============ BEGIN .env CONTENT ============
+
+# ========== SERVER CONFIGURATION ==========
+NODE_ENV=production
+PORT=10000
+
+# ========== DATABASE CONFIGURATION ==========
+# MongoDB Atlas or Local
+MONGODB_URI=mongodb+srv://ctf_admin:PASSWORD@cluster.mongodb.net/ctfquest?retryWrites=true&w=majority
+# For local MongoDB:
+# MONGODB_URI=mongodb://ctf_admin:PASSWORD@localhost:27017/ctfquest
+MONGO_MAX_POOL_SIZE=500
+MONGO_MIN_POOL_SIZE=50
+
+# ========== REDIS CONFIGURATION ==========
+# Local Redis:
+REDIS_URL=redis://:PASSWORD@127.0.0.1:6379
+
+# Redis Cloud (Upstash/Redis Labs):
+# REDIS_URL=redis://:PASSWORD@redis-xxxxx.cloud.redislabs.com:12345
+
+# Redis TTLs
+REDIS_USER_CACHE_TTL=30m
+REDIS_CHALLENGE_CACHE_TTL=10m
+REDIS_SCOREBOARD_CACHE_TTL=30s
+
+# ========== JWT CONFIGURATION ==========
+# Generate a strong secret: node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
+JWT_SECRET=YOUR_GENERATED_SECRET_HERE_MIN_32_CHARS
+JWT_REFRESH_SECRET=YOUR_GENERATED_REFRESH_SECRET_MIN_32_CHARS
+JWT_ACCESS_EXPIRE=15m
+JWT_REFRESH_EXPIRE=7d
+JWT_REFRESH_THRESHOLD_PERCENT=10
+
+# ========== SESSION CONFIGURATION ==========
+SESSION_SECRET=YOUR_SESSION_SECRET_MIN_32_CHARS
+SESSION_MAX_AGE=24h
+
+# ========== SECURITY CONFIGURATION ==========
+MAX_LOGIN_ATTEMPTS=100
+LOGIN_TIMEOUT=1
+BCRYPT_ROUNDS=10
+HSTS_MAX_AGE_SECONDS=31536000
+
+# ========== CORS CONFIGURATION ==========
+CORS_ORIGIN=https://YOUR_DOMAIN.com
+CORS_CREDENTIALS=true
+
+# ========== EMAIL CONFIGURATION ==========
+EMAIL_FROM=noreply@YOUR_DOMAIN.com
+EMAIL_HOST=smtp.gmail.com
+EMAIL_PORT=587
+EMAIL_USER=your-email@gmail.com
+EMAIL_PASS=your-app-password
+
+# ========== RATE LIMITING ==========
+FLAG_RL_LIMIT=3
+FLAG_RL_WINDOW=60
+FLAG_LOCK_TIME=300
+
+# ========== APPLICATION SETTINGS ==========
+MAX_UPLOAD_SIZE=100M
+EVENT_TIMEZONE=Asia/Kolkata
+
+============ END .env CONTENT ============
+
+Secure the .env file:
+$ chmod 600 .env
+
+Verify configuration:
+$ npm run startup-check
+
+================================================================================
+STEP 9: APPLICATION DEPLOYMENT
+================================================================================
+
+Test backend locally:
+$ cd /var/www/ctfquest/backend
+$ npm run start
+
+Wait for messages:
+✓ MongoDB Connected
+✓ Redis Client Ready
+✓ Server running on port 10000
+
+If errors occur, check:
+- MONGODB_URI connection string
+- REDIS_URL and password
+- JWT_SECRET is set
+- Port 10000 is not in use
+
+Stop with Ctrl+C
+
+Deploy backend with PM2:
+$ pm2 start ecosystem.config.js
+
+Check PM2 status:
+$ pm2 status
+$ pm2 logs ctf-backend
+
+Monitor logs:
+$ pm2 logs ctf-backend --lines 100 --follow
+
+Start PM2 on system boot:
+$ sudo pm2 startup
+$ sudo pm2 save
+
+Verify frontend files:
+$ ls -la /var/www/ctfquest/frontend/dist/
+$ ls -la /var/www/ctfquest/frontend/dist/index.html
+
+Expected files:
+- index.html
+- vendor-react.js (or similar chunks)
+- styles.css (or injected)
+
+================================================================================
+STEP 10: NGINX CONFIGURATION AND TESTING
+================================================================================
+
+Update frontend path in Nginx:
+$ sudo nano /etc/nginx/sites-available/ctfquest
+
+Find and update these paths:
+root /var/www/ctfquest/frontend/dist;
+
+Verify configuration:
+$ sudo nginx -t
+
+Reload Nginx:
+$ sudo systemctl reload nginx
+
+Test endpoints:
+
+1. Test Frontend (HTTPS):
+$ curl -I https://YOUR_DOMAIN/
+# Should return 200 and HTML content
+
+2. Test Backend Health:
+$ curl https://YOUR_DOMAIN/api/health
+# Should return { "status": "ok" }
+
+3. Test API with Auth:
+$ curl https://YOUR_DOMAIN/api/challenges -H "Authorization: Bearer YOUR_JWT_TOKEN"
+
+4. Check Nginx error logs:
+$ sudo tail -100 /var/log/nginx/error.log
+
+5. Check Nginx access logs:
+$ sudo tail -100 /var/log/nginx/access.log
+
+================================================================================
+STEP 11: MONITORING AND MAINTENANCE
+================================================================================
+
+Monitor PM2 processes:
+$ pm2 monit
+
+View detailed logs:
+$ pm2 logs
+$ pm2 logs ctf-backend
+$ pm2 logs ctf-backend --err
+
+Monitor system resources:
+$ htop
+$ free -h
+$ df -h
+
+Check disk usage:
+$ du -sh /var/www/ctfquest
+$ du -sh /var/log
+$ du -sh /var/lib/mongodb
+
+Monitor Redis memory:
+$ redis-cli
+  > info memory
+  > exit
+
+Database backup (MongoDB):
+$ mongodump --uri="mongodb+srv://user:password@cluster.mongodb.net/ctfquest" --out /backups/mongodb
+$ tar -czf /backups/mongodb-$(date +%Y%m%d).tar.gz /backups/mongodb
+
+Redis persistence check:
+$ sudo ls -la /var/lib/redis/
+
+================================================================================
+STEP 12: SECURITY HARDENING (CRITICAL)
+================================================================================
+
+1. SSH Key-Based Authentication (disable password):
+$ sudo nano /etc/ssh/sshd_config
+
+Set these values:
+PasswordAuthentication no
+PermitRootLogin no
+PubkeyAuthentication yes
+PermitEmptyPasswords no
+
+Restart SSH:
+$ sudo systemctl restart ssh
+
+2. Fail2ban Installation (prevent brute force):
+$ sudo apt install -y fail2ban
+$ sudo systemctl enable fail2ban
+
+3. Change application user permissions:
+$ sudo useradd -m -s /bin/bash ctfapp
+$ sudo chown -R ctfapp:ctfapp /var/www/ctfquest
+$ sudo chmod -R 755 /var/www/ctfquest
+
+4. Rotate application secrets regularly:
+- Change JWT_SECRET every 3 months
+- Update database passwords
+- Rotate API keys
+
+5. Setup log rotation:
+$ sudo nano /etc/logrotate.d/ctfquest
+
+Add:
+/var/www/ctfquest/backend/logs/*.log {
+    daily
+    rotate 30
+    compress
+    delaycompress
+    notifempty
+    create 0640 ctfapp ctfapp
+    sharedscripts
+}
+
+6. Enable firewall additional rules:
+$ sudo ufw allow from YOUR_IP to any port 22
+$ sudo ufw status
+
+7. Security updates (cron job):
+$ sudo apt install -y unattended-upgrades
+$ sudo dpkg-reconfigure -plow unattended-upgrades
+
+================================================================================
+STEP 13: BACKUP AND DISASTER RECOVERY
+================================================================================
+
+Create backup directory:
+$ sudo mkdir -p /backups
+$ sudo chown -R $USER:$USER /backups
+
+MongoDB Backup Script:
+$ cat > /backups/backup-mongodb.sh << 'EOF'
+#!/bin/bash
+BACKUP_DIR="/backups/mongodb-$(date +%Y%m%d-%H%M%S)"
+mkdir -p $BACKUP_DIR
+
+mongodump --uri="YOUR_MONGODB_URI" --out $BACKUP_DIR
+
+# Keep only last 7 backups
+find /backups -type d -name "mongodb-*" -mtime +7 -exec rm -rf {} \;
+
+echo "MongoDB backup completed: $BACKUP_DIR"
+EOF
+
+$ chmod +x /backups/backup-mongodb.sh
+
+Add to crontab (backup daily at 2 AM):
+$ crontab -e
+  0 2 * * * /backups/backup-mongodb.sh
+
+Application Files Backup:
+$ cat > /backups/backup-app.sh << 'EOF'
+#!/bin/bash
+BACKUP_DIR="/backups/app-$(date +%Y%m%d-%H%M%S)"
+tar -czf $BACKUP_DIR.tar.gz /var/www/ctfquest
+
+# Keep only last 30 days
+find /backups -type f -name "app-*.tar.gz" -mtime +30 -delete
+
+echo "Application backup completed"
+EOF
+
+$ chmod +x /backups/backup-app.sh
+
+Add to crontab (backup daily at 3 AM):
+$ crontab -e
+  0 3 * * * /backups/backup-app.sh
+
+================================================================================
+STEP 14: TROUBLESHOOTING
+================================================================================
+
+1. Backend Connection Issues:
+Check if port 10000 is listening:
+$ sudo netstat -tlnp | grep 10000
+$ sudo ss -tlnp | grep 10000
+
+Check backend logs:
+$ pm2 logs ctf-backend
+
+2. MongoDB Connection Errors:
+Test MongoDB connection:
+$ mongosh "MONGODB_URI"
+$ mongosh --eval "db.adminCommand('ping')"
+
+Verify credentials:
+$ mongosh --eval "db.auth('user', 'password')"
+
+3. Redis Connection Errors:
+Test Redis connection:
+$ redis-cli ping
+$ redis-cli -a PASSWORD ping
+
+Check Redis memory:
+$ redis-cli info memory
+
+4. Nginx Errors:
+Check configuration:
+$ sudo nginx -t -v
+
+Check error log:
+$ sudo tail -50 /var/log/nginx/error.log
+
+5. SSL/Certificate Errors:
+Check certificate validity:
+$ sudo certbot certificates
+
+Renew certificate manually:
+$ sudo certbot renew --force-renewal
+
+6. High Load/Performance Issues:
+Check system resources:
+$ top
+$ free -h
+$ vmstat 1 5
+
+Check MongoDB performance:
+$ mongosh
+  > use ctfquest
+  > db.currentOp()
+  > exit
+
+Check Redis memory usage:
+$ redis-cli info memory
+
+Optimize MongoDB indexes:
+$ mongosh
+  > use ctfquest
+  > db.users.getIndexes()
+  > db.challenges.getIndexes()
+
+7. Application Crashes:
+Check PM2 error logs:
+$ pm2 logs ctf-backend --err
+
+Restart application:
+$ pm2 restart ctf-backend
+
+Check environment variables:
+$ cat /var/www/ctfquest/backend/.env
+
+Verify all dependencies installed:
+$ cd /var/www/ctfquest/backend && npm list
+
+================================================================================
+STEP 15: PRODUCTION CHECKLIST
+================================================================================
+
+Before going live:
+
+DATABASE:
+[ ] MongoDB is running and accessible
+[ ] Database user created with strong password
+[ ] Database indexes created
+[ ] Backup strategy implemented
+[ ] Connection pooling configured
+
+REDIS:
+[ ] Redis is running and password protected
+[ ] Memory limits configured
+[ ] Persistence enabled (appendonly)
+[ ] Backup strategy implemented
+
+APPLICATION:
+[ ] .env file configured with production values
+[ ] JWT_SECRET and SESSION_SECRET are strong (32+ chars)
+[ ] CORS_ORIGIN updated with production domain
+[ ] NODE_ENV=production
+[ ] All dependencies installed (npm install --production)
+
+FRONTEND:
+[ ] Frontend built (npm run build)
+[ ] dist folder exists with all files
+[ ] index.html is accessible
+
+NGINX:
+[ ] SSL certificate installed and valid
+[ ] Nginx configuration tested (nginx -t)
+[ ] Frontend path points to correct dist folder
+[ ] Proxy rules point to backend port 10000
+[ ] Security headers configured
+
+SYSTEM:
+[ ] UFW firewall configured
+[ ] SSH key-based authentication only
+[ ] PM2 configured to restart on reboot
+[ ] Log rotation configured
+[ ] Fail2ban or similar protection enabled
+
+MONITORING:
+[ ] PM2 monitoring active (pm2 monit)
+[ ] Log files accessible and rotating
+[ ] Backup scripts scheduled
+[ ] System alerts configured
+
+TESTING:
+[ ] Frontend loads over HTTPS
+[ ] API endpoints respond correctly
+[ ] User registration works
+[ ] Authentication works
+[ ] File uploads work (if applicable)
+[ ] Database operations work
+[ ] Redis caching works
+
+DOCUMENTATION:
+[ ] Deployment steps documented
+[ ] Credentials stored in secure location
+[ ] Backup recovery procedure documented
+[ ] Runbook for common issues created
+
+================================================================================
+STEP 16: PERFORMANCE OPTIMIZATION
+================================================================================
+
+1. Frontend Optimization:
+- Vite build is already optimized
+- Verify chunking in vite.config.js
+- Monitor bundle size: $ npm run build -- --analyze
+
+2. Backend Optimization:
+- PM2 clustering: instances = 2-4 (configured in ecosystem.config.js)
+- Connection pooling: MONGO_MAX_POOL_SIZE = 500
+- Caching: Redis TTLs configured for user/challenge/scoreboard
+- Compression: gzip enabled in middleware
+
+3. Database Optimization:
+- Indexes created on frequently queried fields
+- Connection pooling enabled
+- Query optimization in routes
+
+4. Redis Optimization:
+- maxmemory set to 2GB (configurable)
+- maxmemory-policy set to allkeys-lru
+- Persistence enabled but not blocking
+
+5. Nginx Optimization:
+- Gzip compression enabled
+- HTTP/2 enabled
+- Static file caching headers configured
+- Reverse proxy buffering optimized
+
+6. System Optimization:
+- ulimit increased for PM2/Node
+- Swap configured for memory overflow
+- Kernel parameters tuned for high concurrency
+
+================================================================================
+STEP 17: MONITORING AND ALERTING
+================================================================================
+
+Setup PM2 Plus (optional, paid service):
+$ pm2 web
+
+Access PM2 web interface:
+http://localhost:9615
+
+Monitor key metrics:
+- Memory usage (critical at 800MB, restarts)
+- CPU usage
+- Event loop latency
+- Exception tracking
+
+Setup log aggregation (optional):
+Install tools like:
+- ELK Stack (Elasticsearch, Logstash, Kibana)
+- Datadog
+- New Relic
+- Cloudwatch (AWS)
+
+Monitor these metrics:
+- Application response time
+- Error rates
+- Database query time
+- Redis hit/miss ratio
+- System disk usage
+- Database backup success
+
+================================================================================
+STEP 18: SCALING CONSIDERATIONS
+================================================================================
+
+For 500+ users, ensure:
+
+1. Database:
+- Upgrade MongoDB to M10 (paid tier) on Atlas
+- Enable sharding for horizontal scaling
+- Read replicas for load distribution
+
+2. Redis:
+- Upgrade to paid tier for higher memory
+- Enable clustering for horizontal scaling
+- Consider Redis Sentinel for high availability
+
+3. Application:
+- PM2 instances increased to 4-8
+- Load balancer in front of multiple instances
+- Auto-scaling groups on AWS
+
+4. Frontend:
+- CDN for static files (CloudFront, Cloudflare)
+- Edge caching for API responses
+
+5. Infrastructure:
+- Multiple EC2 instances in Auto Scaling Group
+- Load Balancer (ELB/ALB)
+- RDS for managed database
+- ElastiCache for managed Redis
+
+================================================================================
+QUICK START (For Experienced DevOps)
+================================================================================
+
+# 1. Update system
+sudo apt update && sudo apt upgrade -y
+
+# 2. Install Node.js, Nginx
+curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
+sudo apt install -y nodejs nginx certbot python3-certbot-nginx
+
+# 3. Install MongoDB (or use Atlas)
+# curl -fsSL https://www.mongodb.org/static/pgp/server-7.0.asc | sudo apt-key add -
+# echo "deb [ arch=amd64,arm64 ] https://repo.mongodb.org/apt/ubuntu jammy/mongodb-org/7.0 multiverse" | sudo tee /etc/apt/sources.list.d/mongodb-org-7.0.list
+# sudo apt install -y mongodb-org
+
+# 4. Install Redis (or use Redis Cloud)
+sudo apt install -y redis-server
+sudo systemctl enable redis-server
+
+# 5. Clone and setup application
+sudo mkdir -p /var/www/ctfquest && cd /var/www/ctfquest
+git clone YOUR_REPO .
+cd backend && npm install --production
+cd ../frontend && npm install && npm run build
+
+# 6. Configure environment
+cp .env.example backend/.env
+nano backend/.env  # Edit with your credentials
+
+# 7. Deploy with PM2
+sudo npm install -g pm2
+cd backend && pm2 start ecosystem.config.js
+pm2 startup && pm2 save
+
+# 8. Configure Nginx
+sudo cp backend/nginx.conf /etc/nginx/sites-available/ctfquest
+# Edit domain and paths
+sudo ln -s /etc/nginx/sites-available/ctfquest /etc/nginx/sites-enabled/ctfquest
+sudo nginx -t && sudo systemctl reload nginx
+
+# 9. Setup SSL
+sudo certbot certonly --nginx -d YOUR_DOMAIN
+
+# 10. Test
+curl https://YOUR_DOMAIN/api/health
+
+================================================================================
+SUPPORT AND MAINTENANCE
+================================================================================
+
+Daily Tasks:
+- Monitor PM2 status: pm2 monit
+- Check error logs: pm2 logs ctf-backend --err
+- Verify uptime: curl https://YOUR_DOMAIN/api/health
+
+Weekly Tasks:
+- Review system logs
+- Check database size
+- Verify backups completed
+- Update security patches
+
+Monthly Tasks:
+- Review performance metrics
+- Rotate secrets (JWT, session keys)
+- Update SSL certificate test
+- Clean old log files
+- Review and optimize expensive queries
+
+Quarterly Tasks:
+- Security audit
+- Load testing
+- Database optimization
+- Documentation updates
+- Disaster recovery drill
+
+================================================================================
+END OF DEPLOYMENT GUIDE
+================================================================================
+
+Questions? Refer to:
+- Backend: /var/www/ctfquest/backend/README.md
+- Frontend: /var/www/ctfquest/frontend/README.md
+- Configuration: /var/www/ctfquest/backend/config/
+- Routes: /var/www/ctfquest/backend/routes/
+- Scripts: /var/www/ctfquest/backend/scripts/
+
+Emergency Contacts:
+- Admin Email: admin@YOUR_DOMAIN.com
+- Support: support@YOUR_DOMAIN.com
+- Monitoring: monitor@YOUR_DOMAIN.com
+
+Last Updated: January 2026
+Document Version: 1.0
