@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const mongoose = require('mongoose');
+const jwt = require('jsonwebtoken');
 const Challenge = require('../models/Challenge');
 const User = require('../models/User');
 const Submission = require('../models/Submission');
@@ -854,6 +855,12 @@ router.post(
       const { challengeId } = req.params;
 
       if (!isValidObjectId(challengeId)) {
+        // Clean up uploaded files for invalid challenge ID
+        if (req.files) {
+          for (const file of req.files) {
+            await deleteFile(file.path).catch(console.error);
+          }
+        }
         return res.status(400).json({
           success: false,
           message: 'Invalid challenge ID'

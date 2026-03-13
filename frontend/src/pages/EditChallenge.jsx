@@ -37,7 +37,7 @@ function EditChallenge() {
   useEffect(() => {
     if (!isAuthenticated) {
       navigate('/login');
-    } else if (user && user.role !== 'admin') {
+    } else if (user && user.role !== 'admin' && user.role !== 'superadmin') {
       navigate('/challenges');
     }
   }, [isAuthenticated, user, navigate]);
@@ -125,9 +125,6 @@ function EditChallenge() {
     try {
       setIsSubmitting(true);
       await axios.post(`/api/challenges/${id}/files`, formDataObj, {
-        headers: {
-          'Content-Type': 'multipart/form-data'
-        },
         timeout: 120000 // 120 seconds for large file uploads
       });
       

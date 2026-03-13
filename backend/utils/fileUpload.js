@@ -6,13 +6,23 @@ const config = require('../config');
 
 // Allowed file extensions (security whitelist)
 const ALLOWED_EXTENSIONS = [
-  '.zip', '.tar', '.gz', '.7z', '.rar',      // Archives
-  '.txt', '.pdf', '.md', '.doc', '.docx',    // Documents
-  '.png', '.jpg', '.jpeg', '.gif', '.svg',   // Images
-  '.pcap', '.pcapng',                        // Network captures
-  '.exe', '.elf', '.bin', '.so', '.dll',     // Binaries (for RE challenges)
-  '.py', '.js', '.c', '.cpp', '.java',       // Source code
-  '.iso', '.ova', '.vmdk'                    // VM images (rare)
+  '.zip', '.tar', '.gz', '.7z', '.rar', '.bz2', '.xz', '.tgz',  // Archives
+  '.txt', '.pdf', '.md', '.doc', '.docx', '.csv', '.log',       // Documents
+  '.png', '.jpg', '.jpeg', '.gif', '.svg', '.webp', '.bmp',     // Images
+  '.pcap', '.pcapng', '.cap',                                   // Network captures
+  '.exe', '.elf', '.bin', '.so', '.dll', '.apk', '.deb',        // Binaries (for RE challenges)
+  '.py', '.js', '.c', '.cpp', '.java', '.rb', '.go', '.rs',     // Source code
+  '.php', '.sh', '.bash', '.ps1', '.bat',                       // Scripts
+  '.html', '.htm', '.css', '.xml', '.json', '.yaml', '.yml',    // Web / config files
+  '.sql', '.db', '.sqlite', '.sqlite3',                         // Database files
+  '.iso', '.ova', '.vmdk', '.img',                              // VM / disk images
+  '.pem', '.crt', '.key', '.pub', '.asc', '.gpg',               // Crypto / key files
+  '.wav', '.mp3', '.mp4', '.ogg', '.flac',                      // Media (stego challenges)
+  '.raw', '.dmp', '.mem', '.vmem',                              // Memory / forensics
+  '.eml', '.pst', '.ics',                                       // Email / calendar
+  '.jar', '.class', '.pyc', '.wasm',                            // Compiled code
+  '.dockerfile', '.conf', '.ini', '.toml', '.env',              // Config files
+  '.hex', '.rom', '.fw'                                         // Firmware / hardware
 ];
 
 // File size limit: 20MB
@@ -48,6 +58,11 @@ const storage = multer.diskStorage({
     
     if (!challengeId) {
       return cb(new Error('Challenge ID is required'));
+    }
+
+    // Validate challengeId is a valid MongoDB ObjectId to prevent path traversal
+    if (!/^[0-9a-fA-F]{24}$/.test(challengeId)) {
+      return cb(new Error('Invalid challenge ID format'));
     }
     
     const uploadDir = path.join(__dirname, '../uploads/challenges', challengeId);
