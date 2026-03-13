@@ -152,7 +152,8 @@ function EditChallenge() {
 
     try {
       setIsDeletingFile(filename);
-      await axios.delete(`/api/challenges/${id}/files/${filename}`);
+      const encodedFilename = encodeURIComponent(filename);
+      await axios.delete(`/api/challenges/${id}/files/${encodedFilename}`);
       
       setSuccessMessage('File deleted successfully');
       setUploadedFiles(uploadedFiles.filter(f => f.filename !== filename));
@@ -474,7 +475,7 @@ function EditChallenge() {
                 id="file-input"
                 multiple
                 onChange={onFileChange}
-                accept=".zip,.tar,.gz,.7z,.rar,.txt,.pdf,.md,.png,.jpg,.jpeg,.gif,.pcap,.pcapng,.exe,.elf,.bin,.py,.js,.c,.cpp,.java,.iso,.ova"
+                accept="*/*"
               />
               <small className="form-hint">
                 Max 10 files, 20MB each. Allowed: archives, documents, images, binaries, source code, network captures

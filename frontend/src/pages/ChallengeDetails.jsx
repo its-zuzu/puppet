@@ -678,8 +678,9 @@ function ChallengeDetails() {
                     </div>
                     <button
                       onClick={() => {
+                        const encodedFilename = encodeURIComponent(file.filename);
                         window.open(
-                          `/api/challenges/${challenge._id}/download/${file.filename}`,
+                          `/api/challenges/${challenge._id}/download/${encodedFilename}`,
                           '_blank'
                         );
                       }}

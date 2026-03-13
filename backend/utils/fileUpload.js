@@ -33,9 +33,12 @@ const MAX_FILES_PER_CHALLENGE = config.fileUpload?.maxFiles || 10;
 const sanitizeFilename = (filename) => {
   // Remove any path separators and dangerous characters
   return filename
-    .replace(/[/\\?%*:|"<>]/g, '-')
+    .replace(/[/\\?%*:|"<>#]/g, '-')
     .replace(/\.\./g, '')
     .replace(/^\.+/, '')
+    .replace(/\s+/g, '_')
+    .replace(/[^a-zA-Z0-9._-]/g, '-')
+    .replace(/-+/g, '-')
     .substring(0, 255); // Limit filename length
 };
 

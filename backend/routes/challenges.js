@@ -998,7 +998,8 @@ router.delete(
   authorize('admin', 'superadmin'),
   async (req, res) => {
     try {
-      const { challengeId, filename } = req.params;
+      const { challengeId } = req.params;
+      const filename = decodeURIComponent(req.params.filename || '');
 
       if (!isValidObjectId(challengeId)) {
         return res.status(400).json({
@@ -1027,7 +1028,8 @@ router.delete(
       }
 
       const file = challenge.files[fileIndex];
-      const filePath = path.join(__dirname, '..', file.path);
+      const normalizedPath = (file.path || '').replace(/^\/+/, '');
+      const filePath = path.join(__dirname, '..', normalizedPath);
 
       // Delete physical file
       await deleteFile(filePath);
@@ -1062,7 +1064,8 @@ router.get(
   protect,
   async (req, res) => {
     try {
-      const { challengeId, filename } = req.params;
+      const { challengeId } = req.params;
+      const filename = decodeURIComponent(req.params.filename || '');
 
       if (!isValidObjectId(challengeId)) {
         return res.status(400).json({
@@ -1098,7 +1101,8 @@ router.get(
         });
       }
 
-      const filePath = path.join(__dirname, '..', file.path);
+      const normalizedPath = (file.path || '').replace(/^\/+/, '');
+      const filePath = path.join(__dirname, '..', normalizedPath);
 
       // Check if file exists
       if (!fs.existsSync(filePath)) {

@@ -396,7 +396,7 @@ function CreateChallenge() {
                 id="file-input"
                 multiple
                 onChange={onFileChange}
-                accept=".zip,.tar,.gz,.7z,.rar,.txt,.pdf,.md,.png,.jpg,.jpeg,.gif,.pcap,.pcapng,.exe,.elf,.bin,.so,.dll,.py,.js,.c,.cpp,.java,.iso,.ova,.vmdk"
+                  accept="*/*"
                 style={{ display: 'none' }}
               />
               <label htmlFor="file-input" className="file-selector-btn">
