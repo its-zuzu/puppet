@@ -3,7 +3,7 @@ import { Link, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Home, Flag, Trophy, Users, Shield, Bell, Menu, X, 
-  User, LogOut, Settings, ChevronDown, FileText, Mail
+  User, LogOut, Settings, ChevronDown, FileText, Mail, Activity
 } from 'lucide-react';
 import AuthContext from '../context/AuthContext';
 import axios from 'axios';
@@ -75,6 +75,7 @@ function Navbar() {
     { path: '/', label: 'Home', icon: Home, auth: false },
     { path: '/challenges', label: 'Challenges', icon: Flag, auth: true },
     { path: '/scoreboard', label: 'Leaderboard', icon: Trophy, auth: true },
+    { path: '/event-status', label: 'Event Status', icon: Activity, auth: false },
     { path: '/my-team', label: 'Team', icon: Users, auth: true },
     { path: '/contact', label: 'Contact', icon: Mail, auth: true },
   ];
