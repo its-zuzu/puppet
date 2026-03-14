@@ -50,6 +50,10 @@ function Navbar() {
   }, []);
 
   useEffect(() => {
+    setLogoLoadError(false);
+  }, [logoUrl]);
+
+  useEffect(() => {
     if (isAuthenticated && user) {
       fetchUnreadCount();
       const interval = setInterval(fetchUnreadCount, 30000);

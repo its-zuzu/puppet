@@ -26,7 +26,24 @@ if (!fs.existsSync(configUploadsDir)) {
   fs.mkdirSync(configUploadsDir, { recursive: true });
 }
 
-const allowedMimeTypes = ['image/png', 'image/jpeg', 'image/jpg', 'image/webp', 'image/svg+xml', 'image/x-icon'];
+const allowedImageExtensions = [
+  '.png', '.jpg', '.jpeg', '.webp', '.svg', '.ico',
+  '.gif', '.bmp', '.avif', '.tif', '.tiff'
+];
+
+const allowedMimeTypes = [
+  'image/png',
+  'image/jpeg',
+  'image/jpg',
+  'image/webp',
+  'image/svg+xml',
+  'image/x-icon',
+  'image/vnd.microsoft.icon',
+  'image/gif',
+  'image/bmp',
+  'image/avif',
+  'image/tiff'
+];
 
 const logoUpload = multer({
   storage: multer.diskStorage({
@@ -37,13 +54,19 @@ const logoUpload = multer({
     }
   }),
   fileFilter: (_req, file, cb) => {
-    if (!allowedMimeTypes.includes(file.mimetype)) {
+    const ext = path.extname(file.originalname || '').toLowerCase();
+    const mime = String(file.mimetype || '').toLowerCase();
+
+    const validByMime = allowedMimeTypes.includes(mime);
+    const validByExt = allowedImageExtensions.includes(ext);
+
+    if (!validByMime && !validByExt) {
       return cb(new Error('Only image files are allowed for logo upload'));
     }
     return cb(null, true);
   },
   limits: {
-    fileSize: 2 * 1024 * 1024,
+    fileSize: 10 * 1024 * 1024,
     files: 1
   }
 });
@@ -142,6 +165,25 @@ const getOrCreateConfiguration = async () => {
   );
 };
 
+const toLogoApiUrl = (logoUrl = '') => {
+  if (!logoUrl) return '';
+  if (logoUrl.startsWith('/api/configuration/logo/')) return logoUrl;
+
+  if (logoUrl.startsWith('/uploads/config/')) {
+    const filename = logoUrl.split('/').pop();
+    return filename ? `/api/configuration/logo/${filename}` : '';
+  }
+
+  return logoUrl;
+};
+
+const extractLogoFilename = (logoUrl = '') => {
+  if (!logoUrl) return null;
+  const normalized = toLogoApiUrl(logoUrl);
+  const filename = normalized.split('/').pop();
+  return filename || null;
+};
+
 const normalizeVisibility = (input = {}) => {
   const value = {
     challenge: String(input.challenge || 'private').toLowerCase(),
@@ -173,7 +215,7 @@ router.get('/', async (req, res) => {
       data: {
         eventName: config.eventName,
         eventDescription: config.eventDescription,
-        logoUrl: config.logoUrl || '',
+        logoUrl: toLogoApiUrl(config.logoUrl || ''),
         visibility: {
           challenge: config.visibility?.challenge || 'private',
           account: config.visibility?.account || 'private',
@@ -183,7 +225,7 @@ router.get('/', async (req, res) => {
         ctfd: {
           ctf_name: config.eventName,
           ctf_description: config.eventDescription,
-          ctf_logo: config.logoUrl || ''
+          ctf_logo: toLogoApiUrl(config.logoUrl || '')
         }
       }
     });
@@ -277,11 +319,11 @@ router.put('/logo', protect, authorize('admin'), logoUpload.single('logo'), asyn
     }
 
     const current = await getOrCreateConfiguration();
-    const nextLogoUrl = `/uploads/config/${req.file.filename}`;
+    const nextLogoUrl = `/api/configuration/logo/${req.file.filename}`;
 
     // Remove previous logo file from disk when replacing
-    if (current.logoUrl && current.logoUrl.startsWith('/uploads/config/')) {
-      const previousFilename = current.logoUrl.split('/').pop();
+    const previousFilename = extractLogoFilename(current.logoUrl || '');
+    if (previousFilename) {
       const previousPath = path.join(configUploadsDir, previousFilename);
       if (fs.existsSync(previousPath)) {
         fs.unlinkSync(previousPath);
@@ -318,6 +360,33 @@ router.put('/logo', protect, authorize('admin'), logoUpload.single('logo'), asyn
     return res.status(500).json({
       success: false,
       message: error.message || 'Failed to upload logo'
+    });
+  }
+});
+
+router.get('/logo/:filename', async (req, res) => {
+  try {
+    const filename = path.basename(String(req.params.filename || ''));
+    if (!filename || filename.includes('..')) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid logo filename'
+      });
+    }
+
+    const fullPath = path.join(configUploadsDir, filename);
+    if (!fs.existsSync(fullPath)) {
+      return res.status(404).json({
+        success: false,
+        message: 'Logo not found'
+      });
+    }
+
+    return res.sendFile(fullPath);
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: 'Failed to serve logo file'
     });
   }
 });

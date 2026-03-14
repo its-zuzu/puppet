@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Mail, Send, Shield, ChevronRight } from 'lucide-react';
@@ -8,10 +8,15 @@ import './Footer.css';
 
 const Footer = () => {
   const { eventName, logoUrl } = useSiteConfig();
+  const [logoLoadError, setLogoLoadError] = useState(false);
   const [email, setEmail] = useState('');
   const [message, setMessage] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
+
+  useEffect(() => {
+    setLogoLoadError(false);
+  }, [logoUrl]);
 
   const handleSubscribe = async (e) => {
     e.preventDefault();
@@ -56,8 +61,13 @@ const Footer = () => {
               whileHover={{ scale: 1.1, rotate: 360 }}
               transition={{ duration: 0.8 }}
             >
-              {logoUrl ? (
-                <img src={logoUrl} alt={`${eventName} logo`} className="htb-footer-logo-image" />
+              {logoUrl && !logoLoadError ? (
+                <img
+                  src={`${logoUrl}${logoUrl.includes('?') ? '&' : '?'}v=${Date.now()}`}
+                  alt={`${eventName} logo`}
+                  className="htb-footer-logo-image"
+                  onError={() => setLogoLoadError(true)}
+                />
               ) : (
                 <Shield size={32} />
               )}
