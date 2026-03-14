@@ -21,7 +21,7 @@
 }
 
 .back-link:hover {
-  color: #00ffaa;
+  color: #A855F7;
 }
 
 .back-icon {
@@ -36,7 +36,7 @@
 }
 
 .thread-breadcrumbs a {
-  color: #00c9ff;
+  color: #D8B4FE;
   text-decoration: none;
 }
 
@@ -59,20 +59,20 @@
 
 .thread-content-wrapper {
   background-color: rgba(26, 46, 70, 0.5);
-  border: 1px solid #1a2e46;
+  border: 1px solid #2D1451;
   border-radius: 8px;
   overflow: hidden;
 }
 
 /* Original Post */
 .thread-original-post {
-  border-bottom: 1px solid #1a2e46;
+  border-bottom: 1px solid #2D1451;
 }
 
 .post-header {
   padding: 1.5rem;
   background-color: rgba(15, 25, 35, 0.8);
-  border-bottom: 1px solid #1a2e46;
+  border-bottom: 1px solid #2D1451;
 }
 
 .post-header h1 {
@@ -90,7 +90,7 @@
 }
 
 .author-name {
-  color: #00c9ff;
+  color: #D8B4FE;
   font-weight: 500;
 }
 
@@ -110,7 +110,7 @@
   width: 60px;
   height: 60px;
   border-radius: 50%;
-  background: linear-gradient(135deg, #00c9ff, #00ffaa);
+  background: linear-gradient(135deg, #D8B4FE, #A855F7);
   display: flex;
   justify-content: center;
   align-items: center;
@@ -150,7 +150,7 @@
 /* Replies Section */
 .thread-replies-section {
   padding: 1.5rem;
-  border-bottom: 1px solid #1a2e46;
+  border-bottom: 1px solid #2D1451;
 }
 
 .thread-replies-section h2 {
@@ -168,7 +168,7 @@
   left: 0;
   width: 40px;
   height: 2px;
-  background: linear-gradient(90deg, #00c9ff, #00ffaa);
+  background: linear-gradient(90deg, #D8B4FE, #A855F7);
   border-radius: 2px;
 }
 
@@ -180,7 +180,7 @@
 
 .reply-item {
   background-color: rgba(15, 25, 35, 0.5);
-  border: 1px solid #1a2e46;
+  border: 1px solid #2D1451;
   border-radius: 8px;
   overflow: hidden;
   position: relative;
@@ -239,7 +239,7 @@
 }
 
 .like-button:hover, .quote-button:hover {
-  color: #00ffaa;
+  color: #A855F7;
 }
 
 .like-icon {
@@ -271,7 +271,7 @@
   left: 0;
   width: 40px;
   height: 2px;
-  background: linear-gradient(90deg, #00c9ff, #00ffaa);
+  background: linear-gradient(90deg, #D8B4FE, #A855F7);
   border-radius: 2px;
 }
 
@@ -284,7 +284,7 @@
 .reply-form textarea {
   padding: 1rem;
   border-radius: 8px;
-  border: 1px solid #1a2e46;
+  border: 1px solid #2D1451;
   background-color: rgba(15, 25, 35, 0.8);
   color: #e0e0e0;
   font-size: 1rem;
@@ -295,8 +295,8 @@
 
 .reply-form textarea:focus {
   outline: none;
-  border-color: #00ffaa;
-  box-shadow: 0 0 0 2px rgba(0, 255, 170, 0.2);
+  border-color: #A855F7;
+  box-shadow: 0 0 0 2px rgba(168, 85, 247, 0.2);
 }
 
 .form-actions {
@@ -305,7 +305,7 @@
 }
 
 .submit-reply-button {
-  background: linear-gradient(90deg, #00c9ff, #00ffaa);
+  background: linear-gradient(90deg, #D8B4FE, #A855F7);
   color: #0a0e17;
   font-weight: 600;
   padding: 0.75rem 1.5rem;
@@ -318,7 +318,7 @@
 
 .submit-reply-button:hover:not(:disabled) {
   transform: translateY(-2px);
-  box-shadow: 0 5px 15px rgba(0, 255, 170, 0.2);
+  box-shadow: 0 5px 15px rgba(168, 85, 247, 0.2);
 }
 
 .submit-reply-button:disabled {
@@ -329,7 +329,7 @@
 /* Login Prompt */
 .login-prompt {
   background-color: rgba(15, 25, 35, 0.8);
-  border: 1px solid #1a2e46;
+  border: 1px solid #2D1451;
   border-radius: 8px;
   padding: 1.5rem;
   text-align: center;
@@ -351,25 +351,25 @@
 
 .login-button {
   background-color: transparent;
-  border: 1px solid #00ffaa;
-  color: #00ffaa;
+  border: 1px solid #A855F7;
+  color: #A855F7;
   margin-right: 0.5rem;
 }
 
 .login-button:hover {
-  background-color: rgba(0, 255, 170, 0.1);
+  background-color: rgba(168, 85, 247, 0.1);
   transform: translateY(-2px);
 }
 
 .register-button {
-  background: linear-gradient(90deg, #00c9ff, #00ffaa);
+  background: linear-gradient(90deg, #D8B4FE, #A855F7);
   color: #0a0e17;
   border: none;
 }
 
 .register-button:hover {
   transform: translateY(-2px);
-  box-shadow: 0 5px 15px rgba(0, 255, 170, 0.2);
+  box-shadow: 0 5px 15px rgba(168, 85, 247, 0.2);
 }
 
 .or-separator {
@@ -390,9 +390,9 @@
 .loading-spinner {
   width: 40px;
   height: 40px;
-  border: 3px solid rgba(0, 255, 170, 0.3);
+  border: 3px solid rgba(168, 85, 247, 0.3);
   border-radius: 50%;
-  border-top-color: #00ffaa;
+  border-top-color: #A855F7;
   animation: spin 1s ease-in-out infinite;
   margin-bottom: 1rem;
 }
@@ -423,7 +423,7 @@
 }
 
 .back-button {
-  background: linear-gradient(90deg, #00c9ff, #00ffaa);
+  background: linear-gradient(90deg, #D8B4FE, #A855F7);
   color: #0a0e17;
   font-weight: 600;
   padding: 0.75rem 1.5rem;
@@ -435,7 +435,7 @@
 
 .back-button:hover {
   transform: translateY(-2px);
-  box-shadow: 0 5px 15px rgba(0, 255, 170, 0.2);
+  box-shadow: 0 5px 15px rgba(168, 85, 247, 0.2);
 }
 
 /* Responsive Adjustments */

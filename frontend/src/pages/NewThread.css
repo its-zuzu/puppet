@@ -26,13 +26,13 @@
   transform: translateX(-50%);
   width: 50px;
   height: 3px;
-  background: linear-gradient(90deg, #00c9ff, #00ffaa);
+  background: linear-gradient(90deg, #D8B4FE, #A855F7);
   border-radius: 3px;
 }
 
 .highlight {
-  color: #00ffaa;
-  text-shadow: 0 0 10px rgba(0, 255, 170, 0.5);
+  color: #A855F7;
+  text-shadow: 0 0 10px rgba(168, 85, 247, 0.5);
 }
 
 .new-thread-subtitle {
@@ -51,7 +51,7 @@
 /* Thread Form */
 .thread-form-wrapper {
   background-color: rgba(26, 46, 70, 0.5);
-  border: 1px solid #1a2e46;
+  border: 1px solid #2D1451;
   border-radius: 8px;
   padding: 2rem;
 }
@@ -95,7 +95,7 @@
 .form-group textarea {
   padding: 0.75rem 1rem;
   border-radius: 4px;
-  border: 1px solid #1a2e46;
+  border: 1px solid #2D1451;
   background-color: rgba(15, 25, 35, 0.8);
   color: #e0e0e0;
   font-size: 1rem;
@@ -106,8 +106,8 @@
 .form-group select:focus,
 .form-group textarea:focus {
   outline: none;
-  border-color: #00ffaa;
-  box-shadow: 0 0 0 2px rgba(0, 255, 170, 0.2);
+  border-color: #A855F7;
+  box-shadow: 0 0 0 2px rgba(168, 85, 247, 0.2);
 }
 
 .form-group textarea {
@@ -169,14 +169,14 @@
 }
 
 .submit-button {
-  background: linear-gradient(90deg, #00c9ff, #00ffaa);
+  background: linear-gradient(90deg, #D8B4FE, #A855F7);
   color: #0a0e17;
   border: none;
 }
 
 .submit-button:hover:not(:disabled) {
   transform: translateY(-2px);
-  box-shadow: 0 5px 15px rgba(0, 255, 170, 0.2);
+  box-shadow: 0 5px 15px rgba(168, 85, 247, 0.2);
 }
 
 .submit-button:disabled {
@@ -187,7 +187,7 @@
 /* Thread Guidelines */
 .thread-guidelines {
   background-color: rgba(26, 46, 70, 0.5);
-  border: 1px solid #1a2e46;
+  border: 1px solid #2D1451;
   border-radius: 8px;
   padding: 1.5rem;
   align-self: start;
@@ -208,7 +208,7 @@
   left: 0;
   width: 40px;
   height: 2px;
-  background: linear-gradient(90deg, #00c9ff, #00ffaa);
+  background: linear-gradient(90deg, #D8B4FE, #A855F7);
   border-radius: 2px;
 }
 
@@ -234,7 +234,7 @@
 }
 
 .guideline-text h3 {
-  color: #00ffaa;
+  color: #A855F7;
   font-size: 1.1rem;
   margin-bottom: 0.25rem;
 }

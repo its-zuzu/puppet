@@ -143,7 +143,7 @@
 
 .htb-notice-card:hover {
   border-color: var(--primary);
-  box-shadow: 0 8px 32px rgba(0, 180, 255, 0.2);
+  box-shadow: 0 8px 32px rgba(168, 85, 247, 0.2);
 }
 
 .htb-notice-title {

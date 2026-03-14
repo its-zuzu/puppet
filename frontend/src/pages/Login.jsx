@@ -25,8 +25,10 @@ function Login() {
   const { email, password } = formData;
 
   const onChange = (e) => {
-    const sanitizedValue = sanitizeInput(e.target.value);
-    setFormData({ ...formData, [e.target.name]: sanitizedValue });
+    const { name, value } = e.target;
+    const nextValue = name === 'email' ? sanitizeInput(value) : value;
+
+    setFormData({ ...formData, [name]: nextValue });
     setFormError('');
     setIsBlocked(false);
     clearErrors();

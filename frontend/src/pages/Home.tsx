@@ -11,8 +11,9 @@ import {
   Zap,
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { FallingPattern } from '@/components/ui/falling-pattern';
-import AuthContext from '@/context/AuthContext';
+import { FallingPattern } from '../components/ui/falling-pattern';
+import AuthContext from '../context/AuthContext';
+import { useSiteConfig } from '../context/SiteConfigContext';
 
 const heroMetrics = [
   { value: '250+', label: 'attack paths' },
@@ -40,7 +41,11 @@ const signalCards = [
 
 export default function Home() {
   const navigate = useNavigate();
-  const { isAuthenticated } = useContext(AuthContext);
+  const { isAuthenticated } = useContext(
+    AuthContext as React.Context<{ isAuthenticated: boolean }>
+  );
+  const { eventName } = useSiteConfig();
+  const platformName = eventName || 'CTFQuest';
 
   const handleStart = () => {
     if (isAuthenticated) {
@@ -54,7 +59,7 @@ export default function Home() {
     if (isAuthenticated) {
       navigate('/scoreboard');
     } else {
-      navigate('/about');
+      navigate('/event-status');
     }
   };
 
@@ -85,7 +90,7 @@ export default function Home() {
             </div>
 
             <h1 className="mt-8 text-5xl font-black leading-[0.94] tracking-[-0.04em] text-[#F9FAFB] sm:text-6xl md:text-7xl lg:text-[5.5rem]">
-              CTFQuest
+              {platformName}
               <span className="mt-3 block bg-[linear-gradient(180deg,#F9FAFB_0%,#C4B5FD_58%,#A855F7_100%)] bg-clip-text text-transparent">
                 Cyber Arena
               </span>

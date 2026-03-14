@@ -66,7 +66,7 @@
   width: 32px;
   height: 32px;
   padding: 6px;
-  background: rgba(0, 180, 255, 0.1);
+  background: rgba(168, 85, 247, 0.1);
   border-radius: var(--radius-md);
   color: var(--primary);
   flex-shrink: 0;
@@ -170,7 +170,7 @@
 }
 
 .filter-btn.active {
-  background: rgba(0, 180, 255, 0.1);
+  background: rgba(168, 85, 247, 0.1);
   border-color: var(--primary);
   color: var(--primary);
 }
@@ -210,7 +210,7 @@
 .filter-select:focus {
   outline: none;
   border-color: var(--primary);
-  box-shadow: 0 0 0 3px rgba(0, 180, 255, 0.1);
+  box-shadow: 0 0 0 3px rgba(168, 85, 247, 0.1);
 }
 
 .filter-select option {

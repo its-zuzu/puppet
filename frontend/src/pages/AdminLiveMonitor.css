@@ -1,10 +1,10 @@
 /* HTB Live Monitor - Cyber Theme */
 :root {
-  --bg-primary: #0a0e1a;
-  --bg-secondary: #0f1419;
+  --bg-primary: #05010B;
+  --bg-secondary: #0A0514;
   --bg-tertiary: #141922;
-  --primary: #00b4ff;
-  --primary-dark: #0099dd;
+  --primary: #A855F7;
+  --primary-dark: #9333EA;
   --success: #00cb70;
   --danger: #ff3b3b;
   --warning: #ffb800;
@@ -31,8 +31,8 @@
   width: 100%;
   height: 100%;
   background: 
-    linear-gradient(90deg, rgba(0, 180, 255, 0.03) 1px, transparent 1px),
-    linear-gradient(rgba(0, 180, 255, 0.03) 1px, transparent 1px);
+    linear-gradient(90deg, rgba(168, 85, 247, 0.03) 1px, transparent 1px),
+    linear-gradient(rgba(168, 85, 247, 0.03) 1px, transparent 1px);
   background-size: 50px 50px;
   pointer-events: none;
   z-index: 0;
@@ -134,7 +134,7 @@
 .htb-stat-card:hover {
   border-color: var(--primary);
   transform: translateY(-2px);
-  box-shadow: 0 8px 24px rgba(0, 180, 255, 0.2);
+  box-shadow: 0 8px 24px rgba(168, 85, 247, 0.2);
 }
 
 .htb-stat-card.success {

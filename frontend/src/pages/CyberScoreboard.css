@@ -180,13 +180,13 @@
 }
 
 .cyber-scoreboard-table-row--current {
-  background: rgba(0, 180, 255, 0.1);
+  background: rgba(168, 85, 247, 0.1);
   border-left: 4px solid var(--primary);
   padding-left: 20px;
 }
 
 .cyber-scoreboard-table-row--current:hover {
-  background: rgba(0, 180, 255, 0.15);
+  background: rgba(168, 85, 247, 0.15);
 }
 
 .cyber-scoreboard-table-row--top1 {

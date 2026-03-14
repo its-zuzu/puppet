@@ -136,7 +136,7 @@
 }
 
 .htb-meta-badge.htb-points {
-  background: rgba(0, 180, 255, 0.1);
+  background: rgba(168, 85, 247, 0.1);
   border: 1px solid var(--primary);
   color: var(--primary);
 }
@@ -155,7 +155,7 @@
 
 .htb-meta-badge:hover {
   transform: translateY(-2px);
-  box-shadow: 0 4px 20px rgba(0, 180, 255, 0.2);
+  box-shadow: 0 4px 20px rgba(168, 85, 247, 0.2);
 }
 
 /* Sections */
@@ -225,7 +225,7 @@
 
 .htb-file-item:hover {
   border-left-color: var(--success);
-  background: rgba(0, 255, 136, 0.05);
+  background: rgba(168, 85, 247, 0.05);
   transform: translateX(4px);
 }
 
@@ -265,7 +265,7 @@
 .htb-download-btn:hover {
   background: var(--success);
   transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(0, 255, 136, 0.3);
+  box-shadow: 0 4px 12px rgba(168, 85, 247, 0.3);
 }
 
 .htb-download-btn .download-icon {
@@ -297,7 +297,7 @@
 
 .htb-hint-card.unlocked {
   border-left: 4px solid var(--success);
-  background: rgba(0, 255, 136, 0.05);
+  background: rgba(168, 85, 247, 0.05);
 }
 
 .htb-hint-icon {
@@ -353,7 +353,7 @@
 }
 
 .htb-unlock-btn:hover {
-  background: #00d4ff;
+  background: #A855F7;
   box-shadow: 0 0 20px var(--primary-glow);
 }
 
@@ -464,7 +464,7 @@
 }
 
 .htb-btn-primary:hover {
-  background: #00d4ff;
+  background: #A855F7;
   box-shadow: 0 0 20px var(--primary-glow);
 }
 
@@ -601,7 +601,7 @@
 }
 
 .htb-status-success {
-  background: rgba(0, 255, 136, 0.15);
+  background: rgba(168, 85, 247, 0.15);
   border: 1px solid var(--success);
   color: var(--success);
 }
@@ -677,7 +677,7 @@
 }
 
 .htb-solves-table tbody tr:hover {
-  background: rgba(0, 180, 255, 0.05);
+  background: rgba(168, 85, 247, 0.05);
 }
 
 /* Flag Form */
@@ -705,7 +705,7 @@
 }
 
 .htb-alert-success {
-  background: rgba(0, 255, 136, 0.1);
+  background: rgba(168, 85, 247, 0.1);
   border: 1px solid var(--success);
   color: var(--success);
 }
@@ -747,7 +747,7 @@
 .htb-flag-input:focus {
   outline: none;
   border-color: var(--primary);
-  box-shadow: 0 0 0 3px rgba(0, 180, 255, 0.1);
+  box-shadow: 0 0 0 3px rgba(168, 85, 247, 0.1);
 }
 
 .htb-flag-input:disabled {
