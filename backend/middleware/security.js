@@ -72,10 +72,17 @@ const validator = require('validator');
 
 const validateInput = {
   email: (email) => {
-    if (!email || !validator.isEmail(email)) {
+    if (!email || typeof email !== 'string') {
       throw new Error('Invalid email format');
     }
-    return validator.normalizeEmail(email);
+
+    const normalizedEmail = email.trim().toLowerCase();
+
+    if (!validator.isEmail(normalizedEmail)) {
+      throw new Error('Invalid email format');
+    }
+
+    return normalizedEmail;
   },
 
   username: (username) => {

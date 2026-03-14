@@ -194,8 +194,18 @@ router.post('/verify-otp', async (req, res) => {
       });
     }
 
+    let validatedEmail;
+    try {
+      validatedEmail = validateInput.email(email);
+    } catch (validationError) {
+      return res.status(400).json({
+        success: false,
+        message: validationError.message
+      });
+    }
+
     // Find user
-    const user = await User.findOne({ email: email.toLowerCase() }).select('+otp');
+    const user = await User.findOne({ email: validatedEmail }).select('+otp');
 
     if (!user) {
       return res.status(404).json({
@@ -267,7 +277,17 @@ router.post('/resend-otp', async (req, res) => {
       });
     }
 
-    const user = await User.findOne({ email: email.toLowerCase() });
+    let validatedEmail;
+    try {
+      validatedEmail = validateInput.email(email);
+    } catch (validationError) {
+      return res.status(400).json({
+        success: false,
+        message: validationError.message
+      });
+    }
+
+    const user = await User.findOne({ email: validatedEmail });
 
     if (!user) {
       return res.status(404).json({
@@ -328,24 +348,30 @@ router.post('/register-admin', protect, authorize('admin'), async (req, res) => 
       });
     }
 
-    // Validate email format
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(email)) {
+    let validatedUsername;
+    let validatedEmail;
+    let validatedPassword;
+
+    try {
+      validatedUsername = validateInput.username(username);
+      validatedEmail = validateInput.email(email);
+      validatedPassword = validateInput.password(password);
+    } catch (validationError) {
       return res.status(400).json({
         success: false,
-        message: 'Please provide a valid email address'
+        message: validationError.message
       });
     }
 
     // Check if user already exists
     const userExists = await User.findOne({
-      $or: [{ email }, { username }]
+      $or: [{ email: validatedEmail }, { username: validatedUsername }]
     });
 
     if (userExists) {
       return res.status(400).json({
         success: false,
-        message: userExists.email === email ?
+        message: userExists.email === validatedEmail ?
           'Email already registered' :
           'Username already taken'
       });
@@ -353,9 +379,9 @@ router.post('/register-admin', protect, authorize('admin'), async (req, res) => 
 
     // Create user
     const user = await User.create({
-      username,
-      email,
-      password,
+      username: validatedUsername,
+      email: validatedEmail,
+      password: validatedPassword,
       role: type === 'admin' ? 'admin' : 'user',
       verified: !!verified,
       isEmailVerified: !!verified,
