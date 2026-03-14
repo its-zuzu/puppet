@@ -26,7 +26,24 @@ if (!fs.existsSync(configUploadsDir)) {
   fs.mkdirSync(configUploadsDir, { recursive: true });
 }
 
-const allowedMimeTypes = ['image/png', 'image/jpeg', 'image/jpg', 'image/webp', 'image/svg+xml', 'image/x-icon'];
+const allowedImageExtensions = [
+  '.png', '.jpg', '.jpeg', '.webp', '.svg', '.ico',
+  '.gif', '.bmp', '.avif', '.tif', '.tiff'
+];
+
+const allowedMimeTypes = [
+  'image/png',
+  'image/jpeg',
+  'image/jpg',
+  'image/webp',
+  'image/svg+xml',
+  'image/x-icon',
+  'image/vnd.microsoft.icon',
+  'image/gif',
+  'image/bmp',
+  'image/avif',
+  'image/tiff'
+];
 
 const logoUpload = multer({
   storage: multer.diskStorage({
@@ -37,13 +54,19 @@ const logoUpload = multer({
     }
   }),
   fileFilter: (_req, file, cb) => {
-    if (!allowedMimeTypes.includes(file.mimetype)) {
+    const ext = path.extname(file.originalname || '').toLowerCase();
+    const mime = String(file.mimetype || '').toLowerCase();
+
+    const validByMime = allowedMimeTypes.includes(mime);
+    const validByExt = allowedImageExtensions.includes(ext);
+
+    if (!validByMime && !validByExt) {
       return cb(new Error('Only image files are allowed for logo upload'));
     }
     return cb(null, true);
   },
   limits: {
-    fileSize: 2 * 1024 * 1024,
+    fileSize: 10 * 1024 * 1024,
     files: 1
   }
 });

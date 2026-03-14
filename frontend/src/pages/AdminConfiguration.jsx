@@ -260,7 +260,7 @@ function AdminConfiguration() {
             <input
               id="eventLogo"
               type="file"
-              accept="image/png,image/jpeg,image/jpg,image/webp,image/svg+xml,image/x-icon"
+              accept="image/*,.svg,.ico,.avif,.tiff,.tif"
               onChange={(e) => setSelectedLogo(e.target.files?.[0] || null)}
             />
             <button type="submit" disabled={uploading}>
@@ -268,6 +268,8 @@ function AdminConfiguration() {
               <span>{uploading ? 'Uploading...' : 'Upload Logo'}</span>
             </button>
           </div>
+
+          <p className="admin-configuration-hint">Supported: PNG, JPG, WEBP, SVG, ICO, GIF, BMP, AVIF, TIFF (max 10MB).</p>
 
           {logoUrl && (
             <div className="admin-configuration-logo-preview-wrap">

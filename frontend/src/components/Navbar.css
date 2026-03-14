@@ -51,9 +51,11 @@
 .cyber-navbar-logo-image {
   width: 32px;
   height: 32px;
-  object-fit: cover;
+  object-fit: contain;
   border-radius: 6px;
   border: 1px solid var(--border-primary);
+  background: rgba(255, 255, 255, 0.08);
+  padding: 2px;
 }
 
 .cyber-navbar-logo-text {
