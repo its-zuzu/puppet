@@ -14,6 +14,7 @@ import './Navbar.css';
 function Navbar() {
   const { isAuthenticated, user, logout } = useContext(AuthContext);
   const { eventName, logoUrl } = useSiteConfig();
+  const [logoLoadError, setLogoLoadError] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
   const [isAdminMenuOpen, setIsAdminMenuOpen] = useState(false);
@@ -28,6 +29,10 @@ function Navbar() {
     window.addEventListener('scroll', handleScroll, { passive: true });
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
+
+  useEffect(() => {
+    setLogoLoadError(false);
+  }, [logoUrl]);
 
   useEffect(() => {
     if (isAuthenticated && user) {
@@ -100,8 +105,13 @@ function Navbar() {
     <nav className={`cyber-navbar ${scrolled ? 'cyber-navbar--scrolled' : ''}`}>
       <div className="cyber-navbar-container">
         <Link to="/" className="cyber-navbar-brand">
-          {logoUrl ? (
-            <img src={logoUrl} alt={`${eventName} logo`} className="cyber-navbar-logo-image" />
+          {logoUrl && !logoLoadError ? (
+            <img
+              src={`${logoUrl}${logoUrl.includes('?') ? '&' : '?'}v=${Date.now()}`}
+              alt={`${eventName} logo`}
+              className="cyber-navbar-logo-image"
+              onError={() => setLogoLoadError(true)}
+            />
           ) : (
             <Shield size={28} className="cyber-navbar-logo-icon" />
           )}
