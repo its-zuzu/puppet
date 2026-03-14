@@ -1,5 +1,5 @@
-import React, { useEffect, lazy, Suspense } from 'react'
-import { BrowserRouter as Router, Routes, Route, Link } from 'react-router-dom'
+import { lazy, Suspense, useEffect } from 'react'
+import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-router-dom'
 import { initSecurity } from './utils/security'
 import './App.css'
 import './enable-copy.css'
@@ -20,7 +20,7 @@ import { Loading } from './components/ui';
 const PageLoader = () => <Loading text="INITIALIZING..." />;
 
 // Lazy load pages - only load when needed
-const Home = lazy(() => import('./pages/Home'))
+const Home = lazy(() => import('./pages/Home.tsx'))
 const Challenges = lazy(() => import('./pages/Challenges'))
 const Login = lazy(() => import('./pages/Login'))
 const Register = lazy(() => import('./pages/Register'))
@@ -51,6 +51,162 @@ const AdminCategories = lazy(() => import('./pages/AdminCategories'))
 const AdminEventControl = lazy(() => import('./pages/AdminEventControl'))
 const AdminConfiguration = lazy(() => import('./pages/AdminConfiguration'))
 const EventStatus = lazy(() => import('./pages/EventStatus'))
+
+function AppShell() {
+  const location = useLocation()
+  const isHomeRoute = location.pathname === '/'
+
+  return (
+    <div className="app-container">
+      <Navbar />
+      <main className={`main-content${isHomeRoute ? ' main-content--home' : ''}`}>
+        <Suspense fallback={<PageLoader />}>
+          <Routes>
+            <Route path="/" element={<Home />} />
+            <Route path="/challenges" element={
+              <ProtectedRoute>
+                <Challenges />
+              </ProtectedRoute>
+            } />
+            <Route path="/challenges/:id" element={
+              <ProtectedRoute>
+                <ChallengeDetails />
+              </ProtectedRoute>
+            } />
+
+            <Route path="/login" element={<Login />} />
+            <Route path="/register" element={<Register />} />
+            <Route path="/contact" element={<ContactUs />} />
+            <Route path="/notices" element={<Notice />} />
+            <Route path="/profile" element={
+              <ProtectedRoute>
+                <Profile />
+              </ProtectedRoute>
+            } />
+            <Route path="/scoreboard" element={
+              <ProtectedRoute>
+                <Scoreboard />
+              </ProtectedRoute>
+            } />
+            <Route path="/event-status" element={<EventStatus />} />
+            <Route path="/team/:id" element={
+              <ProtectedRoute>
+                <TeamDetails />
+              </ProtectedRoute>
+            } />
+            <Route path="/teams/:id" element={
+              <ProtectedRoute>
+                <TeamDetails />
+              </ProtectedRoute>
+            } />
+
+            <Route path="/my-team" element={
+              <ProtectedRoute>
+                <MyTeam />
+              </ProtectedRoute>
+            } />
+
+            <Route path="/user/:userId" element={
+              <ProtectedRoute>
+                <UserProfile />
+              </ProtectedRoute>
+            } />
+            <Route path="/users/:userId" element={
+              <ProtectedRoute>
+                <UserProfile />
+              </ProtectedRoute>
+            } />
+            <Route path="/create-challenge" element={
+              <ProtectedRoute adminOnly={true}>
+                <CreateChallenge />
+              </ProtectedRoute>
+            } />
+            <Route path="/edit-challenge/:id" element={
+              <ProtectedRoute adminOnly={true}>
+                <EditChallenge />
+              </ProtectedRoute>
+            } />
+            <Route path="/admin" element={
+              <ProtectedRoute adminOnly={true}>
+                <AdminDashboard />
+              </ProtectedRoute>
+            } />
+            <Route path="/admin/create-user" element={
+              <ProtectedRoute adminOnly={true}>
+                <AdminCreateUser />
+              </ProtectedRoute>
+            } />
+            <Route path="/admin/create-team" element={
+              <ProtectedRoute adminOnly={true}>
+                <AdminCreateTeam />
+              </ProtectedRoute>
+            } />
+            <Route path="/admin/messages" element={
+              <ProtectedRoute adminOnly={true}>
+                <AdminContactMessages />
+              </ProtectedRoute>
+            } />
+            <Route path="/admin/login-logs" element={
+              <ProtectedRoute adminOnly={true}>
+                <AdminLoginLogs />
+              </ProtectedRoute>
+            } />
+            <Route path="/admin/users/:id" element={
+              <ProtectedRoute adminOnly={true}>
+                <AdminUserProfile />
+              </ProtectedRoute>
+            } />
+            <Route path="/admin/platform-reset" element={
+              <ProtectedRoute adminOnly={true}>
+                <PlatformReset />
+              </ProtectedRoute>
+            } />
+            <Route path="/admin/statistics" element={
+              <ProtectedRoute adminOnly={true}>
+                <AdminStatistics />
+              </ProtectedRoute>
+            } />
+            <Route path="/admin/submissions" element={
+              <ProtectedRoute adminOnly={true}>
+                <AdminSubmissions />
+              </ProtectedRoute>
+            } />
+            <Route path="/admin/categories" element={
+              <ProtectedRoute adminOnly={true}>
+                <AdminCategories />
+              </ProtectedRoute>
+            } />
+            <Route path="/admin/live-monitor" element={
+              <ProtectedRoute adminOnly={true}>
+                <AdminLiveMonitor />
+              </ProtectedRoute>
+            } />
+            <Route path="/admin/event-control" element={
+              <ProtectedRoute adminOnly={true}>
+                <AdminEventControl />
+              </ProtectedRoute>
+            } />
+            <Route path="/admin/configuration" element={
+              <ProtectedRoute adminOnly={true}>
+                <AdminConfiguration />
+              </ProtectedRoute>
+            } />
+            <Route path="/admin/event-status" element={
+              <ProtectedRoute adminOnly={true}>
+                <AdminEventControl />
+              </ProtectedRoute>
+            } />
+            <Route path="/blocked" element={<UserBlocked />} />
+            <Route path="/privacy-policy" element={<PrivacyPolicy />} />
+            <Route path="/terms-of-service" element={<TermsOfService />} />
+          </Routes>
+        </Suspense>
+      </main>
+      <Footer />
+      <BackToTopButton />
+    </div>
+  )
+}
 
 function App() {
   useEffect(() => {
@@ -87,154 +243,7 @@ function App() {
       <SiteConfigProvider>
         <Router>
           <ScrollToTop />
-          <div className="app-container">
-            <Navbar />
-            <main className="main-content">
-              <Suspense fallback={<PageLoader />}>
-                <Routes>
-                <Route path="/" element={<Home />} />
-                <Route path="/challenges" element={
-                  <ProtectedRoute>
-                    <Challenges />
-                  </ProtectedRoute>
-                } />
-                <Route path="/challenges/:id" element={
-                  <ProtectedRoute>
-                    <ChallengeDetails />
-                  </ProtectedRoute>
-                } />
-
-                <Route path="/login" element={<Login />} />
-                <Route path="/register" element={<Register />} />
-                <Route path="/contact" element={<ContactUs />} />
-                <Route path="/notices" element={<Notice />} />
-                <Route path="/profile" element={
-                  <ProtectedRoute>
-                    <Profile />
-                  </ProtectedRoute>
-                } />
-                <Route path="/scoreboard" element={
-                  <ProtectedRoute>
-                    <Scoreboard />
-                  </ProtectedRoute>
-                } />
-                <Route path="/event-status" element={<EventStatus />} />
-                <Route path="/team/:id" element={
-                  <ProtectedRoute>
-                    <TeamDetails />
-                  </ProtectedRoute>
-                } />
-                <Route path="/teams/:id" element={
-                  <ProtectedRoute>
-                    <TeamDetails />
-                  </ProtectedRoute>
-                } />
-
-                <Route path="/my-team" element={
-                  <ProtectedRoute>
-                    <MyTeam />
-                  </ProtectedRoute>
-                } />
-
-                <Route path="/user/:userId" element={
-                  <ProtectedRoute>
-                    <UserProfile />
-                  </ProtectedRoute>
-                } />
-                <Route path="/users/:userId" element={
-                  <ProtectedRoute>
-                    <UserProfile />
-                  </ProtectedRoute>
-                } />
-                <Route path="/create-challenge" element={
-                  <ProtectedRoute adminOnly={true}>
-                    <CreateChallenge />
-                  </ProtectedRoute>
-                } />
-                <Route path="/edit-challenge/:id" element={
-                  <ProtectedRoute adminOnly={true}>
-                    <EditChallenge />
-                  </ProtectedRoute>
-                } />
-                <Route path="/admin" element={
-                  <ProtectedRoute adminOnly={true}>
-                    <AdminDashboard />
-                  </ProtectedRoute>
-                } />
-                <Route path="/admin/create-user" element={
-                  <ProtectedRoute adminOnly={true}>
-                    <AdminCreateUser />
-                  </ProtectedRoute>
-                } />
-                <Route path="/admin/create-team" element={
-                  <ProtectedRoute adminOnly={true}>
-                    <AdminCreateTeam />
-                  </ProtectedRoute>
-                } />
-                <Route path="/admin/messages" element={
-                  <ProtectedRoute adminOnly={true}>
-                    <AdminContactMessages />
-                  </ProtectedRoute>
-                } />
-                <Route path="/admin/login-logs" element={
-                  <ProtectedRoute adminOnly={true}>
-                    <AdminLoginLogs />
-                  </ProtectedRoute>
-                } />
-                <Route path="/admin/users/:id" element={
-                  <ProtectedRoute adminOnly={true}>
-                    <AdminUserProfile />
-                  </ProtectedRoute>
-                } />
-                <Route path="/admin/platform-reset" element={
-                  <ProtectedRoute adminOnly={true}>
-                    <PlatformReset />
-                  </ProtectedRoute>
-                } />
-                <Route path="/admin/statistics" element={
-                  <ProtectedRoute adminOnly={true}>
-                    <AdminStatistics />
-                  </ProtectedRoute>
-                } />
-                <Route path="/admin/submissions" element={
-                  <ProtectedRoute adminOnly={true}>
-                    <AdminSubmissions />
-                  </ProtectedRoute>
-                } />
-                <Route path="/admin/categories" element={
-                  <ProtectedRoute adminOnly={true}>
-                    <AdminCategories />
-                  </ProtectedRoute>
-                } />
-                <Route path="/admin/live-monitor" element={
-                  <ProtectedRoute adminOnly={true}>
-                    <AdminLiveMonitor />
-                  </ProtectedRoute>
-                } />
-                <Route path="/admin/event-control" element={
-                  <ProtectedRoute adminOnly={true}>
-                    <AdminEventControl />
-                  </ProtectedRoute>
-                } />
-                <Route path="/admin/configuration" element={
-                  <ProtectedRoute adminOnly={true}>
-                    <AdminConfiguration />
-                  </ProtectedRoute>
-                } />
-                <Route path="/admin/event-status" element={
-                  <ProtectedRoute adminOnly={true}>
-                    <AdminEventControl />
-                  </ProtectedRoute>
-                } />
-                <Route path="/blocked" element={<UserBlocked />} />
-                <Route path="/privacy-policy" element={<PrivacyPolicy />} />
-                <Route path="/terms-of-service" element={<TermsOfService />} />
-                </Routes>
-              </Suspense>
-            </main>
-            <Footer />
-            <BackToTopButton />
-          </div>
+          <AppShell />
         </Router>
       </SiteConfigProvider>
     </AuthProvider>

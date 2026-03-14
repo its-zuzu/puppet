@@ -57,10 +57,10 @@
 
 .spinner-bar {
     width: 6px;
-    background: linear-gradient(180deg, #00ffaa 0%, #00c9ff 100%);
+    background: linear-gradient(180deg, #A855F7 0%, #D8B4FE 100%);
     border-radius: 3px;
     animation: barPulse 1.2s ease-in-out infinite;
-    box-shadow: 0 0 10px rgba(0, 255, 170, 0.5);
+    box-shadow: 0 0 10px rgba(168, 85, 247, 0.5);
 }
 
 .spinner-bar:nth-child(1) {

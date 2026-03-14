@@ -196,7 +196,7 @@
   left: -50%;
   width: 200%;
   height: 200%;
-  background: radial-gradient(circle, rgba(0, 180, 255, 0.1) 0%, transparent 70%);
+  background: radial-gradient(circle, rgba(168, 85, 247, 0.1) 0%, transparent 70%);
   animation: rotateGlow 10s linear infinite;
   pointer-events: none;
 }
@@ -273,7 +273,7 @@
 .htb-newsletter-input:focus {
   outline: none;
   border-color: var(--primary);
-  box-shadow: 0 0 0 3px rgba(0, 180, 255, 0.1);
+  box-shadow: 0 0 0 3px rgba(168, 85, 247, 0.1);
 }
 
 .htb-input-border {
@@ -354,7 +354,7 @@
 }
 
 .htb-newsletter-success {
-  background: rgba(0, 255, 136, 0.1);
+  background: rgba(168, 85, 247, 0.1);
   border: 1px solid var(--success);
   color: var(--success);
 }

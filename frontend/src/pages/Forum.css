@@ -27,13 +27,13 @@
   transform: translateX(-50%);
   width: 50px;
   height: 3px;
-  background: linear-gradient(90deg, #00c9ff, #00ffaa);
+  background: linear-gradient(90deg, #D8B4FE, #A855F7);
   border-radius: 3px;
 }
 
 .highlight {
-  color: #00ffaa;
-  text-shadow: 0 0 10px rgba(0, 255, 170, 0.5);
+  color: #A855F7;
+  text-shadow: 0 0 10px rgba(168, 85, 247, 0.5);
 }
 
 .forum-subtitle {
@@ -44,7 +44,7 @@
 }
 
 .new-thread-button {
-  background: linear-gradient(90deg, #00c9ff, #00ffaa);
+  background: linear-gradient(90deg, #D8B4FE, #A855F7);
   color: #0a0e17;
   font-weight: 600;
   padding: 0.75rem 1.5rem;
@@ -60,7 +60,7 @@
 
 .new-thread-button:hover {
   transform: translateY(-3px);
-  box-shadow: 0 10px 20px rgba(0, 255, 170, 0.2);
+  box-shadow: 0 10px 20px rgba(168, 85, 247, 0.2);
 }
 
 .button-icon {
@@ -96,7 +96,7 @@
   left: 0;
   width: 40px;
   height: 2px;
-  background: linear-gradient(90deg, #00c9ff, #00ffaa);
+  background: linear-gradient(90deg, #D8B4FE, #A855F7);
   border-radius: 2px;
 }
 
@@ -110,7 +110,7 @@
   display: flex;
   align-items: center;
   background-color: rgba(26, 46, 70, 0.5);
-  border: 1px solid #1a2e46;
+  border: 1px solid #2D1451;
   border-radius: 8px;
   padding: 1rem;
   cursor: pointer;
@@ -121,13 +121,13 @@
 .category-item:hover {
   background-color: rgba(26, 46, 70, 0.8);
   transform: translateX(5px);
-  border-color: #00ffaa;
+  border-color: #A855F7;
 }
 
 .category-item.active {
-  background-color: rgba(0, 255, 170, 0.1);
-  border-color: #00ffaa;
-  box-shadow: 0 0 15px rgba(0, 255, 170, 0.2);
+  background-color: rgba(168, 85, 247, 0.1);
+  border-color: #A855F7;
+  box-shadow: 0 0 15px rgba(168, 85, 247, 0.2);
 }
 
 .category-icon {
@@ -152,8 +152,8 @@
 }
 
 .category-count {
-  background-color: rgba(0, 255, 170, 0.2);
-  color: #00ffaa;
+  background-color: rgba(168, 85, 247, 0.2);
+  color: #A855F7;
   font-weight: 600;
   padding: 0.25rem 0.5rem;
   border-radius: 20px;
@@ -165,7 +165,7 @@
 /* Threads Section */
 .threads-section {
   background-color: rgba(26, 46, 70, 0.5);
-  border: 1px solid #1a2e46;
+  border: 1px solid #2D1451;
   border-radius: 8px;
   overflow: hidden;
 }
@@ -176,7 +176,7 @@
   align-items: center;
   padding: 1.5rem;
   background-color: rgba(15, 25, 35, 0.8);
-  border-bottom: 1px solid #1a2e46;
+  border-bottom: 1px solid #2D1451;
 }
 
 .threads-header h2 {
@@ -197,7 +197,7 @@
 }
 
 .stat-value {
-  color: #00ffaa;
+  color: #A855F7;
   font-weight: 700;
   font-size: 1.2rem;
 }
@@ -220,7 +220,7 @@
 }
 
 .create-first-thread {
-  background: linear-gradient(90deg, #00c9ff, #00ffaa);
+  background: linear-gradient(90deg, #D8B4FE, #A855F7);
   color: #0a0e17;
   font-weight: 600;
   padding: 0.75rem 1.5rem;
@@ -234,7 +234,7 @@
 
 .create-first-thread:hover {
   transform: translateY(-2px);
-  box-shadow: 0 5px 15px rgba(0, 255, 170, 0.2);
+  box-shadow: 0 5px 15px rgba(168, 85, 247, 0.2);
 }
 
 /* Thread List */
@@ -254,7 +254,7 @@
   display: grid;
   grid-template-columns: 3fr 1fr 1fr 2fr;
   padding: 1.25rem 1.5rem;
-  border-bottom: 1px solid #1a2e46;
+  border-bottom: 1px solid #2D1451;
   text-decoration: none;
   color: inherit;
   position: relative;
@@ -266,7 +266,7 @@
 }
 
 .thread-item:hover {
-  background-color: rgba(0, 255, 170, 0.05);
+  background-color: rgba(168, 85, 247, 0.05);
 }
 
 .thread-item.pinned {
@@ -292,7 +292,7 @@
 }
 
 .thread-item:hover .thread-title h3 {
-  color: #00ffaa;
+  color: #A855F7;
 }
 
 .thread-meta {
@@ -304,7 +304,7 @@
 }
 
 .thread-author {
-  color: #00c9ff;
+  color: #D8B4FE;
 }
 
 .thread-category {
@@ -354,7 +354,7 @@
 }
 
 .last-reply-author {
-  color: #00c9ff;
+  color: #D8B4FE;
   font-size: 0.9rem;
   margin-bottom: 0.25rem;
 }
@@ -377,9 +377,9 @@
 .loading-spinner {
   width: 40px;
   height: 40px;
-  border: 3px solid rgba(0, 255, 170, 0.3);
+  border: 3px solid rgba(168, 85, 247, 0.3);
   border-radius: 50%;
-  border-top-color: #00ffaa;
+  border-top-color: #A855F7;
   animation: spin 1s ease-in-out infinite;
   margin-bottom: 1rem;
 }

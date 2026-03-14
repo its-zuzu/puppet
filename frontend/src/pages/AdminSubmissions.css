@@ -1,10 +1,10 @@
 /* HTB Theme Variables */
 :root {
-  --htb-bg-primary: #0a0e1a;
+  --htb-bg-primary: #05010B;
   --htb-bg-secondary: #111827;
   --htb-bg-tertiary: #1a1f35;
-  --htb-primary: #00b4ff;
-  --htb-primary-dark: #0099dd;
+  --htb-primary: #A855F7;
+  --htb-primary-dark: #9333EA;
   --htb-primary-light: #33c3ff;
   --htb-success: #00cb70;
   --htb-success-dark: #00a556;
@@ -36,8 +36,8 @@
   right: 0;
   bottom: 0;
   background-image: 
-    linear-gradient(rgba(0, 180, 255, 0.05) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(0, 180, 255, 0.05) 1px, transparent 1px);
+    linear-gradient(rgba(168, 85, 247, 0.05) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(168, 85, 247, 0.05) 1px, transparent 1px);
   background-size: 50px 50px;
   pointer-events: none;
   z-index: 0;
@@ -106,7 +106,7 @@
   background: var(--htb-primary);
   color: var(--htb-bg-primary);
   transform: translateX(-3px);
-  box-shadow: 0 4px 12px rgba(0, 180, 255, 0.3);
+  box-shadow: 0 4px 12px rgba(168, 85, 247, 0.3);
 }
 
 /* Alert */
@@ -149,8 +149,8 @@
 
 .htb-search-box:focus-within {
   border-color: var(--htb-primary);
-  box-shadow: 0 0 0 3px rgba(0, 180, 255, 0.15), var(--htb-shadow-sm);
-  background: rgba(0, 180, 255, 0.02);
+  box-shadow: 0 0 0 3px rgba(168, 85, 247, 0.15), var(--htb-shadow-sm);
+  background: rgba(168, 85, 247, 0.02);
 }
 
 .htb-search-box input {
@@ -263,7 +263,7 @@
 }
 
 .htb-category-badge {
-  background: rgba(0, 180, 255, 0.15);
+  background: rgba(168, 85, 247, 0.15);
   color: var(--htb-primary);
   border: 1px solid var(--htb-primary);
 }
@@ -289,7 +289,7 @@
   justify-content: center;
   gap: 0.75rem;
   padding: 1.25rem;
-  background: rgba(0, 180, 255, 0.05);
+  background: rgba(168, 85, 247, 0.05);
   border: 1px solid var(--htb-border);
   border-radius: 8px;
   text-align: center;
@@ -298,7 +298,7 @@
 }
 
 .htb-stat-item:hover {
-  background: rgba(0, 180, 255, 0.1);
+  background: rgba(168, 85, 247, 0.1);
   border-color: var(--htb-primary);
   transform: scale(1.05);
 }
@@ -608,7 +608,7 @@
 
 .htb-empty-state:hover {
   border-color: var(--htb-primary);
-  background: rgba(0, 180, 255, 0.03);
+  background: rgba(168, 85, 247, 0.03);
 }
 
 .htb-empty-icon {

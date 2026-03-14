@@ -51,9 +51,9 @@ function Scoreboard() {
           onClick={() => setViewType('teams')}
           style={{
             padding: '10px 20px',
-            background: viewType === 'teams' ? '#00ffaa' : 'transparent',
-            color: viewType === 'teams' ? '#000' : '#00ffaa',
-            border: '2px solid #00ffaa',
+            background: viewType === 'teams' ? '#A855F7' : 'transparent',
+            color: viewType === 'teams' ? '#000' : '#A855F7',
+            border: '2px solid #A855F7',
             borderRadius: '5px 0 0 5px',
             cursor: 'pointer',
             fontWeight: 'bold',
@@ -66,9 +66,9 @@ function Scoreboard() {
           onClick={() => setViewType('users')}
           style={{
             padding: '10px 20px',
-            background: viewType === 'users' ? '#00ffaa' : 'transparent',
-            color: viewType === 'users' ? '#000' : '#00ffaa',
-            border: '2px solid #00ffaa',
+            background: viewType === 'users' ? '#A855F7' : 'transparent',
+            color: viewType === 'users' ? '#000' : '#A855F7',
+            border: '2px solid #A855F7',
             borderLeft: 'none',
             borderRadius: '0 5px 5px 0',
             cursor: 'pointer',
@@ -107,14 +107,14 @@ function Scoreboard() {
                   key={entry.account_id}
                   style={{
                     borderBottom: '1px solid #2b3e50',
-                    background: idx < 3 ? 'rgba(0, 255, 170, 0.05)' : 'transparent'
+                    background: idx < 3 ? 'rgba(168, 85, 247, 0.05)' : 'transparent'
                   }}
                 >
                   <td style={{ padding: '15px', textAlign: 'center', fontWeight: 'bold', fontSize: '1.1em', color: idx < 3 ? '#ffeb3b' : 'inherit' }}>
                     {entry.pos}
                   </td>
                   <td style={{ padding: '15px' }}>
-                    <a href={entry.account_url} style={{ color: '#00ffaa', textDecoration: 'none', fontWeight: '500' }}>
+                    <a href={entry.account_url} style={{ color: '#A855F7', textDecoration: 'none', fontWeight: '500' }}>
                       {entry.name}
                     </a>
                   </td>

@@ -11,7 +11,7 @@
   padding: 2rem;
   background: rgba(0, 0, 0, 0.2);
   border-radius: 8px;
-  border: 1px solid rgba(0, 255, 170, 0.1);
+  border: 1px solid rgba(168, 85, 247, 0.1);
   position: relative;
 }
 
@@ -23,7 +23,7 @@
 }
 
 .messages-header .highlight {
-  color: #00ffaa;
+  color: #A855F7;
 }
 
 .back-button {
@@ -31,9 +31,9 @@
   top: 1rem;
   left: 1rem;
   padding: 0.5rem 1rem;
-  background: linear-gradient(135deg, #1a2e46, #0f1f2b);
-  color: #00ffaa;
-  border: 1px solid #00ffaa;
+  background: linear-gradient(135deg, #2D1451, #0f1f2b);
+  color: #A855F7;
+  border: 1px solid #A855F7;
   border-radius: 4px;
   cursor: pointer;
   transition: all 0.3s ease;
@@ -43,10 +43,10 @@
 }
 
 .back-button:hover {
-  background: #00ffaa;
+  background: #A855F7;
   color: #0a1929;
   transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(0, 255, 170, 0.3);
+  box-shadow: 0 4px 12px rgba(168, 85, 247, 0.3);
 }
 
 .refresh-button {
@@ -54,9 +54,9 @@
   top: 1rem;
   right: 1rem;
   padding: 0.5rem 1rem;
-  background: linear-gradient(135deg, #1a2e46, #0f1f2b);
-  color: #00ffaa;
-  border: 1px solid #00ffaa;
+  background: linear-gradient(135deg, #2D1451, #0f1f2b);
+  color: #A855F7;
+  border: 1px solid #A855F7;
   border-radius: 4px;
   cursor: pointer;
   transition: all 0.3s ease;
@@ -84,12 +84,12 @@
   background: rgba(0, 0, 0, 0.2);
   padding: 1.5rem;
   border-radius: 8px;
-  border: 1px solid rgba(0, 255, 170, 0.1);
+  border: 1px solid rgba(168, 85, 247, 0.1);
 }
 
 .messages-list h2 {
   margin-bottom: 1rem;
-  color: #00ffaa;
+  color: #A855F7;
   text-transform: uppercase;
   letter-spacing: 1px;
 }
@@ -108,18 +108,18 @@
   border-radius: 6px;
   cursor: pointer;
   transition: all 0.3s ease;
-  border: 1px solid rgba(0, 255, 170, 0.1);
+  border: 1px solid rgba(168, 85, 247, 0.1);
 }
 
 .message-card:hover {
   transform: translateY(-2px);
-  border-color: #00ffaa;
-  box-shadow: 0 4px 12px rgba(0, 255, 170, 0.2);
+  border-color: #A855F7;
+  box-shadow: 0 4px 12px rgba(168, 85, 247, 0.2);
 }
 
 .message-card.selected {
-  border-color: #00ffaa;
-  background: rgba(0, 255, 170, 0.1);
+  border-color: #A855F7;
+  background: rgba(168, 85, 247, 0.1);
 }
 
 .message-header {
@@ -178,7 +178,7 @@
   background: rgba(0, 0, 0, 0.2);
   padding: 1.5rem;
   border-radius: 8px;
-  border: 1px solid rgba(0, 255, 170, 0.1);
+  border: 1px solid rgba(168, 85, 247, 0.1);
 }
 
 .message-actions {
@@ -212,7 +212,7 @@
 .message-info {
   margin-bottom: 1.5rem;
   padding-bottom: 1rem;
-  border-bottom: 1px solid rgba(0, 255, 170, 0.1);
+  border-bottom: 1px solid rgba(168, 85, 247, 0.1);
 }
 
 .message-content {
@@ -248,7 +248,7 @@
 .loading {
   text-align: center;
   padding: 2rem;
-  color: #00ffaa;
+  color: #A855F7;
 }
 
 .no-messages {
@@ -257,7 +257,7 @@
   color: #666;
   background: rgba(0, 0, 0, 0.2);
   border-radius: 6px;
-  border: 1px dashed rgba(0, 255, 170, 0.2);
+  border: 1px dashed rgba(168, 85, 247, 0.2);
 }
 
 .no-messages::before {

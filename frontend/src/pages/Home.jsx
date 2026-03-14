@@ -92,14 +92,14 @@ function Home() {
       title: "Web Exploitation",
       description: "Master XSS, SQL injection, and advanced web vulnerabilities",
       color: "#00ff88",
-      bgColor: "rgba(0, 255, 136, 0.1)"
+      bgColor: "rgba(168, 85, 247, 0.1)"
     },
     {
       icon: <Lock size={28} />,
       title: "Cryptography",
       description: "Break ciphers and understand cryptographic protocols",
-      color: "#00b4ff",
-      bgColor: "rgba(0, 180, 255, 0.1)"
+      color: "#A855F7",
+      bgColor: "rgba(168, 85, 247, 0.1)"
     },
     {
       icon: <Search size={28} />,

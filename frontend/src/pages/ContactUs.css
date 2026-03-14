@@ -101,7 +101,7 @@
   left: 0;
   width: 100%;
   height: 100%;
-  background: linear-gradient(135deg, rgba(0, 180, 255, 0.03) 0%, transparent 100%);
+  background: linear-gradient(135deg, rgba(168, 85, 247, 0.03) 0%, transparent 100%);
   opacity: 0;
   transition: opacity 0.3s ease;
 }
@@ -111,8 +111,8 @@
 }
 
 .htb-info-card:hover {
-  border-left-color: #00d4ff;
-  box-shadow: 0 8px 32px rgba(0, 180, 255, 0.15);
+  border-left-color: #A855F7;
+  box-shadow: 0 8px 32px rgba(168, 85, 247, 0.15);
   transform: translateX(4px);
 }
 
@@ -252,7 +252,7 @@
 .htb-form-group textarea:focus {
   outline: none;
   border-color: var(--primary);
-  box-shadow: 0 0 0 3px rgba(0, 180, 255, 0.1);
+  box-shadow: 0 0 0 3px rgba(168, 85, 247, 0.1);
 }
 
 .htb-form-group textarea {
@@ -299,8 +299,8 @@
 }
 
 .htb-submit-btn:hover:not(:disabled) {
-  background: #00d4ff;
-  box-shadow: 0 0 30px rgba(0, 180, 255, 0.4);
+  background: #A855F7;
+  box-shadow: 0 0 30px rgba(168, 85, 247, 0.4);
 }
 
 .htb-submit-btn:disabled {

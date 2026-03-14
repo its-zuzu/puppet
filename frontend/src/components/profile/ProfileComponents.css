@@ -3,7 +3,7 @@
 .achievements-card,
 .skill-tree-card,
 .stats-card {
-  background-color: #1a2e46;
+  background-color: #2D1451;
   border-radius: 10px;
   padding: 1.5rem;
   margin-bottom: 2rem;
@@ -29,7 +29,7 @@
   font-weight: bold;
   color: white;
   margin-right: 1rem;
-  box-shadow: 0 0 15px rgba(0, 255, 170, 0.3);
+  box-shadow: 0 0 15px rgba(168, 85, 247, 0.3);
 }
 
 .level-info {
@@ -39,7 +39,7 @@
 .level-title {
   font-size: 1.5rem;
   margin: 0 0 0.3rem 0;
-  background: linear-gradient(90deg, #ffffff, #00ffaa);
+  background: linear-gradient(90deg, #ffffff, #A855F7);
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
@@ -79,7 +79,7 @@
   background-color: rgba(0, 0, 0, 0.2);
   padding: 1rem;
   border-radius: 5px;
-  border-left: 3px solid #00ffaa;
+  border-left: 3px solid #A855F7;
 }
 
 .next-level-label {
@@ -94,7 +94,7 @@
 .points-needed {
   margin-top: 0.5rem;
   font-size: 0.9rem;
-  color: #00ffaa;
+  color: #A855F7;
 }
 
 .max-level-reached {
@@ -102,7 +102,7 @@
   padding: 1rem;
   background-color: rgba(255, 255, 255, 0.05);
   border-radius: 5px;
-  color: #00ffaa;
+  color: #A855F7;
   font-weight: bold;
 }
 
@@ -116,7 +116,7 @@
 
 .achievements-header h3 {
   margin: 0;
-  color: #00ffaa;
+  color: #A855F7;
 }
 
 .achievements-stats {
@@ -129,8 +129,8 @@
 
 .toggle-achievements-btn {
   background: none;
-  border: 1px solid #00ffaa;
-  color: #00ffaa;
+  border: 1px solid #A855F7;
+  color: #A855F7;
   padding: 0.3rem 0.8rem;
   border-radius: 4px;
   cursor: pointer;
@@ -139,7 +139,7 @@
 }
 
 .toggle-achievements-btn:hover {
-  background-color: rgba(0, 255, 170, 0.1);
+  background-color: rgba(168, 85, 247, 0.1);
 }
 
 .achievements-grid {
@@ -158,8 +158,8 @@
 }
 
 .achievement-item.unlocked {
-  border-color: #00ffaa;
-  box-shadow: 0 0 10px rgba(0, 255, 170, 0.1);
+  border-color: #A855F7;
+  box-shadow: 0 0 10px rgba(168, 85, 247, 0.1);
 }
 
 .achievement-item.locked {
@@ -202,7 +202,7 @@
 
 .achievement-progress-fill {
   height: 100%;
-  background-color: #00ffaa;
+  background-color: #A855F7;
   border-radius: 3px;
   transition: width 0.3s ease;
 }
@@ -308,7 +308,7 @@
 .stat-value {
   font-size: 1.8rem;
   font-weight: bold;
-  color: #00ffaa;
+  color: #A855F7;
   margin-bottom: 0.5rem;
 }
 

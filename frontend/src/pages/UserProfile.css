@@ -64,7 +64,7 @@
 .htb-refresh-btn:hover:not(:disabled) {
   border-color: var(--primary);
   color: var(--primary);
-  background: rgba(0, 180, 255, 0.05);
+  background: rgba(168, 85, 247, 0.05);
 }
 
 .htb-refresh-btn:disabled {
@@ -135,7 +135,7 @@
 
 .htb-challenge-card:hover {
   border-color: var(--primary);
-  box-shadow: 0 8px 32px rgba(0, 180, 255, 0.2);
+  box-shadow: 0 8px 32px rgba(168, 85, 247, 0.2);
   transform: translateY(-4px);
 }
 
@@ -174,7 +174,7 @@
   align-items: center;
   gap: 6px;
   padding: 6px 12px;
-  background: rgba(0, 180, 255, 0.1);
+  background: rgba(168, 85, 247, 0.1);
   border: 1px solid var(--primary);
   border-radius: var(--radius-sm);
   font-weight: 700;
@@ -303,7 +303,7 @@
 
 .htb-hint-item:hover {
   border-left-color: var(--primary);
-  box-shadow: 0 4px 20px rgba(0, 180, 255, 0.1);
+  box-shadow: 0 4px 20px rgba(168, 85, 247, 0.1);
 }
 
 .htb-hint-icon-wrapper {
@@ -465,7 +465,7 @@
 .htb-hint-card:hover {
   border-left-color: var(--primary);
   transform: translateY(-2px);
-  box-shadow: 0 4px 20px rgba(0, 180, 255, 0.1);
+  box-shadow: 0 4px 20px rgba(168, 85, 247, 0.1);
 }
 
 .htb-hint-header {
