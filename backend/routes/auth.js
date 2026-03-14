@@ -3,6 +3,7 @@ const router = express.Router();
 const jwt = require('jsonwebtoken');
 const config = require('../config');
 const User = require('../models/User');
+const Configuration = require('../models/Configuration');
 const LoginLog = require('../models/LoginLog');
 const { protect, authorize } = require('../middleware/auth');
 
@@ -151,14 +152,31 @@ const clearTokenCookie = (res) => {
 };
 
 // @route   POST /api/auth/register
-// @desc    Public registration disabled - Admin only
+// @desc    Public registration based on configuration visibility
 // @access  Public
 router.post('/register', async (req, res) => {
-  return res.status(403).json({
-    success: false,
-    message: 'Public registration is currently disabled.',
-    registrationDisabled: true
-  });
+  try {
+    const cfg = await Configuration.findOne({ key: 'global' }).select('visibility').lean();
+    const registrationVisibility = cfg?.visibility?.registration || 'private';
+
+    if (registrationVisibility !== 'public') {
+      return res.status(403).json({
+        success: false,
+        message: 'Public registration is currently disabled.',
+        registrationDisabled: true
+      });
+    }
+
+    return res.status(501).json({
+      success: false,
+      message: 'Public registration is enabled in configuration but this endpoint is not fully implemented yet. Use admin user creation for now.'
+    });
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: 'Failed to check registration visibility setting'
+    });
+  }
 });
 
 // @route   POST /api/auth/verify-otp

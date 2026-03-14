@@ -6,12 +6,14 @@ import {
   User, LogOut, Settings, ChevronDown, FileText, Mail, Activity
 } from 'lucide-react';
 import AuthContext from '../context/AuthContext';
+import { useSiteConfig } from '../context/SiteConfigContext';
 import axios from 'axios';
 import { Badge } from './ui';
 import './Navbar.css';
 
 function Navbar() {
   const { isAuthenticated, user, logout } = useContext(AuthContext);
+  const { eventName, logoUrl } = useSiteConfig();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
   const [isAdminMenuOpen, setIsAdminMenuOpen] = useState(false);
@@ -81,6 +83,7 @@ function Navbar() {
 
   const adminLinks = [
     { path: '/admin', label: 'Dashboard' },
+    { path: '/admin/configuration', label: 'Configuration' },
     { path: '/admin/event-control', label: 'Event Control' },
     { path: '/admin/create-user', label: 'Create User' },
     { path: '/admin/create-team', label: 'Create Team' },
@@ -97,10 +100,12 @@ function Navbar() {
     <nav className={`cyber-navbar ${scrolled ? 'cyber-navbar--scrolled' : ''}`}>
       <div className="cyber-navbar-container">
         <Link to="/" className="cyber-navbar-brand">
-          <Shield size={28} className="cyber-navbar-logo-icon" />
-          <span className="cyber-navbar-logo-text">
-            CTF<span className="text-gradient">Quest</span>
-          </span>
+          {logoUrl ? (
+            <img src={logoUrl} alt={`${eventName} logo`} className="cyber-navbar-logo-image" />
+          ) : (
+            <Shield size={28} className="cyber-navbar-logo-icon" />
+          )}
+          <span className="cyber-navbar-logo-text">{eventName}</span>
         </Link>
 
         <div className="cyber-navbar-desktop">

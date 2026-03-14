@@ -3,9 +3,11 @@ import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Mail, Send, Shield, ChevronRight } from 'lucide-react';
 import axios from 'axios';
+import { useSiteConfig } from '../context/SiteConfigContext';
 import './Footer.css';
 
 const Footer = () => {
+  const { eventName, logoUrl } = useSiteConfig();
   const [email, setEmail] = useState('');
   const [message, setMessage] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -54,10 +56,14 @@ const Footer = () => {
               whileHover={{ scale: 1.1, rotate: 360 }}
               transition={{ duration: 0.8 }}
             >
-              <Shield size={32} />
+              {logoUrl ? (
+                <img src={logoUrl} alt={`${eventName} logo`} className="htb-footer-logo-image" />
+              ) : (
+                <Shield size={32} />
+              )}
             </motion.div>
             <span className="htb-logo-text">
-              CTF<span className="htb-logo-highlight">Quest</span>
+              {eventName}
             </span>
           </Link>
           <p className="htb-footer-tagline">
@@ -184,10 +190,10 @@ const Footer = () => {
         <div className="htb-footer-bottom-line"></div>
         <div className="htb-footer-bottom-content">
           <p className="htb-footer-copyright">
-            © {new Date().getFullYear()} CTFQuest. All Rights Reserved.
+            © {new Date().getFullYear()} {eventName}. All Rights Reserved.
           </p>
           <p className="htb-footer-disclaimer">
-            CTFQuest is designed for educational purposes only. Always practice ethical hacking.
+            {eventName} is designed for educational purposes only. Always practice ethical hacking.
           </p>
         </div>
       </div>

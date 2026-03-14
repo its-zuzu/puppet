@@ -48,6 +48,14 @@
   filter: drop-shadow(0 0 8px var(--primary-glow));
 }
 
+.cyber-navbar-logo-image {
+  width: 32px;
+  height: 32px;
+  object-fit: cover;
+  border-radius: 6px;
+  border: 1px solid var(--border-primary);
+}
+
 .cyber-navbar-logo-text {
   letter-spacing: 1px;
 }

@@ -7,6 +7,7 @@ import {
   Terminal, Flag, Cpu, Database, Network, ChevronDown
 } from 'lucide-react';
 import AuthContext from '../context/AuthContext';
+import { useSiteConfig } from '../context/SiteConfigContext';
 import { Button } from '../components/ui';
 import { Card, CardBody } from '../components/ui';
 import axios from 'axios';
@@ -14,6 +15,8 @@ import './Home.css';
 
 function Home() {
   const { isAuthenticated, user } = useContext(AuthContext);
+  const { eventName } = useSiteConfig();
+  const eventSlug = eventName.toLowerCase().replace(/\s+/g, '-');
   const navigate = useNavigate();
   const [terminalText, setTerminalText] = useState('');
   const [terminalLine, setTerminalLine] = useState(0);
@@ -28,7 +31,7 @@ function Home() {
   const opacity = useTransform(scrollYProgress, [0, 0.5], [1, 0]);
 
   const terminalCommands = [
-    '$ sudo ./ctfquest --init',
+    `$ sudo ./${eventSlug} --init`,
     '[✓] System initialized...',
     '[✓] Connecting to challenge matrix...',
     '[✓] Loading exploit frameworks...',
@@ -158,7 +161,7 @@ function Home() {
               transition={{ delay: 0.3 }}
             >
               <Shield size={16} />
-              <span>CTFQUEST 2026</span>
+              <span>{eventName.toUpperCase()}</span>
             </motion.div>
 
             <h1 className="htb-hero-title">
@@ -255,7 +258,7 @@ function Home() {
               </div>
               <div className="htb-terminal-title">
                 <Terminal size={14} />
-                <span>root@ctfquest:~#</span>
+                <span>root@{eventSlug}:~#</span>
               </div>
             </div>
             <div className="htb-terminal-body">

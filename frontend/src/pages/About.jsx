@@ -1,10 +1,13 @@
 import './About.css'
+import { useSiteConfig } from '../context/SiteConfigContext'
 
 function About() {
+  const { eventName } = useSiteConfig()
+
   return (
     <div className="about-container">
       <div className="about-header">
-        <h1>About <span className="highlight">CTFQuest</span></h1>
+        <h1>About <span className="highlight">{eventName}</span></h1>
         <p className="about-subtitle">
           A Comprehensive CTF Platform for Cybersecurity Education - Bridging the gap between theory and practice 
           through innovative, scalable, and accessible cybersecurity training.
@@ -15,7 +18,7 @@ function About() {
         <div className="about-card">
           <h2>Our Mission</h2>
           <p>
-            CTFQuest's mission is to make cybersecurity education accessible, scalable, and practical for college students 
+            {eventName}'s mission is to make cybersecurity education accessible, scalable, and practical for college students 
             and small organizations. We provide a comprehensive MERN stack-based Platform as a Service (PaaS) that supports 
             all three CTF styles: Jeopardy, Attack-Defense, and King of the Hill, with deep academic integration and 
             community-oriented features.
@@ -27,7 +30,7 @@ function About() {
           <p>
             College students and small organizations lack accessible, scalable platforms to practice and host cybersecurity 
             CTF events. Existing solutions are either costly, lack academic integration, or support limited CTF formats, 
-            hindering hands-on learning and event organization. CTFQuest addresses these gaps with a unified, 
+            hindering hands-on learning and event organization. {eventName} addresses these gaps with a unified, 
             education-focused platform.
           </p>
         </div>
@@ -35,7 +38,7 @@ function About() {
         <div className="about-card">
           <h2>Our Solution</h2>
           <p>
-            CTFQuest offers a beginner-friendly interface, academic integration with Learning Management Systems (LMS), 
+            {eventName} offers a beginner-friendly interface, academic integration with Learning Management Systems (LMS), 
             and community features like forums and live events. The platform enables students to practice cybersecurity 
             challenges and allows universities and small organizations to host CTF events with custom content creation tools.
           </p>
@@ -48,7 +51,7 @@ function About() {
           <div className="value-card">
             <div className="value-icon">🌐</div>
             <h3>All-in-One CTF Support</h3>
-            <p>Unlike competitors, CTFQuest supports Jeopardy, Attack-Defense, and King of the Hill in one platform</p>
+            <p>Unlike competitors, {eventName} supports Jeopardy, Attack-Defense, and King of the Hill in one platform</p>
           </div>
           {/* <div className="value-card">
             <div className="value-icon">🎓</div>

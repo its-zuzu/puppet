@@ -3,9 +3,11 @@ import { motion } from 'framer-motion';
 import { MapPin, Mail, Phone, MessageSquare, Send, CheckCircle, AlertCircle } from 'lucide-react';
 import axios from 'axios';
 import { Loading } from '../components/ui';
+import { useSiteConfig } from '../context/SiteConfigContext';
 import './ContactUs.css';
 
 function ContactUs() {
+  const { eventName } = useSiteConfig();
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -113,7 +115,7 @@ function ContactUs() {
             >
               <div className="htb-info-content">
                 <h3><MessageSquare size={18} /> Community</h3>
-                <p>Discord: CTFQuest</p>
+                <p>Discord: {eventName}</p>
                 <p className="htb-info-note">Join our active community</p>
               </div>
             </motion.div>

@@ -3,6 +3,7 @@ import { useNavigate, Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Mail, Lock, Shield, ArrowRight, Terminal as TerminalIcon } from 'lucide-react';
 import AuthContext from '../context/AuthContext';
+import { useSiteConfig } from '../context/SiteConfigContext';
 import { sanitizeInput, validateEmail } from '../utils/security';
 import Logger from '../utils/logger';
 import { Button, Input, Alert } from '../components/ui';
@@ -18,6 +19,7 @@ function Login() {
   const [isBlocked, setIsBlocked] = useState(false);
 
   const { login, clearErrors } = useContext(AuthContext);
+  const { eventName } = useSiteConfig();
   const navigate = useNavigate();
 
   const { email, password } = formData;
@@ -93,7 +95,7 @@ function Login() {
           </div>
           <h1 className="htb-auth-brand-title">
             Welcome to<br />
-            <span className="htb-gradient-text">CTFQuest</span>
+            <span className="htb-gradient-text">{eventName}</span>
           </h1>
           <p className="htb-auth-brand-subtitle">
             Sign in to access challenges and compete with hackers worldwide

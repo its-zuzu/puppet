@@ -114,7 +114,11 @@ function CreateChallenge() {
         challengeData
       );
 
-      const challengeId = res.data.data._id;
+      const challengeId = res?.data?.data?._id || res?.data?.data?.id;
+
+      if (!challengeId) {
+        throw new Error('Challenge was created but no challenge ID was returned');
+      }
 
       // Upload files if any selected
       if (selectedFiles.length > 0) {
@@ -129,6 +133,9 @@ function CreateChallenge() {
             `/api/challenges/${challengeId}/files`,
             fileFormData,
             {
+              headers: {
+                'Content-Type': 'multipart/form-data'
+              },
               timeout: 120000 // 120 seconds for large file uploads
             }
           );
@@ -142,7 +149,7 @@ function CreateChallenge() {
       }
       
       setTimeout(() => {
-        navigate(`/admin/edit-challenge/${challengeId}`);
+        navigate(`/edit-challenge/${challengeId}`);
       }, 1500);
     } catch (err) {
       setFormError(err.response?.data?.message || 'Failed to create challenge');

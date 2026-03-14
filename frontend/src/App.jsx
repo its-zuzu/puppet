@@ -6,6 +6,7 @@ import './enable-copy.css'
 
 // Context
 import { AuthProvider } from './context/AuthContext'
+import { SiteConfigProvider } from './context/SiteConfigContext'
 
 // Components (loaded immediately - they're used on every page)
 import Navbar from './components/Navbar'
@@ -49,6 +50,7 @@ const AdminLiveMonitor = lazy(() => import('./pages/AdminLiveMonitor'))
 const MyTeam = lazy(() => import('./pages/MyTeam'))
 const AdminCategories = lazy(() => import('./pages/AdminCategories'))
 const AdminEventControl = lazy(() => import('./pages/AdminEventControl'))
+const AdminConfiguration = lazy(() => import('./pages/AdminConfiguration'))
 const EventStatus = lazy(() => import('./pages/EventStatus'))
 
 function App() {
@@ -83,13 +85,14 @@ function App() {
 
   return (
     <AuthProvider>
-      <Router>
-        <ScrollToTop />
-        <div className="app-container">
-          <Navbar />
-          <main className="main-content">
-            <Suspense fallback={<PageLoader />}>
-              <Routes>
+      <SiteConfigProvider>
+        <Router>
+          <ScrollToTop />
+          <div className="app-container">
+            <Navbar />
+            <main className="main-content">
+              <Suspense fallback={<PageLoader />}>
+                <Routes>
                 <Route path="/" element={<Home />} />
                 <Route path="/challenges" element={
                   <ProtectedRoute>
@@ -215,6 +218,11 @@ function App() {
                     <AdminEventControl />
                   </ProtectedRoute>
                 } />
+                <Route path="/admin/configuration" element={
+                  <ProtectedRoute adminOnly={true}>
+                    <AdminConfiguration />
+                  </ProtectedRoute>
+                } />
                 <Route path="/admin/event-status" element={
                   <ProtectedRoute adminOnly={true}>
                     <AdminEventControl />
@@ -223,13 +231,14 @@ function App() {
                 <Route path="/blocked" element={<UserBlocked />} />
                 <Route path="/privacy-policy" element={<PrivacyPolicy />} />
                 <Route path="/terms-of-service" element={<TermsOfService />} />
-              </Routes>
-            </Suspense>
-          </main>
-          <Footer />
-          <BackToTopButton />
-        </div>
-      </Router>
+                </Routes>
+              </Suspense>
+            </main>
+            <Footer />
+            <BackToTopButton />
+          </div>
+        </Router>
+      </SiteConfigProvider>
     </AuthProvider>
   )
 }

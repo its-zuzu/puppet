@@ -1,6 +1,9 @@
 import './Legal.css';
+import { useSiteConfig } from '../context/SiteConfigContext';
 
 function PrivacyPolicy() {
+  const { eventName } = useSiteConfig();
+
   return (
     <div className="legal-container">
       <div className="legal-header">
@@ -12,7 +15,7 @@ function PrivacyPolicy() {
         <section className="legal-section">
           <h2>1. Introduction</h2>
           <p>
-            Welcome to CTFQuest. We respect your privacy and are committed to protecting your personal data.
+            Welcome to {eventName}. We respect your privacy and are committed to protecting your personal data.
             This privacy policy will inform you about how we look after your personal data when you visit our website
             and tell you about your privacy rights and how the law protects you.
           </p>
