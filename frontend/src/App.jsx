@@ -22,7 +22,6 @@ const PageLoader = () => <Loading text="INITIALIZING..." />;
 // Lazy load pages - only load when needed
 const Home = lazy(() => import('./pages/Home'))
 const Challenges = lazy(() => import('./pages/Challenges'))
-const About = lazy(() => import('./pages/About'))
 const Login = lazy(() => import('./pages/Login'))
 const Register = lazy(() => import('./pages/Register'))
 const Profile = lazy(() => import('./pages/Profile'))
@@ -105,7 +104,6 @@ function App() {
                   </ProtectedRoute>
                 } />
 
-                <Route path="/about" element={<About />} />
                 <Route path="/login" element={<Login />} />
                 <Route path="/register" element={<Register />} />
                 <Route path="/contact" element={<ContactUs />} />
