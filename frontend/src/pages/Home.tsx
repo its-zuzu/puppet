@@ -15,7 +15,7 @@ import { FallingPattern } from '../components/ui/falling-pattern';
 import AuthContext from '../context/AuthContext';
 import { useSiteConfig } from '../context/SiteConfigContext';
 
-//Gaurav conflict testconst heroMetrics = [
+const heroMetrics = [
   { value: '250+', label: 'attack paths' },
   { value: '24/7', label: 'live arena' },
   { value: 'Squads', label: 'team operations' },
