@@ -582,19 +582,25 @@ function ChallengeDetails() {
 
   if (loading) {
     return (
-      <div className="challenge-details-container">
-        <Loading text="LOADING CHALLENGE..." />
+      <div className="htb-challenge-container">
+        <div className="htb-challenge-grid-bg"></div>
+        <div className="challenge-details-container">
+          <Loading text="LOADING CHALLENGE..." />
+        </div>
       </div>
     );
   }
 
   if (error || !challenge) {
     return (
-      <div className="challenge-details-container">
-        <div className="error">{error || 'Challenge not found'}</div>
-        <button onClick={() => navigate('/challenges')} className="back-button">
-          ← Back to Challenges
-        </button>
+      <div className="htb-challenge-container">
+        <div className="htb-challenge-grid-bg"></div>
+        <div className="challenge-details-container">
+          <div className="error">{error || 'Challenge not found'}</div>
+          <button onClick={() => navigate('/challenges')} className="back-button">
+            ← Back to Challenges
+          </button>
+        </div>
       </div>
     );
   }
