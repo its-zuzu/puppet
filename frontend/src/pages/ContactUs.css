@@ -2,48 +2,72 @@
 .htb-contact-container {
   position: relative;
   min-height: 100vh;
-  background: var(--bg-primary);
+  background: linear-gradient(180deg, rgba(8, 4, 24, 0.98) 0%, rgba(4, 2, 16, 1) 100%);
   overflow: hidden;
+}
+
+.htb-contact-container::before,
+.htb-contact-container::after {
+  content: '';
+  position: absolute;
+  border-radius: 9999px;
+  filter: blur(120px);
+  pointer-events: none;
+  z-index: 0;
+}
+
+.htb-contact-container::before {
+  top: 14%;
+  left: 7%;
+  width: 18rem;
+  height: 18rem;
+  background: rgba(168, 85, 247, 0.18);
+}
+
+.htb-contact-container::after {
+  right: 8%;
+  bottom: 10%;
+  width: 20rem;
+  height: 20rem;
+  background: rgba(91, 33, 182, 0.18);
 }
 
 .htb-contact-grid-bg {
   position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background-image: 
-    linear-gradient(var(--border-primary) 1px, transparent 1px),
-    linear-gradient(90deg, var(--border-primary) 1px, transparent 1px);
-  background-size: 40px 40px;
-  opacity: 0.15;
-  animation: gridMove 25s linear infinite;
+  inset: 0;
+  background:
+    linear-gradient(180deg, rgba(107, 33, 168, 0.12) 0%, rgba(59, 7, 100, 0.08) 34%, rgba(0, 0, 0, 0.88) 100%),
+    radial-gradient(circle at 20% 18%, rgba(192, 132, 252, 0.12), transparent 24%),
+    radial-gradient(circle at 80% 22%, rgba(126, 34, 206, 0.16), transparent 30%),
+    radial-gradient(circle at 65% 78%, rgba(76, 29, 149, 0.12), transparent 28%);
   z-index: 0;
-}
-
-@keyframes gridMove {
-  0% { transform: translate(0, 0); }
-  100% { transform: translate(40px, 40px); }
+  pointer-events: none;
 }
 
 /* Header */
 .htb-contact-header {
   position: relative;
   z-index: 5;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.45rem;
   text-align: center;
-  padding: 64px 32px 48px;
+  padding: 28px 24px 24px;
   border-bottom: 1px solid var(--border-primary);
-  background: rgba(10, 14, 26, 0.6);
-  backdrop-filter: blur(10px);
+  background: rgba(10, 14, 26, 0.68);
+  backdrop-filter: blur(12px);
 }
 
 .htb-contact-header h1 {
   font-family: var(--font-heading);
-  font-size: 3rem;
+  font-size: clamp(1.7rem, 2.1vw, 2.15rem);
   font-weight: 800;
   color: var(--text-primary);
-  letter-spacing: 1px;
-  margin-bottom: 16px;
+  letter-spacing: -0.02em;
+  line-height: 1.02;
+  margin: 0;
 }
 
 .htb-highlight {
@@ -52,9 +76,10 @@
 }
 
 .htb-contact-subtitle {
-  font-size: 1.25rem;
+  font-size: 0.9rem;
+  line-height: 1.4;
   color: var(--text-secondary);
-  max-width: 700px;
+  max-width: 28rem;
   margin: 0 auto;
 }
 
@@ -64,7 +89,7 @@
   z-index: 1;
   max-width: 1400px;
   margin: 0 auto;
-  padding: 64px 32px 80px;
+  padding: 36px 32px 80px;
 }
 
 .htb-contact-grid {
@@ -83,15 +108,24 @@
   top: 24px;
 }
 
-.htb-info-card {
-  padding: 28px;
-  background: var(--bg-secondary);
-  border: 1px solid var(--border-primary);
-  border-left: 3px solid var(--primary);
-  border-radius: var(--radius-lg);
-  transition: all 0.3s ease;
+.htb-info-card-shell,
+.htb-contact-form-shell {
   position: relative;
+  border-radius: 1.5rem;
+}
+
+.htb-info-card {
+  position: relative;
+  z-index: 1;
+  padding: 28px;
+  background: linear-gradient(180deg, rgba(11, 16, 32, 0.76) 0%, rgba(8, 13, 28, 0.52) 100%);
+  border: 1px solid rgba(139, 92, 246, 0.16);
+  border-radius: 1.5rem;
+  transition: all 0.3s ease;
   overflow: hidden;
+  box-shadow: 0 18px 48px rgba(2, 6, 23, 0.34);
+  backdrop-filter: blur(22px);
+  -webkit-backdrop-filter: blur(22px);
 }
 
 .htb-info-card::before {
@@ -111,9 +145,9 @@
 }
 
 .htb-info-card:hover {
-  border-left-color: #A855F7;
-  box-shadow: 0 8px 32px rgba(168, 85, 247, 0.15);
-  transform: translateX(4px);
+  border-color: rgba(192, 132, 252, 0.34);
+  box-shadow: 0 24px 60px rgba(2, 6, 23, 0.42);
+  transform: translateY(-2px);
 }
 
 .htb-info-content h3 {
@@ -149,11 +183,15 @@
 
 /* Contact Form */
 .htb-contact-form {
+  position: relative;
+  z-index: 1;
   padding: 40px;
-  background: var(--bg-secondary);
-  border: 1px solid var(--border-primary);
-  border-radius: var(--radius-lg);
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+  background: linear-gradient(180deg, rgba(11, 16, 32, 0.82) 0%, rgba(8, 13, 28, 0.56) 100%);
+  border: 1px solid rgba(139, 92, 246, 0.16);
+  border-radius: 1.55rem;
+  box-shadow: 0 22px 64px rgba(2, 6, 23, 0.36);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
 }
 
 .htb-form-header {
@@ -234,9 +272,9 @@
 .htb-form-group textarea {
   width: 100%;
   padding: 14px 16px;
-  background: var(--bg-tertiary);
-  border: 1px solid var(--border-primary);
-  border-radius: var(--radius-md);
+  background: rgba(29, 19, 53, 0.7);
+  border: 1px solid rgba(139, 92, 246, 0.18);
+  border-radius: 1rem;
   color: var(--text-primary);
   font-size: 1rem;
   font-family: var(--font-body);
@@ -251,8 +289,9 @@
 .htb-form-group input:focus,
 .htb-form-group textarea:focus {
   outline: none;
-  border-color: var(--primary);
-  box-shadow: 0 0 0 3px rgba(168, 85, 247, 0.1);
+  border-color: rgba(192, 132, 252, 0.56);
+  box-shadow: 0 0 0 3px rgba(168, 85, 247, 0.12);
+  background: rgba(35, 21, 64, 0.82);
 }
 
 .htb-form-group textarea {
@@ -269,10 +308,10 @@
   gap: 12px;
   width: 100%;
   padding: 16px 32px;
-  background: var(--primary);
-  color: var(--bg-primary);
-  border: none;
-  border-radius: var(--radius-md);
+  background: linear-gradient(135deg, #c084fc 0%, #a855f7 52%, #8b5cf6 100%);
+  color: #12061f;
+  border: 1px solid rgba(216, 180, 254, 0.26);
+  border-radius: 999px;
   font-weight: 700;
   font-size: 1rem;
   text-transform: uppercase;
@@ -281,6 +320,7 @@
   transition: all 0.3s ease;
   position: relative;
   overflow: hidden;
+  box-shadow: 0 18px 40px rgba(168, 85, 247, 0.26);
 }
 
 .htb-submit-btn::before {
@@ -299,8 +339,8 @@
 }
 
 .htb-submit-btn:hover:not(:disabled) {
-  background: #A855F7;
-  box-shadow: 0 0 30px rgba(168, 85, 247, 0.4);
+  background: linear-gradient(135deg, #d8b4fe 0%, #b86cff 52%, #9f67ff 100%);
+  box-shadow: 0 0 34px rgba(168, 85, 247, 0.34);
 }
 
 .htb-submit-btn:disabled {
@@ -339,16 +379,22 @@
 }
 
 @media (max-width: 768px) {
+  .htb-contact-header {
+    gap: 0.4rem;
+    padding: 24px 20px 20px;
+  }
+
   .htb-contact-header h1 {
-    font-size: 2.25rem;
+    font-size: 1.6rem;
   }
 
   .htb-contact-subtitle {
-    font-size: 1.063rem;
+    font-size: 0.86rem;
+    max-width: 22rem;
   }
 
   .htb-contact-main {
-    padding: 48px 20px 60px;
+    padding: 30px 20px 60px;
   }
 
   .htb-info-cards {
@@ -366,11 +412,17 @@
 
 @media (max-width: 480px) {
   .htb-contact-header {
-    padding: 48px 20px 32px;
+    gap: 0.35rem;
+    padding: 20px 16px 18px;
   }
 
   .htb-contact-header h1 {
-    font-size: 1.875rem;
+    font-size: 1.38rem;
+  }
+
+  .htb-contact-subtitle {
+    font-size: 0.8rem;
+    max-width: 17rem;
   }
 
   .htb-submit-btn {

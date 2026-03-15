@@ -84,6 +84,7 @@ function Scoreboard() {
         <div className="cyber-scoreboard-actions">
           <Button
             variant="outline"
+            className="cyber-scoreboard-refresh-btn"
             icon={<RefreshCw size={18} />}
             onClick={() => fetchScoreboard(true)}
             loading={refreshing}

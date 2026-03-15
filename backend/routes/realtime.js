@@ -11,6 +11,27 @@ const subscriber = getRedisSubscriber();
 // Track active connections to avoid duplicate subscriptions
 let activeConnections = 0;
 let isSubscribed = false;
+const configuredCorsOrigins = (process.env.CORS_ORIGIN || '')
+    .split(',')
+    .map((origin) => origin.trim())
+    .filter(Boolean);
+const defaultCorsOrigin = configuredCorsOrigins.find((origin) => origin !== '*') || 'http://localhost:5173';
+
+function resolveSseOrigin(requestOrigin) {
+    if (!requestOrigin) {
+        return defaultCorsOrigin;
+    }
+
+    if (requestOrigin.includes('localhost') || requestOrigin.includes('127.0.0.1')) {
+        return requestOrigin;
+    }
+
+    if (configuredCorsOrigins.includes(requestOrigin)) {
+        return requestOrigin;
+    }
+
+    return defaultCorsOrigin;
+}
 
 // Subscribe to channel once when first admin connects
 function ensureSubscribed() {
@@ -78,8 +99,9 @@ router.get('/', async (req, res) => {
         'Cache-Control': 'no-cache, no-transform',
         'Connection': 'keep-alive',
         'X-Accel-Buffering': 'no', // Important for Nginx
-        'Access-Control-Allow-Origin': process.env.CORS_ORIGIN || 'https://ctfquest.ddns.net', // Restrict to app domain
+        'Access-Control-Allow-Origin': resolveSseOrigin(req.headers.origin),
         'Access-Control-Allow-Credentials': 'true',
+        'Vary': 'Origin',
     });
 
     // 3. Send initial connection message

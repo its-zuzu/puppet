@@ -67,24 +67,30 @@ app.use(requestIp.mw());
 // Security Headers
 app.use(secureHeaders);
 
+const configuredCorsOrigins = (process.env.CORS_ORIGIN || '')
+  .split(',')
+  .map((origin) => origin.trim())
+  .filter(Boolean);
+
+const isLocalDevelopmentOrigin = (origin) =>
+  origin.includes('localhost') || origin.includes('127.0.0.1');
+
 // CORS with development-friendly configuration
 const corsOptions = {
   origin: function (origin, callback) {
     // Allow requests with no origin (like mobile apps or curl requests)
     if (!origin) return callback(null, true);
 
-    const allowedOrigins = process.env.CORS_ORIGIN.split(',').map(o => o.trim());
-
     // Allow localhost for development
-    if (origin.includes('localhost') || origin.includes('127.0.0.1')) {
+    if (isLocalDevelopmentOrigin(origin)) {
       return callback(null, true);
     }
 
-    if (allowedOrigins.includes(origin) || allowedOrigins.includes('*')) {
-      callback(null, true);
-    } else {
-      callback(new Error('Not allowed by CORS'), false);
+    if (configuredCorsOrigins.includes(origin) || configuredCorsOrigins.includes('*')) {
+      return callback(null, true);
     }
+
+    return callback(new Error('Not allowed by CORS'), false);
   },
   credentials: process.env.CORS_CREDENTIALS === 'true',
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],

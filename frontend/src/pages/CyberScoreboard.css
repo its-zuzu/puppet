@@ -52,6 +52,28 @@
   gap: 12px;
 }
 
+.cyber-button.cyber-scoreboard-refresh-btn {
+  min-height: 44px;
+  padding: 0.72rem 1.2rem;
+  border-radius: 999px;
+  border: 1px solid rgba(192, 132, 252, 0.24);
+  background: linear-gradient(180deg, rgba(11, 16, 32, 0.82) 0%, rgba(8, 13, 28, 0.64) 100%);
+  color: #f5f3ff;
+  box-shadow: 0 16px 36px rgba(2, 6, 23, 0.3);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+}
+
+.cyber-button.cyber-scoreboard-refresh-btn:hover {
+  border-color: rgba(216, 180, 254, 0.52);
+  background: linear-gradient(180deg, rgba(29, 22, 58, 0.9) 0%, rgba(15, 12, 32, 0.78) 100%);
+  box-shadow: 0 20px 42px rgba(2, 6, 23, 0.38);
+}
+
+.cyber-scoreboard-refresh-btn .cyber-button__icon {
+  color: #d8b4fe;
+}
+
 /* Tabs */
 .cyber-scoreboard-tabs {
   display: flex;
