@@ -1,7 +1,7 @@
 import React, { useState, useContext } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Mail, Lock, Shield, ArrowRight, Terminal as TerminalIcon } from 'lucide-react';
+import { Mail, Lock } from 'lucide-react';
 import AuthContext from '../context/AuthContext';
 import { useSiteConfig } from '../context/SiteConfigContext';
 import { sanitizeInput, validateEmail } from '../utils/security';
@@ -79,34 +79,30 @@ function Login() {
   };
 
   return (
-    <div className="htb-auth-container">
-      {/* Animated Grid Background */}
-      <div className="htb-auth-grid-bg"></div>
+    <div className="htb-auth-container htb-auth-container-login">
+      <div className="htb-auth-login-blur-bg"></div>
       
       {/* Main Content */}
-      <div className="htb-auth-content">
+      <div className="htb-auth-content htb-auth-content-login">
         {/* Left Side - Branding */}
         <motion.div
-          className="htb-auth-brand"
+          className="htb-auth-brand htb-auth-brand-login"
           initial={{ opacity: 0, x: -30 }}
           animate={{ opacity: 1, x: 0 }}
           transition={{ duration: 0.6 }}
         >
-          <div className="htb-auth-brand-icon">
-            <Shield size={48} />
-          </div>
-          <h1 className="htb-auth-brand-title">
+          <h1 className="htb-auth-brand-title htb-auth-brand-title-login">
             Welcome to<br />
-            <span className="htb-gradient-text">{eventName}</span>
+            <span className="htb-gradient-text htb-gradient-text-login">{eventName}</span>
           </h1>
-          <p className="htb-auth-brand-subtitle">
+          <p className="htb-auth-brand-subtitle htb-auth-brand-subtitle-login">
             Sign in to access challenges and compete with hackers worldwide
           </p>
         </motion.div>
 
         {/* Right Side - Login Form */}
         <motion.div
-          className="htb-auth-card"
+          className="htb-auth-card htb-auth-card-login"
           initial={{ opacity: 0, x: 30 }}
           animate={{ opacity: 1, x: 0 }}
           transition={{ duration: 0.6, delay: 0.2 }}

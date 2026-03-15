@@ -11,6 +11,49 @@
   overflow: hidden;
 }
 
+.htb-auth-container-login {
+  background: linear-gradient(180deg, rgba(8, 4, 24, 0.98) 0%, rgba(4, 2, 16, 1) 100%);
+  isolation: isolate;
+}
+
+.htb-auth-container-login::before,
+.htb-auth-container-login::after {
+  content: '';
+  position: absolute;
+  border-radius: 9999px;
+  filter: blur(120px);
+  pointer-events: none;
+  z-index: 0;
+}
+
+.htb-auth-container-login::before {
+  top: 10%;
+  left: 9%;
+  width: 20rem;
+  height: 20rem;
+  background: rgba(168, 85, 247, 0.22);
+}
+
+.htb-auth-container-login::after {
+  right: 8%;
+  bottom: 12%;
+  width: 22rem;
+  height: 22rem;
+  background: rgba(91, 33, 182, 0.2);
+}
+
+.htb-auth-login-blur-bg {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background:
+    linear-gradient(180deg, rgba(76, 29, 149, 0.16) 0%, rgba(17, 24, 39, 0.06) 38%, rgba(2, 6, 23, 0.75) 100%),
+    radial-gradient(circle at 20% 18%, rgba(192, 132, 252, 0.12), transparent 24%),
+    radial-gradient(circle at 78% 20%, rgba(126, 34, 206, 0.16), transparent 28%),
+    radial-gradient(circle at 55% 68%, rgba(76, 29, 149, 0.12), transparent 32%);
+}
+
 /* Animated Grid Background */
 .htb-auth-grid-bg {
   position: fixed;
@@ -45,10 +88,22 @@
   padding: 40px;
 }
 
+.htb-auth-content-login {
+  align-items: center;
+  gap: clamp(56px, 7vw, 96px);
+  max-width: 1180px;
+  padding: 32px 40px 40px;
+  top: -20px;
+}
+
 /* Left Side - Branding */
 .htb-auth-brand {
   flex: 1;
   max-width: 500px;
+}
+
+.htb-auth-brand-login {
+  max-width: 520px;
 }
 
 .htb-auth-brand-icon {
@@ -75,8 +130,20 @@
   letter-spacing: -1px;
 }
 
+.htb-auth-brand-title-login {
+  margin-bottom: 18px;
+  line-height: 1.02;
+}
+
 .htb-gradient-text {
   background: linear-gradient(135deg, var(--primary) 0%, #00ff88 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.htb-gradient-text-login {
+  background: linear-gradient(135deg, #f5e7ff 0%, #d8b4fe 24%, #c084fc 48%, #8b5cf6 74%, #6d28d9 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
@@ -89,6 +156,11 @@
   max-width: 450px;
 }
 
+.htb-auth-brand-subtitle-login {
+  max-width: 420px;
+  color: rgba(226, 232, 240, 0.76);
+}
+
 /* Right Side - Auth Card */
 .htb-auth-card {
   flex: 0 0 460px;
@@ -97,6 +169,25 @@
   border-radius: var(--radius-xl);
   padding: 48px;
   box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4);
+}
+
+.htb-auth-card-login {
+  position: relative;
+  overflow: hidden;
+  background: linear-gradient(180deg, rgba(14, 18, 36, 0.78) 0%, rgba(10, 14, 30, 0.56) 100%);
+  border: 1px solid rgba(192, 132, 252, 0.16);
+  box-shadow: 0 28px 80px rgba(2, 6, 23, 0.42);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+}
+
+.htb-auth-card-login::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.08), transparent 28%, transparent 72%, rgba(192, 132, 252, 0.08));
 }
 
 .htb-auth-card-header {
@@ -154,8 +245,18 @@
     gap: 60px;
   }
 
+  .htb-auth-content-login {
+    gap: 48px;
+    padding: 28px 28px 36px;
+    top: -12px;
+  }
+
   .htb-auth-brand-title {
     font-size: 3rem;
+  }
+
+  .htb-auth-brand-title-login {
+    font-size: 2.85rem;
   }
 }
 
@@ -164,6 +265,12 @@
     flex-direction: column;
     gap: 40px;
     padding: 40px 20px;
+  }
+
+  .htb-auth-content-login {
+    gap: 28px;
+    padding: 32px 20px 40px;
+    top: 0;
   }
 
   .htb-auth-brand {
@@ -180,6 +287,11 @@
     font-size: 2.5rem;
   }
 
+  .htb-auth-brand-title-login {
+    font-size: 2.35rem;
+    margin-bottom: 14px;
+  }
+
   .htb-auth-brand-subtitle {
     margin-left: auto;
     margin-right: auto;
@@ -191,11 +303,19 @@
     max-width: 500px;
     padding: 32px 24px;
   }
+
+  .htb-auth-card-login {
+    max-width: 520px;
+  }
 }
 
 @media (max-width: 480px) {
   .htb-auth-brand-title {
     font-size: 2rem;
+  }
+
+  .htb-auth-brand-title-login {
+    font-size: 1.95rem;
   }
 
   .htb-auth-brand-subtitle {
