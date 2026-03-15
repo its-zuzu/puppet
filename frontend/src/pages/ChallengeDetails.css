@@ -97,7 +97,8 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 2rem 1.5rem 1.5rem;
+  min-height: 5.2rem;
+  padding: 0.95rem 1.25rem;
   border-bottom: 1px solid rgba(139, 92, 246, 0.16);
   background: rgba(8, 10, 24, 0.52);
   backdrop-filter: blur(20px);
@@ -105,17 +106,20 @@
 
 .htb-back-btn {
   position: absolute;
-  left: 1.5rem;
+  top: 50%;
+  left: 1.25rem;
+  transform: translateY(-50%);
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 0.85rem 1.2rem;
+  gap: 6px;
+  justify-content: center;
+  padding: 0.58rem 0.88rem;
   background: rgba(17, 24, 39, 0.5);
   border: 1px solid rgba(139, 92, 246, 0.18);
-  border-radius: 0.95rem;
+  border-radius: 999px;
   color: #f8fafc;
   font-weight: 600;
-  font-size: 0.938rem;
+  font-size: 0.86rem;
   cursor: pointer;
   transition: border-color 0.25s ease, transform 0.25s ease, color 0.25s ease, box-shadow 0.25s ease;
   z-index: 10;
@@ -132,19 +136,15 @@
   position: relative;
   z-index: 2;
   margin: 0;
-  padding: 0 5.5rem;
-  text-align: center;
-}
-
-.htb-challenge-title {
   font-family: var(--font-heading);
-  font-size: clamp(1.9rem, 3.5vw, 3.2rem);
-  font-weight: 800;
+  font-size: clamp(1.02rem, 1.45vw, 1.42rem);
+  font-weight: 700;
   color: #f8fafc;
-  letter-spacing: -0.03em;
+  letter-spacing: -0.02em;
   text-align: center;
   line-height: 1.08;
-  max-width: 42rem;
+  width: min(100%, 40rem);
+  padding: 0 6.5rem;
   margin-inline: auto;
   text-wrap: balance;
   word-break: break-word;
@@ -856,11 +856,17 @@
 /* Responsive */
 @media (max-width: 1024px) {
   .htb-challenge-header {
-    padding: 1.75rem 1.2rem 1.35rem;
+    min-height: 4.9rem;
+    padding: 0.9rem 1.1rem;
   }
 
   .htb-back-btn {
-    left: 1.2rem;
+    left: 1.1rem;
+  }
+
+  .htb-challenge-title {
+    width: min(100%, 34rem);
+    padding: 0 5.75rem;
   }
 
   .htb-challenge-main {
@@ -874,17 +880,21 @@
 
 @media (max-width: 640px) {
   .htb-challenge-header {
-    flex-direction: column;
-    gap: 1rem;
-    padding: 1.35rem 1rem 1.15rem;
+    min-height: 4.3rem;
+    padding: 0.78rem 0.95rem;
   }
 
   .htb-back-btn {
-    position: static;
+    left: 0.95rem;
+    padding: 0.52rem 0.78rem;
+    font-size: 0.8rem;
   }
 
   .htb-challenge-title {
-    padding: 0;
+    width: min(100%, 22rem);
+    padding: 0 3.75rem;
+    font-size: clamp(0.94rem, 3.8vw, 1.18rem);
+    line-height: 1.14;
   }
 
   .htb-challenge-content {
