@@ -1,12 +1,11 @@
-import React, { useState, useEffect, useContext } from 'react';
+import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import ReactECharts from 'echarts-for-react';
-import AuthContext from '../context/AuthContext';
 import { Loading } from './ui';
 
 /**
- * CTFd-Style Score Graph using ECharts
- * Matches official CTFd visual style
+ * CTFd-style scoreboard graph.
+ * Uses /api/v1/scoreboard/top/:count and cumulative sum of solve/award values.
  */
 const ScoreGraph = ({ type = 'teams', limit = 10, height = '400px' }) => {
   const [option, setOption] = useState(null);
@@ -21,141 +20,118 @@ const ScoreGraph = ({ type = 'teams', limit = 10, height = '400px' }) => {
 
   const fetchGraphData = async () => {
     try {
-      const res = await axios.get(`/api/v1/scoreboard/graph?type=${type}`);
-      const data = res.data.data; // { "1": { id, name, data: [{time, score}, ...] } }
+      const res = await axios.get(`/api/v1/scoreboard/top/${limit}?type=${type}`);
+      const places = res.data?.data || {};
+      const ranks = Object.keys(places);
 
-      if (Object.keys(data).length === 0) {
+      if (ranks.length === 0) {
         setHasData(false);
         setLoading(false);
         return;
       }
+
       setHasData(true);
 
-      const series = [];
       const legendData = [];
-      // Neon/Cyberpunk Palette matching dark theme
-      const colors = [
-        '#00F0FF', // Neon Cyan
-        '#FF0055', // Neon Red/Pink
-        '#00FF99', // Neon Green
-        '#BD00FF', // Neon Purple
-        '#FAFF00', // Neon Yellow
-        '#FF8C00', // Neon Orange
-        '#F0F',    // Magenta
-        '#00CCFF', // Sky Blue
-        '#FFE4E1', // Misty Rose
-        '#7FFFD4'  // Aquamarine
-      ];
+      const series = [];
 
-      // Find global min time to start all graphs from same zero point
-      let minTime = new Date().getTime();
-      Object.values(data).forEach(team => {
-        if (team.data.length > 0) {
-          const t = new Date(team.data[0].time).getTime();
-          if (t < minTime) minTime = t;
-        }
-      });
-      // Offset slightly before first solve so 0 point is visible
-      minTime = minTime - 3600000;
-
-      Object.values(data).forEach((team, index) => {
-        let timeSeries = team.data.map(d => [d.time, d.score]);
-
-        // 1. Force start from (0,0) relative to first event
-        // Add a 0 score point at minTime
-        timeSeries.unshift([minTime, 0]);
-
-        // Add current time point to extend line
-        if (timeSeries.length > 0) {
-          const lastPoint = timeSeries[timeSeries.length - 1];
-          timeSeries.push([new Date().getTime(), lastPoint[1]]);
+      ranks.forEach((rank) => {
+        const place = places[rank];
+        const solves = Array.isArray(place?.solves) ? [...place.solves] : [];
+        if (solves.length === 0) {
+          return;
         }
 
-        series.push({
-          name: team.name,
-          type: 'line',
-          data: timeSeries,
-          showSymbol: true,
-          symbolSize: 8, // Slightly larger
-          // symbol: 'circle',
-          itemStyle: { color: colors[index % colors.length] },
-          lineStyle: {
-            width: 3,
-            color: colors[index % colors.length],
-            shadowColor: colors[index % colors.length], // Glow effect
-            shadowBlur: 10
-          },
-          smooth: 0.3, // Slight curve for modern look
-          areaStyle: undefined, // REMOVE area fill to ensure line is visible
+        solves.sort((a, b) => new Date(a.date) - new Date(b.date));
+
+        let running = 0;
+        const scores = solves.map((entry) => {
+          running += Number(entry.value || 0);
+          return [new Date(entry.date), running];
         });
-        legendData.push(team.name);
+
+        legendData.push(place.name);
+        series.push({
+          name: place.name,
+          type: 'line',
+          data: scores,
+          label: { show: false },
+          showSymbol: true,
+          symbolSize: 6,
+          lineStyle: { width: 2.5 }
+        });
       });
 
+      if (series.length === 0) {
+        setHasData(false);
+        setLoading(false);
+        return;
+      }
 
-      const chartOption = {
+      setOption({
+        title: {
+          left: 'center',
+          text: `Top ${limit} ${type === 'teams' ? 'Teams' : 'Users'}`
+        },
+        textStyle: {
+          color: '#e0e6ed'
+        },
         tooltip: {
           trigger: 'axis',
-          axisPointer: { type: 'line' }, // Clean line pointer
-          backgroundColor: 'rgba(10, 10, 20, 0.95)',
-          borderColor: '#333',
-          textStyle: { color: '#fff' },
-          formatter: (params) => {
-            const date = new Date(params[0].axisValue);
-            let result = `<div style="font-weight:bold; margin-bottom:5px;">${date.toLocaleString()}</div>`;
-            params.sort((a, b) => b.data[1] - a.data[1]);
-            params.forEach(item => {
-              const score = item.data[1];
-              // Only show if score > 0 to restrict tooltip size on start
-              result += `<div style="display:flex; justify-content:space-between; width:150px;">
-                <span>${item.marker} ${item.seriesName}</span>
-                <span style="font-weight:bold">${score}</span>
-              </div>`;
-            });
-            return result;
-          }
+          axisPointer: { type: 'cross' }
         },
         legend: {
           data: legendData,
           type: 'scroll',
-          top: 0,
-          textStyle: { color: '#e0e0e0', fontWeight: 'bold' },
-          pageIconColor: '#00F0FF',
-          pageTextStyle: { color: '#fff' }
+          orient: 'horizontal',
+          align: 'left',
+          bottom: 35
+        },
+        toolbox: {
+          feature: {
+            dataZoom: { yAxisIndex: 'none' },
+            saveAsImage: {}
+          }
         },
         grid: {
-          left: '20px',
-          right: '30px',
-          bottom: '20px', // Increased space for labels
-          top: '40px',
-          containLabel: true
+          containLabel: true,
+          left: '3%',
+          right: '4%',
+          bottom: '3%',
+          top: '18%'
+        },
+        yAxis: {
+          type: 'value',
+          axisLine: { lineStyle: { color: '#4a5568' } },
+          axisLabel: { color: '#a0aec0' },
+          splitLine: { lineStyle: { color: 'rgba(74, 85, 104, 0.2)' } }
         },
         xAxis: {
           type: 'time',
           boundaryGap: false,
-          axisLabel: {
-            color: '#a0a0a0',
-            formatter: '{HH}:{mm}', // Cleaner time format
-            rotate: 0 // No rotation needed if interval is handled auto
-          },
-          splitLine: { show: false },
-          axisLine: { lineStyle: { color: '#333' } }
+          axisLine: { lineStyle: { color: '#4a5568' } },
+          axisLabel: { color: '#a0aec0' },
+          splitLine: { lineStyle: { color: 'rgba(74, 85, 104, 0.2)' } }
         },
-        yAxis: {
-          type: 'value',
-          min: 0, // Force start at 0
-          axisLabel: { color: '#a0a0a0' },
-          splitLine: {
-            lineStyle: { color: '#1a1a2e', type: 'dashed' }
-          }
-        },
-        series: series,
+        series,
         backgroundColor: 'transparent',
-      };
+        dataZoom: [
+          {
+            id: 'dataZoomX',
+            type: 'slider',
+            xAxisIndex: [0],
+            filterMode: 'filter',
+            height: 20,
+            top: 35,
+            fillerColor: 'rgba(233, 236, 241, 0.4)'
+          }
+        ]
+      });
 
-      setOption(chartOption);
       setLoading(false);
     } catch (err) {
       console.error('Graph Error:', err);
+      setHasData(false);
       setLoading(false);
     }
   };

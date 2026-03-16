@@ -80,7 +80,8 @@ router.get('/', async (req, res) => {
  */
 router.get('/top/:count', async (req, res) => {
   try {
-    const count = parseInt(req.params.count) || 10;
+    const rawCount = parseInt(req.params.count, 10);
+    const count = Math.max(1, Math.min(Number.isNaN(rawCount) ? 10 : rawCount, 50));
     const type = req.query.type === 'users' ? 'users' : 'teams';
     const isAdmin = req.user && req.user.role === 'admin';
 
@@ -112,12 +113,15 @@ router.get('/top/:count', async (req, res) => {
       const rank = i + 1;
 
       // Fetch Solves
-      const history = await getSolveHistory(entry.account_id, type === 'teams', freezeTime);
+      const history = await getSolveHistory(entry.account_id, type, freezeTime);
 
       responseData[rank] = {
         id: entry.account_id,
+        account_url: entry.account_url,
         name: entry.name,
         score: entry.score,
+        bracket_id: entry.bracket_id || null,
+        bracket_name: entry.bracket_name || null,
         solves: history
       };
     }
@@ -153,7 +157,7 @@ router.get('/graph', async (req, res) => {
 
     const freezeTime = await getFreezeTime();
 
-    // 1. Get Top 10 Standings (Graph usually shows top 10)
+    // 1. Get Top 10 Standings (CTFd graph is built from scoreboard detail/top data)
     let topStandings = [];
     if (type === 'teams') {
       topStandings = await aggregateTeamStandings(isAdmin, freezeTime, 10);
@@ -161,37 +165,20 @@ router.get('/graph', async (req, res) => {
       topStandings = await aggregateUserStandings(isAdmin, freezeTime, 10);
     }
 
-    // 2. Generate Time Series for each
-    const graphData = {}; // keyed by rank? CTFd returns object with key as rank string
+    // 2. Return CTFd-style detail payload so frontend can compute cumulative lines
+    const graphData = {};
 
     for (let i = 0; i < topStandings.length; i++) {
       const entry = topStandings[i];
       const rank = i + 1;
 
-      const history = await getSolveHistory(entry.account_id, type === 'teams', freezeTime);
-
-      // Sort history by date ASC
-      history.sort((a, b) => new Date(a.date) - new Date(b.date));
-
-      const series = [];
-      let cumulativeScore = 0;
-
-      // Add start point
-      // series.push({ time: eventStart, score: 0 }); // Optional, CTFd might not do this
-
-      for (const item of history) {
-        cumulativeScore += item.value;
-        series.push({
-          time: new Date(item.date).getTime(),
-          score: cumulativeScore
-        });
-      }
+      const history = await getSolveHistory(entry.account_id, type, freezeTime);
 
       graphData[rank] = {
         id: entry.account_id,
         name: entry.name,
-        color: '', // Frontend handles color
-        data: series
+        score: entry.score,
+        solves: history
       };
     }
 
@@ -235,6 +222,7 @@ async function aggregateUserStandings(isAdmin, freezeTime, limit = null) {
       }
     },
     { $unwind: '$challengeData' },
+    { $match: { 'challengeData.points': { $ne: 0 } } },
     {
       $group: {
         _id: "$user",
@@ -353,6 +341,7 @@ async function aggregateTeamStandings(isAdmin, freezeTime, limit = null) {
       }
     },
     { $unwind: '$challengeData' },
+    { $match: { 'challengeData.points': { $ne: 0 } } },
     {
       $lookup: {
         from: 'users',
@@ -478,64 +467,114 @@ async function aggregateTeamStandings(isAdmin, freezeTime, limit = null) {
 /**
  * Helper: Get detailed solve history for graph/top view (CTFd-style with current values)
  */
-async function getSolveHistory(accountId, isTeam, freezeTime) {
+async function getSolveHistory(accountId, mode, freezeTime) {
   const history = [];
-  const ids = [];
+  const isTeam = mode === 'teams';
 
   if (isTeam) {
-    // Get team members first
-    const users = await User.find({ team: accountId }).select('_id');
-    ids.push(...users.map(u => u._id));
-  } else {
-    ids.push(accountId);
-  }
+    // Team solves are represented by member solves mapped to team account_id
+    const members = await User.find({ team: accountId }).select('_id team').lean();
+    const memberIds = members.map((m) => m._id);
 
-  // Solves - JOIN with Challenges to get current values
-  const solveQuery = {
-    user: { $in: ids },
-    isCorrect: true
-  };
-  if (freezeTime) solveQuery.submittedAt = { $lt: new Date(freezeTime) };
+    const solveQuery = {
+      user: { $in: memberIds },
+      isCorrect: true
+    };
+    if (freezeTime) solveQuery.submittedAt = { $lt: new Date(freezeTime) };
 
-  const solves = await Submission.find(solveQuery)
-    .populate('challenge', 'title points') // Get current points value
-    .select('submittedAt challenge')
-    .lean();
+    const solves = await Submission.find(solveQuery)
+      .populate('challenge', 'points')
+      .select('submittedAt challenge user')
+      .lean();
 
-  solves.forEach(s => {
-    if (s.challenge) {
+    for (const s of solves) {
+      if (!s.challenge || s.challenge.points === 0) continue;
       history.push({
+        date: s.submittedAt,
         challenge_id: s.challenge._id,
-        challenge_name: s.challenge.title || 'Unknown',
-        value: s.challenge.points, // Current challenge value (dynamic)
-        date: s.submittedAt
+        account_id: accountId,
+        user_id: s.user,
+        team_id: accountId,
+        value: s.challenge.points
       });
     }
-  });
+  } else {
+    const solveQuery = {
+      user: accountId,
+      isCorrect: true
+    };
+    if (freezeTime) solveQuery.submittedAt = { $lt: new Date(freezeTime) };
+
+    const userDoc = await User.findById(accountId).select('_id team').lean();
+
+    const solves = await Submission.find(solveQuery)
+      .populate('challenge', 'points')
+      .select('submittedAt challenge user')
+      .lean();
+
+    for (const s of solves) {
+      if (!s.challenge || s.challenge.points === 0) continue;
+      history.push({
+        date: s.submittedAt,
+        challenge_id: s.challenge._id,
+        account_id: accountId,
+        user_id: s.user,
+        team_id: userDoc?.team || null,
+        value: s.challenge.points
+      });
+    }
+  }
 
   // Awards
   const awardQuery = { value: { $ne: 0 } };
   if (isTeam) {
+    const members = await User.find({ team: accountId }).select('_id team').lean();
+    const memberIds = members.map((m) => m._id);
+    const memberMap = new Map(members.map((m) => [m._id.toString(), m]));
+
     // Awards for team directly OR users in team
     awardQuery.$or = [
       { team: accountId },
-      { user: { $in: ids } }
+      { user: { $in: memberIds } }
     ];
+
+    if (freezeTime) awardQuery.date = { $lt: new Date(freezeTime) };
+
+    const awards = await Award.find(awardQuery).select('value date user team').lean();
+    for (const a of awards) {
+      const mappedTeam = a.team || memberMap.get(String(a.user))?.team || null;
+      if (!mappedTeam) continue;
+
+      history.push({
+        date: a.date,
+        challenge_id: null,
+        account_id: accountId,
+        user_id: a.user || null,
+        team_id: mappedTeam,
+        value: a.value
+      });
+    }
   } else {
     awardQuery.user = accountId;
+    if (freezeTime) awardQuery.date = { $lt: new Date(freezeTime) };
+
+    const userDoc = await User.findById(accountId).select('_id team').lean();
+    const awards = await Award.find(awardQuery).select('value date user').lean();
+
+    for (const a of awards) {
+      history.push({
+        date: a.date,
+        challenge_id: null,
+        account_id: accountId,
+        user_id: a.user || accountId,
+        team_id: userDoc?.team || null,
+        value: a.value
+      });
+    }
   }
-  if (freezeTime) awardQuery.date = { $lt: new Date(freezeTime) };
 
-  const awards = await Award.find(awardQuery).select('value date name').lean();
-
-  awards.forEach(a => {
-    history.push({
-      challenge_id: null,
-      challenge_name: a.name || 'Award',
-      value: a.value,
-      date: a.date
-    });
-  });
+  // CTFd-style: sort by date ascending
+  history.sort((a, b) => new Date(a.date) - new Date(b.date));
 
   return history;
 }
