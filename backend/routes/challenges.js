@@ -224,7 +224,8 @@ router.get('/:id', async (req, res) => {
     }
     
     // If challenge is not visible and user is not admin, return 404
-      if (!challenge.isVisible && req.user.role !== 'admin') {
+    const challengeVisible = challenge.state ? challenge.state === 'visible' : challenge.isVisible;
+    if (!challengeVisible && !isAdmin) {
       return res.status(404).json({
         success: false,
         message: 'Challenge not found'
@@ -234,7 +235,7 @@ router.get('/:id', async (req, res) => {
     // CTFd-style: Get user's unlocked hints from Unlocks table
     let unlockedHints = [];
 
-    if (token && userId && teamId) {
+    if (token && userId) {
       try {
         const Unlock = require('../models/Unlock');
 

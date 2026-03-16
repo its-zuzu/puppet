@@ -119,19 +119,41 @@ EventStateSchema.statics.updateEventState = async function (status, userId) {
 EventStateSchema.statics.setCompetitionTimes = async function ({ startTime, endTime, freezeTime }, userId = null) {
   const FIXED_ID = '000000000000000000000001';
 
-  const startDate = startTime ? new Date(startTime) : null;
-  const endDate = endTime ? new Date(endTime) : null;
-  const freezeDate = freezeTime ? new Date(freezeTime) : null;
+  const parseDateInput = (value, label) => {
+    if (value === null || value === undefined || value === '') return null;
 
-  if (startDate && Number.isNaN(startDate.getTime())) {
-    throw new Error('Invalid start time');
-  }
-  if (endDate && Number.isNaN(endDate.getTime())) {
-    throw new Error('Invalid end time');
-  }
-  if (freezeDate && Number.isNaN(freezeDate.getTime())) {
-    throw new Error('Invalid freeze time');
-  }
+    let parsed;
+
+    if (value instanceof Date) {
+      parsed = value;
+    } else if (typeof value === 'number') {
+      // Accept both epoch seconds and epoch milliseconds
+      parsed = new Date(value < 1e12 ? value * 1000 : value);
+    } else if (typeof value === 'string') {
+      const trimmed = value.trim();
+      if (!trimmed) return null;
+
+      // Numeric strings can be seconds or milliseconds
+      if (/^\d+$/.test(trimmed)) {
+        const num = Number(trimmed);
+        parsed = new Date(num < 1e12 ? num * 1000 : num);
+      } else {
+        parsed = new Date(trimmed);
+      }
+    } else {
+      parsed = new Date(value);
+    }
+
+    if (Number.isNaN(parsed.getTime())) {
+      throw new Error(`Invalid ${label}`);
+    }
+
+    return parsed;
+  };
+
+  const startDate = parseDateInput(startTime, 'start time');
+  const endDate = parseDateInput(endTime, 'end time');
+  const freezeDate = parseDateInput(freezeTime, 'freeze time');
 
   if (startDate && endDate && startDate >= endDate) {
     throw new Error('Start time must be before end time');
