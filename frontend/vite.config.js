@@ -10,6 +10,7 @@ export default defineConfig(({ mode }) => {
   
   return {
     plugins: [react()],
+    cacheDir: '.vite',
     resolve: {
       alias: {
         '@': path.resolve(__dirname, './src'),
@@ -91,7 +92,7 @@ export default defineConfig(({ mode }) => {
       cors: true,
       proxy: {
         '/api': {
-          target: (env.VITE_API_URL && env.VITE_API_URL !== '/') ? env.VITE_API_URL : 'http://localhost:10000',
+          target: (env.VITE_API_URL && env.VITE_API_URL !== '/') ? env.VITE_API_URL : 'http://127.0.0.1:10000',
           changeOrigin: true,
           secure: false,
           ws: true,

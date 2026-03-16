@@ -15,18 +15,51 @@ const configuredCorsOrigins = (process.env.CORS_ORIGIN || '')
     .split(',')
     .map((origin) => origin.trim())
     .filter(Boolean);
+const LOCALHOST_HOSTNAMES = new Set(['localhost', '127.0.0.1', '::1']);
 const defaultCorsOrigin = configuredCorsOrigins.find((origin) => origin !== '*') || 'http://localhost:5173';
+
+function parseOrigin(origin) {
+    try {
+        const parsed = new URL(origin);
+        return {
+            protocol: parsed.protocol,
+            hostname: parsed.hostname.replace(/^\[|\]$/g, ''),
+            port: parsed.port
+        };
+    } catch (_error) {
+        return null;
+    }
+}
+
+function normalizeOrigin(origin) {
+    const parsed = parseOrigin(origin);
+    if (!parsed) {
+        return null;
+    }
+
+    return `${parsed.protocol}//${parsed.hostname}${parsed.port ? `:${parsed.port}` : ''}`;
+}
+
+const normalizedConfiguredCorsOrigins = new Set(
+    configuredCorsOrigins
+        .filter((origin) => origin !== '*')
+        .map(normalizeOrigin)
+        .filter(Boolean)
+);
 
 function resolveSseOrigin(requestOrigin) {
     if (!requestOrigin) {
         return defaultCorsOrigin;
     }
 
-    if (requestOrigin.includes('localhost') || requestOrigin.includes('127.0.0.1')) {
+    const parsedOrigin = parseOrigin(requestOrigin);
+
+    if (parsedOrigin && LOCALHOST_HOSTNAMES.has(parsedOrigin.hostname)) {
         return requestOrigin;
     }
 
-    if (configuredCorsOrigins.includes(requestOrigin)) {
+    const normalizedRequestOrigin = normalizeOrigin(requestOrigin);
+    if (normalizedRequestOrigin && normalizedConfiguredCorsOrigins.has(normalizedRequestOrigin)) {
         return requestOrigin;
     }
 

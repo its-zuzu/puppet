@@ -12,7 +12,7 @@
     "seed:tutorials": "node scripts/seedTutorials.js",
     "monitor": "node scripts/monitorUsers.js",
     "test:concurrency": "node scripts/testConcurrency.js",
-    "health": "curl http://localhost:5000/api/health",
+    "health": "curl http://127.0.0.1:10000/api/health",
     "startup-check": "node scripts/startup.js",
     "start:safe": "npm run startup-check && npm start",
     "dev:safe": "npm run startup-check && npm run dev",

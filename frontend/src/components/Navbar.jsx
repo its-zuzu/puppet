@@ -93,8 +93,9 @@ function Navbar() {
   const isActive = (path) => location.pathname === path;
   const isAdmin = user?.role === 'admin' || user?.role === 'superadmin';
   const platformLogo = logoUrl || '/logo.jpeg';
+  const brandName = eventName || 'Ciphera';
   const brandAccent = useMemo(() => {
-    const currentName = eventName || 'CTFQuest';
+    const currentName = brandName;
     const lowered = currentName.toLowerCase();
 
     if (lowered.endsWith('quest')) {
@@ -103,7 +104,7 @@ function Navbar() {
 
     const parts = currentName.trim().split(/\s+/);
     return parts.length > 1 ? parts[parts.length - 1] : '';
-  }, [eventName]);
+  }, [brandName]);
 
   const primaryNavItems = useMemo(
     () =>
@@ -199,7 +200,7 @@ function Navbar() {
       <div className="cyber-navbar-container">
         <PillNav
           logo={platformLogo}
-          logoAlt={`${eventName || 'CTFQuest'} logo`}
+          logoAlt={`${brandName} logo`}
           items={primaryNavItems}
           activeHref={location.pathname}
           className="cyber-navbar-pill"
@@ -209,7 +210,7 @@ function Navbar() {
           hoveredPillTextColor="#ffffff"
           pillTextColor="#000000"
           theme="light"
-          brandName={eventName || 'CTFQuest'}
+          brandName={brandName}
           brandAccent={brandAccent}
           initialLoadAnimation={false}
           mobileExtraContent={renderMobileMenuExtras}

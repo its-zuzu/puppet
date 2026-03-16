@@ -6,7 +6,6 @@ import AuthContext from '../context/AuthContext';
 import { useSiteConfig } from '../context/SiteConfigContext';
 import { sanitizeInput, validateEmail } from '../utils/security';
 import Logger from '../utils/logger';
-import { Button, Input, Alert } from '../components/ui';
 import './Auth.css';
 
 function Login() {
@@ -21,6 +20,7 @@ function Login() {
   const { login, clearErrors } = useContext(AuthContext);
   const { eventName } = useSiteConfig();
   const navigate = useNavigate();
+  const brandName = eventName || 'Ciphera';
 
   const { email, password } = formData;
 
@@ -93,7 +93,7 @@ function Login() {
         >
           <h1 className="htb-auth-brand-title htb-auth-brand-title-login">
             Welcome to<br />
-            <span className="htb-gradient-text htb-gradient-text-login">{eventName}</span>
+            <span className="htb-gradient-text htb-gradient-text-login">{brandName}</span>
           </h1>
           <p className="htb-auth-brand-subtitle htb-auth-brand-subtitle-login">
             Sign in to access challenges and compete with hackers worldwide
@@ -113,47 +113,56 @@ function Login() {
           </div>
 
           {formError && (
-            <div style={{ marginBottom: '24px' }}>
-              <Alert type={isBlocked ? "danger" : "warning"}>
-                {formError}
-              </Alert>
+            <div className={`htb-auth-alert${isBlocked ? ' htb-auth-alert--danger' : ' htb-auth-alert--warning'}`}>
+              <span className="htb-auth-alert__icon" aria-hidden="true">!</span>
+              <span>{formError}</span>
             </div>
           )}
 
           <form onSubmit={onSubmit} className="htb-auth-form">
-            <Input
-              type="email"
-              name="email"
-              label="Email"
-              value={email}
-              onChange={onChange}
-              placeholder="user@domain.com"
-              icon={<Mail size={18} />}
-              required
-              fullWidth
-            />
+            <label className="htb-auth-field" htmlFor="login-email">
+              <span className="htb-auth-field__label">Email</span>
+              <span className="htb-auth-input-shell">
+                <Mail size={18} className="htb-auth-input-shell__icon" />
+                <input
+                  id="login-email"
+                  type="email"
+                  name="email"
+                  value={email}
+                  onChange={onChange}
+                  placeholder="user@domain.com"
+                  className="htb-auth-input"
+                  autoComplete="email"
+                  required
+                />
+              </span>
+            </label>
 
-            <Input
-              type="password"
-              name="password"
-              label="Password"
-              value={password}
-              onChange={onChange}
-              placeholder="Enter your password"
-              icon={<Lock size={18} />}
-              required
-              fullWidth
-            />
+            <label className="htb-auth-field" htmlFor="login-password">
+              <span className="htb-auth-field__label">Password</span>
+              <span className="htb-auth-input-shell">
+                <Lock size={18} className="htb-auth-input-shell__icon" />
+                <input
+                  id="login-password"
+                  type="password"
+                  name="password"
+                  value={password}
+                  onChange={onChange}
+                  placeholder="Enter your password"
+                  className="htb-auth-input"
+                  autoComplete="current-password"
+                  required
+                />
+              </span>
+            </label>
 
-            <Button
+            <button
               type="submit"
-              variant="primary"
-              size="lg"
-              fullWidth
-              loading={isSubmitting}
+              className="htb-auth-submit"
+              disabled={isSubmitting}
             >
               {isSubmitting ? 'Signing In...' : 'Sign In'}
-            </Button>
+            </button>
           </form>
 
           <div className="htb-auth-footer">

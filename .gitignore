@@ -66,6 +66,7 @@ coverage/
 
 # Cache
 .cache/
+.vite/
 .parcel-cache/
 .eslintcache
 
@@ -73,6 +74,7 @@ coverage/
 *.sqlite
 *.sqlite3
 *.db
+.local-mongodb/
 
 # Redis dump
 dump.rdb
