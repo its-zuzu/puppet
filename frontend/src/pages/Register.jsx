@@ -2,6 +2,7 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Mail, User, Users, FileText, ArrowLeft, UserPlus, Shield } from 'lucide-react';
+import { Button } from '../components/ui';
 import './Auth.css';
 
 function Register() {

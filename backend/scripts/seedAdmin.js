@@ -5,11 +5,9 @@ const User = require('../models/User');
 
 dotenv.config();
 
-const mongoUri = process.env.MONGODB_URI || process.env.MONGO_URI || 'mongodb://127.0.0.1:27017/ctfquest';
-
 const seedAdmin = async () => {
   try {
-    await mongoose.connect(mongoUri);
+    await mongoose.connect(process.env.MONGO_URI);
     console.log('MongoDB connected');
 
     const adminEmail = 'admin@pwngrid.com';

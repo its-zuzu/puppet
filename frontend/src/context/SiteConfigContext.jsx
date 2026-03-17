@@ -1,23 +1,9 @@
 import { createContext, useContext, useEffect, useMemo, useState } from 'react';
 import axios from 'axios';
 
-const DEFAULT_EVENT_NAME = 'Ciphera';
-const DEFAULT_EVENT_DESCRIPTION = 'Ciphera cybersecurity platform';
-
-const normalizeEventName = (value) => {
-  const trimmedValue = typeof value === 'string' ? value.trim() : '';
-  const normalizedValue = trimmedValue.toLowerCase().replace(/[^a-z0-9]+/g, '');
-
-  if (!trimmedValue || normalizedValue === 'ciphera' || normalizedValue === 'ctfquest') {
-    return DEFAULT_EVENT_NAME;
-  }
-
-  return trimmedValue;
-};
-
 const SiteConfigContext = createContext({
-  eventName: DEFAULT_EVENT_NAME,
-  eventDescription: DEFAULT_EVENT_DESCRIPTION,
+  eventName: 'CTFQuest',
+  eventDescription: 'Capture The Flag platform',
   logoUrl: '',
   visibility: {
     challenge: 'private',
@@ -33,8 +19,8 @@ const SiteConfigContext = createContext({
 });
 
 export const SiteConfigProvider = ({ children }) => {
-  const [eventName, setEventName] = useState(DEFAULT_EVENT_NAME);
-  const [eventDescription, setEventDescription] = useState(DEFAULT_EVENT_DESCRIPTION);
+  const [eventName, setEventName] = useState('CTFQuest');
+  const [eventDescription, setEventDescription] = useState('Capture The Flag platform');
   const [logoUrl, setLogoUrl] = useState('');
   const [visibility, setVisibility] = useState({
     challenge: 'private',
@@ -49,8 +35,8 @@ export const SiteConfigProvider = ({ children }) => {
       const response = await axios.get('/api/configuration');
       const data = response?.data?.data || {};
 
-      setEventName(normalizeEventName(data.eventName));
-      setEventDescription(data.eventDescription || DEFAULT_EVENT_DESCRIPTION);
+      setEventName(data.eventName || 'CTFQuest');
+      setEventDescription(data.eventDescription || 'Capture The Flag platform');
       setLogoUrl(data.logoUrl || '');
       setVisibility({
         challenge: data.visibility?.challenge || 'private',
@@ -73,7 +59,7 @@ export const SiteConfigProvider = ({ children }) => {
         { withCredentials: true }
       );
 
-      const updatedName = normalizeEventName(response?.data?.data?.eventName || nextEventName);
+      const updatedName = response?.data?.data?.eventName || nextEventName;
       setEventName(updatedName);
       return { success: true, eventName: updatedName };
     } catch (error) {

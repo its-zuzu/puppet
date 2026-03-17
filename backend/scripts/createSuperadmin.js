@@ -5,8 +5,6 @@ const User = require('../models/User');
 
 dotenv.config();
 
-const mongoUri = process.env.MONGODB_URI || process.env.MONGO_URI || 'mongodb://127.0.0.1:27017/ctfquest';
-
 const adminUser = {
   username: 'admin',
   email: 'admin@pwngrid.com',
@@ -14,7 +12,7 @@ const adminUser = {
   role: 'admin'
 };
 
-mongoose.connect(mongoUri)
+mongoose.connect(process.env.MONGO_URI || 'mongodb://localhost:27017/cyberctf')
   .then(async () => {
     console.log('MongoDB connected successfully');
     

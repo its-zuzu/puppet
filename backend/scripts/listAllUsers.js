@@ -2,9 +2,7 @@ const mongoose = require('mongoose');
 const User = require('../models/User');
 require('dotenv').config();
 
-const mongoUri = process.env.MONGODB_URI || process.env.MONGO_URI || 'mongodb://127.0.0.1:27017/ctfquest';
-
-mongoose.connect(mongoUri)
+mongoose.connect(process.env.MONGO_URI || 'mongodb://localhost:27017/cyberctf')
   .then(async () => {
     const users = await User.find({}).select('username email role');
     console.log('Total users:', users.length);

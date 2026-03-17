@@ -72,48 +72,8 @@ const configuredCorsOrigins = (process.env.CORS_ORIGIN || '')
   .map((origin) => origin.trim())
   .filter(Boolean);
 
-const LOCALHOST_HOSTNAMES = new Set(['localhost', '127.0.0.1', '::1']);
-
-const parseOrigin = (origin) => {
-  try {
-    const parsed = new URL(origin);
-    return {
-      protocol: parsed.protocol,
-      hostname: parsed.hostname.replace(/^\[|\]$/g, ''),
-      port: parsed.port
-    };
-  } catch (_error) {
-    return null;
-  }
-};
-
-const normalizeOrigin = (origin) => {
-  const parsed = parseOrigin(origin);
-  if (!parsed) {
-    return null;
-  }
-
-  return `${parsed.protocol}//${parsed.hostname}${parsed.port ? `:${parsed.port}` : ''}`;
-};
-
-const normalizedConfiguredCorsOrigins = new Set(
-  configuredCorsOrigins
-    .filter((origin) => origin !== '*')
-    .map(normalizeOrigin)
-    .filter(Boolean)
-);
-
 const isLocalDevelopmentOrigin = (origin) =>
-  !!parseOrigin(origin) && LOCALHOST_HOSTNAMES.has(parseOrigin(origin).hostname);
-
-const isConfiguredCorsOrigin = (origin) => {
-  if (configuredCorsOrigins.includes('*')) {
-    return true;
-  }
-
-  const normalizedOrigin = normalizeOrigin(origin);
-  return normalizedOrigin ? normalizedConfiguredCorsOrigins.has(normalizedOrigin) : false;
-};
+  origin.includes('localhost') || origin.includes('127.0.0.1');
 
 // CORS with development-friendly configuration
 const corsOptions = {
@@ -126,7 +86,7 @@ const corsOptions = {
       return callback(null, true);
     }
 
-    if (isConfiguredCorsOrigin(origin)) {
+    if (configuredCorsOrigins.includes(origin) || configuredCorsOrigins.includes('*')) {
       return callback(null, true);
     }
 
@@ -139,7 +99,6 @@ const corsOptions = {
   maxAge: 86400 // 24 hours
 };
 app.use(cors(corsOptions));
-app.options('*', cors(corsOptions));
 
 // Initialize centralized Redis client (singleton for 500+ users)
 const redisClient = getRedisClient();
