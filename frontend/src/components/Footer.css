@@ -1,6 +1,7 @@
 /* Footer */
 .htb-footer {
   position: relative;
+  z-index: 5;
   isolation: isolate;
   background:
     linear-gradient(180deg, rgba(13, 4, 29, 0.72) 0%, rgba(8, 1, 20, 0.9) 38%, rgba(4, 0, 12, 0.98) 100%),
