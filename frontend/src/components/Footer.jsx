@@ -1,6 +1,5 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { motion } from 'framer-motion';
 import { Shield, ChevronRight } from 'lucide-react';
 import { useSiteConfig } from '../context/SiteConfigContext';
 import './Footer.css';
@@ -17,19 +16,9 @@ const Footer = () => {
     <footer className="htb-footer">
       <div className="htb-footer-content">
         {/* Brand Section */}
-        <motion.div 
-          className="htb-footer-brand"
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          transition={{ duration: 0.6 }}
-        >
+        <div className="htb-footer-brand">
           <Link to="/" className="htb-footer-logo">
-            <motion.div 
-              className="htb-logo-icon"
-              whileHover={{ scale: 1.1, rotate: 360 }}
-              transition={{ duration: 0.8 }}
-            >
+            <div className="htb-logo-icon">
               {logoUrl && !logoLoadError ? (
                 <img
                   src={`${logoUrl}${logoUrl.includes('?') ? '&' : '?'}v=${Date.now()}`}
@@ -40,7 +29,7 @@ const Footer = () => {
               ) : (
                 <Shield size={32} />
               )}
-            </motion.div>
+            </div>
             <span className="htb-logo-text">
               {eventName}
             </span>
@@ -48,16 +37,10 @@ const Footer = () => {
           <p className="htb-footer-tagline">
             Empowering the next generation of cybersecurity professionals through hands-on challenges and competitions.
           </p>
-        </motion.div>
+        </div>
 
         {/* Navigation Columns */}
-        <motion.div 
-          className="htb-footer-nav-group"
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          transition={{ duration: 0.6, delay: 0.1 }}
-        >
+        <div className="htb-footer-nav-group">
           <div className="htb-footer-column">
             <h3 className="htb-footer-heading">
               <span className="htb-heading-line"></span>
@@ -95,7 +78,7 @@ const Footer = () => {
               <span>Contact Us</span>
             </Link>
           </div>
-        </motion.div>
+        </div>
       </div>
 
       {/* Bottom Bar */}
