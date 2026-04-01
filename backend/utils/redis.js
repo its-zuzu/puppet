@@ -10,28 +10,65 @@ let redisReadyPromise = null;
 let connectionFailureCount = 0;
 let lastFailureTime = null;
 
+function createNoopRedisClient(kind = 'client') {
+  return {
+    status: 'ready',
+    async get() { return null; },
+    async setex() { return 'OK'; },
+    async del() { return 0; },
+    async keys() { return []; },
+    async flushdb() { return 'OK'; },
+    async quit() { return 'OK'; },
+    on() { return this; },
+    once(event, cb) {
+      if (event === 'ready' && typeof cb === 'function') {
+        cb();
+      }
+      return this;
+    },
+    removeListener() { return this; },
+    subscribe(_channel, cb) {
+      if (typeof cb === 'function') cb(null, 1);
+      return this;
+    }
+  };
+}
+
 /**
  * Get or create the main Redis client (for caching, rate limiting, sessions)
  * Reuses connection across all modules to prevent memory leak
  */
 function getRedisClient() {
   if (!redisClient) {
+    const disableRedis = process.env.DISABLE_REDIS === 'true';
+    if (disableRedis) {
+      redisClient = createNoopRedisClient('client');
+      isRedisReady = true;
+      redisReadyPromise = Promise.resolve(true);
+      console.warn('[Redis] DISABLE_REDIS=true - running without Redis cache/rate-limit backend');
+      return redisClient;
+    }
+
     const redisUrl = process.env.REDIS_URL || 'redis://localhost:6379';
     
     redisClient = new Redis(redisUrl, {
-      maxRetriesPerRequest: 3,
+      maxRetriesPerRequest: 1,
       enableReadyCheck: true,
-      lazyConnect: false,
+      enableOfflineQueue: false,
+      lazyConnect: true,
+      connectTimeout: parseInt(process.env.REDIS_CONNECT_TIMEOUT_MS || '500', 10),
+      commandTimeout: parseInt(process.env.REDIS_COMMAND_TIMEOUT_MS || '500', 10),
       // Connection pool settings for high load
       maxPoolSize: 50,
       minPoolSize: 10,
       retryStrategy(times) {
-        const delay = Math.min(times * 50, 2000);
+        const delay = Math.min(times * 50, 500);
         return delay;
       }
     });
 
-    // Create promise that resolves when Redis is ready
+    // Create promise that resolves when Redis is ready.
+    // Fail-open in development/partial outages: do not reject startup.
     redisReadyPromise = new Promise((resolve, reject) => {
       redisClient.once('ready', () => {
         isRedisReady = true;
@@ -46,7 +83,7 @@ function getRedisClient() {
         if (!isRedisReady) {
           console.error('Redis Client Connection Failed:', err);
           monitoring.redis.connectionFailed(err);
-          reject(err);
+          resolve(false);
         }
       });
     });
@@ -85,12 +122,19 @@ function getRedisClient() {
  */
 function getRedisSubscriber() {
   if (!redisSubscriber) {
+    const disableRedis = process.env.DISABLE_REDIS === 'true';
+    if (disableRedis) {
+      redisSubscriber = createNoopRedisClient('subscriber');
+      return redisSubscriber;
+    }
+
     const redisUrl = process.env.REDIS_URL || 'redis://localhost:6379';
     
     redisSubscriber = new Redis(redisUrl, {
-      maxRetriesPerRequest: 3,
+      maxRetriesPerRequest: 1,
       enableReadyCheck: true,
-      lazyConnect: false
+      enableOfflineQueue: false,
+      lazyConnect: true
     });
 
     redisSubscriber.on('error', (err) => {
@@ -114,7 +158,10 @@ async function waitForRedis() {
   if (!redisReadyPromise) {
     throw new Error('Redis client not initialized');
   }
-  await redisReadyPromise;
+  const ready = await redisReadyPromise;
+  if (ready === false) {
+    console.warn('[Redis] Running in degraded mode (Redis unavailable)');
+  }
 }
 
 /**

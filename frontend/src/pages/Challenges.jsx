@@ -227,7 +227,9 @@ function Challenges() {
         <div className="challenges-orb challenges-orb--secondary" aria-hidden="true" />
         <div className="challenges-orb challenges-orb--tertiary" aria-hidden="true" />
         <div className="challenges-page">
-          <Loading text="LOADING CHALLENGES..." />
+          <div className="challenges-page-content">
+            <Loading text="LOADING CHALLENGES..." />
+          </div>
         </div>
       </div>
     );
@@ -241,6 +243,7 @@ function Challenges() {
       <div className="challenges-orb challenges-orb--tertiary" aria-hidden="true" />
 
       <div className="challenges-page">
+        <div className="challenges-page-content">
         <div className="challenges-header">
           <motion.div
             className="header-content"
@@ -248,7 +251,6 @@ function Challenges() {
             animate={{ opacity: 1, y: 0 }}
           >
             <div className="header-title-section">
-              <span className="page-kicker">Arena Feed</span>
               <h1 className="page-title">
                 <Flag className="title-icon" />
                 Challenges
@@ -369,6 +371,7 @@ function Challenges() {
             )}
           </AnimatePresence>
         </motion.div>
+        </div>
       </div>
     </div>
   );

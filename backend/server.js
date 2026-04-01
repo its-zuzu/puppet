@@ -378,78 +378,114 @@ const mongoOptions = {
 mongoose.set('bufferCommands', false); // Disable mongoose buffering
 mongoose.set('strictQuery', true); // Enable strict mode for queries
 
-mongoose.connect(MONGODB_URI, mongoOptions)
-  .then(async () => {
+let mongoRetryTimer = null;
+const mongoRetryDelayMs = parseInt(process.env.MONGO_RETRY_DELAY_MS, 5000);
+const allowMemoryMongo =
+  process.env.NODE_ENV !== 'production' && process.env.ENABLE_MEMORY_MONGO === 'true';
+let memoryMongoServer = null;
+
+const scheduleMongoReconnect = () => {
+  if (mongoRetryTimer) return;
+  mongoRetryTimer = setTimeout(() => {
+    mongoRetryTimer = null;
+    connectToMongo();
+  }, mongoRetryDelayMs);
+};
+
+const initializeEventState = async () => {
+  try {
+    const EventState = require('./models/EventState');
+    const { refreshEventStateCache } = require('./middleware/eventState');
+
+    const eventState = await EventState.getEventState();
+    const stateObj = {
+      status: eventState.status,
+      startedAt: eventState.startedAt,
+      endedAt: eventState.endedAt,
+      freezeAt: eventState.freezeAt,
+      isPaused: eventState.isPaused,
+      pausedAt: eventState.pausedAt,
+      pausedBy: eventState.pausedBy,
+      resumedAt: eventState.resumedAt,
+      resumedBy: eventState.resumedBy,
+      startedBy: eventState.startedBy,
+      endedBy: eventState.endedBy,
+      customMessage: eventState.customMessage
+    };
+
+    await refreshEventStateCache(stateObj);
+    console.log(`[EventState] Initialized: status=${eventState.status}`);
+  } catch (err) {
+    if (err.code === 11000) {
+      try {
+        const EventState = require('./models/EventState');
+        const { refreshEventStateCache } = require('./middleware/eventState');
+        const FIXED_ID = '000000000000000000000001';
+        const eventState = await EventState.findById(FIXED_ID);
+        if (eventState) {
+          const stateObj = {
+            status: eventState.status,
+            startedAt: eventState.startedAt,
+            endedAt: eventState.endedAt,
+            freezeAt: eventState.freezeAt,
+            isPaused: eventState.isPaused,
+            pausedAt: eventState.pausedAt,
+            pausedBy: eventState.pausedBy,
+            resumedAt: eventState.resumedAt,
+            resumedBy: eventState.resumedBy,
+            startedBy: eventState.startedBy,
+            endedBy: eventState.endedBy,
+            customMessage: eventState.customMessage
+          };
+          await refreshEventStateCache(stateObj);
+          console.log(`[EventState] Initialized (existing): status=${eventState.status}`);
+        }
+      } catch (retryErr) {
+        console.error('[EventState] Error fetching existing event state:', retryErr);
+      }
+    } else {
+      console.error('[EventState] Error initializing event state:', err);
+    }
+  }
+};
+
+const connectToMongo = async () => {
+  if (mongoose.connection.readyState === 1 || mongoose.connection.readyState === 2) {
+    return;
+  }
+
+  try {
+    await mongoose.connect(MONGODB_URI, mongoOptions);
     console.log('MongoDB connected successfully with enhanced connection pooling');
     console.log(`Connection pool: min=${mongoOptions.minPoolSize}, max=${mongoOptions.maxPoolSize}`);
+    await initializeEventState();
+  } catch (err) {
+    console.error('MongoDB connection error:', err.message);
 
-    // Initialize EventState document and load into Redis cache
-    try {
-      const EventState = require('./models/EventState');
-      const { refreshEventStateCache } = require('./middleware/eventState');
+    if (allowMemoryMongo && !memoryMongoServer) {
+      try {
+        const { MongoMemoryServer } = require('mongodb-memory-server');
+        console.warn('[MongoDB] Falling back to in-memory MongoDB for local development');
+        memoryMongoServer = await MongoMemoryServer.create();
+        const memoryUri = memoryMongoServer.getUri('ctf-platform');
 
-      // Use getEventState which handles upsert atomically
-      const eventState = await EventState.getEventState();
-      const stateObj = {
-        status: eventState.status,
-        startedAt: eventState.startedAt,
-        endedAt: eventState.endedAt,
-        freezeAt: eventState.freezeAt,
-        isPaused: eventState.isPaused,
-        pausedAt: eventState.pausedAt,
-        pausedBy: eventState.pausedBy,
-        resumedAt: eventState.resumedAt,
-        resumedBy: eventState.resumedBy,
-        startedBy: eventState.startedBy,
-        endedBy: eventState.endedBy,
-        customMessage: eventState.customMessage
-      };
-
-      await refreshEventStateCache(stateObj);
-      console.log(`[EventState] Initialized: status=${eventState.status}`);
-    } catch (err) {
-      // Handle duplicate key error gracefully (can happen with multiple PM2 instances)
-      if (err.code === 11000) {
-        // Document already exists, just fetch it
-        try {
-          const EventState = require('./models/EventState');
-          const { refreshEventStateCache } = require('./middleware/eventState');
-          const FIXED_ID = '000000000000000000000001';
-          const eventState = await EventState.findById(FIXED_ID);
-          if (eventState) {
-            const stateObj = {
-              status: eventState.status,
-              startedAt: eventState.startedAt,
-              endedAt: eventState.endedAt,
-              freezeAt: eventState.freezeAt,
-              isPaused: eventState.isPaused,
-              pausedAt: eventState.pausedAt,
-              pausedBy: eventState.pausedBy,
-              resumedAt: eventState.resumedAt,
-              resumedBy: eventState.resumedBy,
-              startedBy: eventState.startedBy,
-              endedBy: eventState.endedBy,
-              customMessage: eventState.customMessage
-            };
-            await refreshEventStateCache(stateObj);
-            console.log(`[EventState] Initialized (existing): status=${eventState.status}`);
-          }
-        } catch (retryErr) {
-          console.error('[EventState] Error fetching existing event state:', retryErr);
-        }
-      } else {
-        console.error('[EventState] Error initializing event state:', err);
+        await mongoose.connect(memoryUri, mongoOptions);
+        console.log('[MongoDB] In-memory MongoDB connected');
+        await initializeEventState();
+        return;
+      } catch (memoryErr) {
+        console.error('[MongoDB] In-memory fallback failed:', memoryErr.message);
       }
-      // Don't block server startup if event state initialization fails
     }
 
-    app.listen(PORT, "127.0.0.1", () => {
-      console.log(`Server running in ${process.env.NODE_ENV || 'development'} mode on port ${PORT}`);
-      console.log(`Server accessible at http://localhost:${PORT}`);
-      console.log(`MongoDB connection pool configured for ${mongoOptions.maxPoolSize} concurrent connections`);
-    });
-  })
-  .catch(err => {
-    console.error('MongoDB connection error:', err);
-    //process.exit(1);
-  });
+    console.error(`[MongoDB] Retrying in ${Math.round(mongoRetryDelayMs / 1000)}s...`);
+    scheduleMongoReconnect();
+  }
+};
+
+app.listen(PORT, '127.0.0.1', () => {
+  console.log(`Server running in ${process.env.NODE_ENV || 'development'} mode on port ${PORT}`);
+  console.log(`Server accessible at http://localhost:${PORT}`);
+  console.log(`MongoDB connection pool configured for ${mongoOptions.maxPoolSize} concurrent connections`);
+  connectToMongo();
+});

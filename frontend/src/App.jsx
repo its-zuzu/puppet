@@ -55,11 +55,14 @@ const EventStatus = lazy(() => import('./pages/EventStatus'))
 function AppShell() {
   const location = useLocation()
   const isHomeRoute = location.pathname === '/'
+  const isChallengesRoute = location.pathname === '/challenges'
+  const isChallengeDetailRoute = location.pathname.startsWith('/challenges/')
+  const isScoreboardRoute = location.pathname === '/scoreboard'
 
   return (
     <div className="app-container">
       <Navbar />
-      <main className={`main-content${isHomeRoute ? ' main-content--home' : ''}`}>
+      <main className={`main-content${isHomeRoute ? ' main-content--home' : ''}${isChallengesRoute ? ' main-content--challenges' : ''}${isChallengeDetailRoute ? ' main-content--challenge-detail' : ''}${isScoreboardRoute ? ' main-content--scoreboard' : ''}`}>
         <Suspense fallback={<PageLoader />}>
           <Routes>
             <Route path="/" element={<Home />} />

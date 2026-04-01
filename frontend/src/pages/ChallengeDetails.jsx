@@ -635,8 +635,6 @@ function ChallengeDetails() {
         <motion.button 
           onClick={() => navigate('/challenges')} 
           className="htb-back-btn"
-          whileHover={{ scale: 1.05, x: -5 }}
-          whileTap={{ scale: 0.95 }}
         >
           <ChevronLeft size={20} />
           Back

@@ -40,6 +40,27 @@
   padding: 0;
 }
 
+.main-content.main-content--challenges {
+  padding-top: 0;
+  padding-right: 0;
+  padding-bottom: 0;
+  padding-left: 0;
+}
+
+.main-content.main-content--challenge-detail {
+  padding-top: clamp(0.75rem, 1vw, 1.25rem);
+  padding-right: clamp(0.5rem, 1vw, 1rem);
+  padding-bottom: 1rem;
+  padding-left: clamp(0.5rem, 1vw, 1rem);
+}
+
+.main-content.main-content--scoreboard {
+  padding-top: 0;
+  padding-right: 0;
+  padding-bottom: 0;
+  padding-left: 0;
+}
+
 /* Footer Styles */
 .footer {
   background: rgba(6, 0, 16, 0.92);

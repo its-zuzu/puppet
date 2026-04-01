@@ -6,6 +6,8 @@ const { getRedisClient } = require('../utils/redis');
 const redisClient = getRedisClient();
 const CACHE_TTL = Math.floor(config.redis.ttl.userCache / 1000); // Convert ms to seconds
 
+const isRedisReady = () => redisClient && redisClient.status === 'ready';
+
 // Protect routes
 exports.protect = async (req, res, next) => {
   let token;
@@ -75,26 +77,29 @@ exports.protect = async (req, res, next) => {
       }
     }
 
-    // Check cache first to reduce database load
+    // Check cache first to reduce database load.
+    // Auth must not fail when Redis is unavailable.
     const cacheKey = `user:${decoded.id}`;
 
     let user;
-    try {
-      const cachedStr = await redisClient.get(cacheKey);
-      if (cachedStr) {
-        const cachedData = JSON.parse(cachedStr);
-        // Restore Date objects for password check
-        if (cachedData.passwordChangedAt) {
-          cachedData.passwordChangedAt = new Date(cachedData.passwordChangedAt);
+    if (isRedisReady()) {
+      try {
+        const cachedStr = await redisClient.get(cacheKey);
+        if (cachedStr) {
+          const cachedData = JSON.parse(cachedStr);
+          // Restore Date objects for password check
+          if (cachedData.passwordChangedAt) {
+            cachedData.passwordChangedAt = new Date(cachedData.passwordChangedAt);
+          }
+          // Ensure _id is always a string for consistency
+          if (cachedData._id && typeof cachedData._id === 'object') {
+            cachedData._id = cachedData._id.toString();
+          }
+          user = cachedData;
         }
-        // Ensure _id is always a string for consistency
-        if (cachedData._id && typeof cachedData._id === 'object') {
-          cachedData._id = cachedData._id.toString();
-        }
-        user = cachedData;
+      } catch (e) {
+        console.warn('Redis cache read error:', e.message);
       }
-    } catch (e) {
-      console.warn('Redis cache error:', e);
     }
 
     if (!user) {
@@ -106,7 +111,13 @@ exports.protect = async (req, res, next) => {
 
       if (!dbUser) {
         // Remove from cache if user no longer exists
-        await redisClient.del(cacheKey);
+        if (isRedisReady()) {
+          try {
+            await redisClient.del(cacheKey);
+          } catch (e) {
+            console.warn('Redis cache delete error:', e.message);
+          }
+        }
         return res.status(401).json({
           success: false,
           message: 'User no longer exists'
@@ -122,8 +133,14 @@ exports.protect = async (req, res, next) => {
       user = dbUser;
 
       // Cache the user data with populated team (15 min TTL for production)
-      const productionCacheTTL = 900; // 15 minutes for production
-      await redisClient.setex(cacheKey, productionCacheTTL, JSON.stringify(dbUser));
+      if (isRedisReady()) {
+        const productionCacheTTL = 900; // 15 minutes for production
+        try {
+          await redisClient.setex(cacheKey, productionCacheTTL, JSON.stringify(dbUser));
+        } catch (e) {
+          console.warn('Redis cache write error:', e.message);
+        }
+      }
     }
 
     // Check if user's password was changed after the token was issued

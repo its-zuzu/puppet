@@ -53,15 +53,25 @@ const sanitizeInput = (req, res, next) => {
   next();
 };
 
-const sanitizePayload = (obj) => {
+const isPasswordField = (key) => {
+  if (!key) return false;
+  const normalized = String(key).toLowerCase();
+  return normalized.includes('password');
+};
+
+const sanitizePayload = (obj, key = null) => {
   if (typeof obj === 'string') {
+    if (isPasswordField(key)) {
+      // Preserve password exactly as entered; trimming mutates valid secrets.
+      return obj.replace(/\0/g, '');
+    }
     // Basic trimming and removal of null bytes
     return obj.trim().replace(/\0/g, '');
   }
   if (typeof obj === 'object' && obj !== null) {
     if (obj.buffer) return obj; // Skip files
     Object.keys(obj).forEach(key => {
-      obj[key] = sanitizePayload(obj[key]);
+      obj[key] = sanitizePayload(obj[key], key);
     });
   }
   return obj;
