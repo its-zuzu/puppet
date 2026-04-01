@@ -222,168 +222,176 @@ function AdminConfiguration() {
   };
 
   return (
-    <div className="admin-configuration-container">
-      <div className="admin-configuration-card">
-        <div className="admin-configuration-header">
-          <Settings size={24} />
-          <div>
-            <h1>Platform Configuration</h1>
-            <p>CTFd-style admin configuration for global platform settings.</p>
-          </div>
-        </div>
+    <div className="admin-configuration-page-shell">
+      <div className="admin-configuration-page-bg" aria-hidden="true" />
+      <div className="admin-configuration-orb admin-configuration-orb--primary" aria-hidden="true" />
+      <div className="admin-configuration-orb admin-configuration-orb--secondary" aria-hidden="true" />
+      <div className="admin-configuration-orb admin-configuration-orb--tertiary" aria-hidden="true" />
 
-        <form onSubmit={handleSubmit} className="admin-configuration-form">
-          <label htmlFor="eventName">Event Name (ctf_name)</label>
-          <input
-            id="eventName"
-            type="text"
-            maxLength={100}
-            value={value}
-            onChange={(e) => setValue(e.target.value)}
-            placeholder="Enter event name"
-          />
-
-          {error && <div className="admin-configuration-alert admin-configuration-alert-error">{error}</div>}
-          {message && <div className="admin-configuration-alert admin-configuration-alert-success">{message}</div>}
-
-          <button type="submit" disabled={saving}>
-            <Save size={16} />
-            <span>{saving ? 'Saving...' : 'Save Configuration'}</span>
-          </button>
-        </form>
-
-        <form onSubmit={handleLogoUpload} className="admin-configuration-form admin-configuration-logo-form">
-          <label htmlFor="eventLogo">Website Logo</label>
-          <p className="admin-configuration-hint">Upload an image to use as the website logo, similar to CTFd logo settings.</p>
-
-          <div className="admin-configuration-logo-row">
-            <input
-              id="eventLogo"
-              type="file"
-              accept="image/*,.svg,.ico,.avif,.tiff,.tif"
-              onChange={(e) => setSelectedLogo(e.target.files?.[0] || null)}
-            />
-            <button type="submit" disabled={uploading}>
-              <Upload size={16} />
-              <span>{uploading ? 'Uploading...' : 'Upload Logo'}</span>
-            </button>
-          </div>
-
-          <p className="admin-configuration-hint">Supported: PNG, JPG, WEBP, SVG, ICO, GIF, BMP, AVIF, TIFF (max 10MB).</p>
-
-          {logoUrl && (
-            <div className="admin-configuration-logo-preview-wrap">
-              <img src={`${logoUrl}?v=${Date.now()}`} alt="Current website logo" className="admin-configuration-logo-preview" />
+      <div className="admin-configuration-page">
+        <div className="admin-configuration-container">
+          <div className="admin-configuration-card">
+            <div className="admin-configuration-header">
+              <Settings size={24} />
+              <div>
+                <h1>Platform Configuration</h1>
+              </div>
             </div>
-          )}
-        </form>
 
-        <form onSubmit={handleVisibilityUpdate} className="admin-configuration-form admin-configuration-visibility-form">
-          <label>Challenge Visibility</label>
-          <select
-            value={visibilityForm.challenge}
-            onChange={(e) => setVisibilityForm((prev) => ({ ...prev, challenge: e.target.value }))}
-          >
-            <option value="private">Private</option>
-            <option value="public">Public</option>
-          </select>
+            <form onSubmit={handleSubmit} className="admin-configuration-form">
+              <label htmlFor="eventName">Event Name (ctf_name)</label>
+              <input
+                id="eventName"
+                type="text"
+                maxLength={100}
+                value={value}
+                onChange={(e) => setValue(e.target.value)}
+                placeholder="Enter event name"
+              />
 
-          <label>Account Visibility</label>
-          <select
-            value={visibilityForm.account}
-            onChange={(e) => setVisibilityForm((prev) => ({ ...prev, account: e.target.value }))}
-          >
-            <option value="private">Private</option>
-            <option value="public">Public</option>
-            <option value="admins">Admins</option>
-          </select>
+              {error && <div className="admin-configuration-alert admin-configuration-alert-error">{error}</div>}
+              {message && <div className="admin-configuration-alert admin-configuration-alert-success">{message}</div>}
 
-          <label>Score Visibility</label>
-          <select
-            value={visibilityForm.score}
-            onChange={(e) => setVisibilityForm((prev) => ({ ...prev, score: e.target.value }))}
-          >
-            <option value="private">Private</option>
-            <option value="public">Public</option>
-            <option value="admins">Admins</option>
-          </select>
+              <button type="submit" disabled={saving}>
+                <Save size={16} />
+                <span>{saving ? 'Saving...' : 'Save Configuration'}</span>
+              </button>
+            </form>
 
-          <label>Registration Visibility</label>
-          <select
-            value={visibilityForm.registration}
-            onChange={(e) => setVisibilityForm((prev) => ({ ...prev, registration: e.target.value }))}
-          >
-            <option value="private">Private</option>
-            <option value="public">Public</option>
-          </select>
+            <form onSubmit={handleLogoUpload} className="admin-configuration-form admin-configuration-logo-form">
+              <label htmlFor="eventLogo">Website Logo</label>
+              <p className="admin-configuration-hint">Upload an image to use as the website logo, similar to CTFd logo settings.</p>
 
-          <button type="submit" disabled={savingVisibility}>
-            <Save size={16} />
-            <span>{savingVisibility ? 'Updating...' : 'Update Visibility'}</span>
-          </button>
-        </form>
+              <div className="admin-configuration-logo-row">
+                <input
+                  id="eventLogo"
+                  type="file"
+                  accept="image/*,.svg,.ico,.avif,.tiff,.tif"
+                  onChange={(e) => setSelectedLogo(e.target.files?.[0] || null)}
+                />
+                <button type="submit" disabled={uploading}>
+                  <Upload size={16} />
+                  <span>{uploading ? 'Uploading...' : 'Upload Logo'}</span>
+                </button>
+              </div>
 
-        <div className="admin-configuration-form admin-configuration-backup-form">
-          <label>Backup</label>
-          <p className="admin-configuration-hint">Export and import full platform backups (CTFd-style).</p>
+              <p className="admin-configuration-hint">Supported: PNG, JPG, WEBP, SVG, ICO, GIF, BMP, AVIF, TIFF (max 10MB).</p>
 
-          <div className="admin-configuration-backup-actions">
-            <button type="button" onClick={handleBackupExport} disabled={backupLoading}>
-              <Download size={16} />
-              <span>{backupLoading ? 'Exporting...' : 'Export Backup'}</span>
-            </button>
+              {logoUrl && (
+                <div className="admin-configuration-logo-preview-wrap">
+                  <img src={`${logoUrl}?v=${Date.now()}`} alt="Current website logo" className="admin-configuration-logo-preview" />
+                </div>
+              )}
+            </form>
+
+            <form onSubmit={handleVisibilityUpdate} className="admin-configuration-form admin-configuration-visibility-form">
+              <label>Challenge Visibility</label>
+              <select
+                value={visibilityForm.challenge}
+                onChange={(e) => setVisibilityForm((prev) => ({ ...prev, challenge: e.target.value }))}
+              >
+                <option value="private">Private</option>
+                <option value="public">Public</option>
+              </select>
+
+              <label>Account Visibility</label>
+              <select
+                value={visibilityForm.account}
+                onChange={(e) => setVisibilityForm((prev) => ({ ...prev, account: e.target.value }))}
+              >
+                <option value="private">Private</option>
+                <option value="public">Public</option>
+                <option value="admins">Admins</option>
+              </select>
+
+              <label>Score Visibility</label>
+              <select
+                value={visibilityForm.score}
+                onChange={(e) => setVisibilityForm((prev) => ({ ...prev, score: e.target.value }))}
+              >
+                <option value="private">Private</option>
+                <option value="public">Public</option>
+                <option value="admins">Admins</option>
+              </select>
+
+              <label>Registration Visibility</label>
+              <select
+                value={visibilityForm.registration}
+                onChange={(e) => setVisibilityForm((prev) => ({ ...prev, registration: e.target.value }))}
+              >
+                <option value="private">Private</option>
+                <option value="public">Public</option>
+              </select>
+
+              <button type="submit" disabled={savingVisibility}>
+                <Save size={16} />
+                <span>{savingVisibility ? 'Updating...' : 'Update Visibility'}</span>
+              </button>
+            </form>
+
+            <div className="admin-configuration-form admin-configuration-backup-form">
+              <label>Backup</label>
+              <p className="admin-configuration-hint">Export and import full platform backups (CTFd-style).</p>
+
+              <div className="admin-configuration-backup-actions">
+                <button type="button" onClick={handleBackupExport} disabled={backupLoading}>
+                  <Download size={16} />
+                  <span>{backupLoading ? 'Exporting...' : 'Export Backup'}</span>
+                </button>
+              </div>
+
+              <form onSubmit={handleBackupImport} className="admin-configuration-inline-form">
+                <label>Import Mode</label>
+                <select value={backupMode} onChange={(e) => setBackupMode(e.target.value)}>
+                  <option value="merge">Merge</option>
+                  <option value="replace">Replace</option>
+                </select>
+
+                <input
+                  type="file"
+                  accept="application/json,.json"
+                  onChange={(e) => setBackupFile(e.target.files?.[0] || null)}
+                />
+
+                <button type="submit" disabled={importLoading}>
+                  <Database size={16} />
+                  <span>{importLoading ? 'Importing...' : 'Import Backup'}</span>
+                </button>
+              </form>
+
+              <div className="admin-configuration-hint">CSV Tools</div>
+              <div className="admin-configuration-inline-form">
+                <select value={csvType} onChange={(e) => setCsvType(e.target.value)}>
+                  <option value="users">Users</option>
+                  <option value="teams">Teams</option>
+                  <option value="challenges">Challenges</option>
+                </select>
+
+                <button type="button" onClick={handleCsvExport} disabled={csvLoading}>
+                  <Download size={16} />
+                  <span>{csvLoading ? 'Downloading...' : 'Download CSV'}</span>
+                </button>
+              </div>
+
+              <form onSubmit={handleCsvImport} className="admin-configuration-inline-form">
+                <span className="admin-configuration-hint">CSV import currently supports users.</span>
+                <select value={csvImportType} onChange={(e) => setCsvImportType(e.target.value)}>
+                  <option value="users">Users</option>
+                </select>
+
+                <input
+                  type="file"
+                  accept="text/csv,.csv"
+                  onChange={(e) => setCsvFile(e.target.files?.[0] || null)}
+                />
+
+                <button type="submit" disabled={csvImportLoading}>
+                  <Upload size={16} />
+                  <span>{csvImportLoading ? 'Uploading...' : 'Import CSV'}</span>
+                </button>
+              </form>
+            </div>
           </div>
-
-          <form onSubmit={handleBackupImport} className="admin-configuration-inline-form">
-            <label>Import Mode</label>
-            <select value={backupMode} onChange={(e) => setBackupMode(e.target.value)}>
-              <option value="merge">Merge</option>
-              <option value="replace">Replace</option>
-            </select>
-
-            <input
-              type="file"
-              accept="application/json,.json"
-              onChange={(e) => setBackupFile(e.target.files?.[0] || null)}
-            />
-
-            <button type="submit" disabled={importLoading}>
-              <Database size={16} />
-              <span>{importLoading ? 'Importing...' : 'Import Backup'}</span>
-            </button>
-          </form>
-
-          <div className="admin-configuration-hint">CSV Tools</div>
-          <div className="admin-configuration-inline-form">
-            <select value={csvType} onChange={(e) => setCsvType(e.target.value)}>
-              <option value="users">Users</option>
-              <option value="teams">Teams</option>
-              <option value="challenges">Challenges</option>
-            </select>
-
-            <button type="button" onClick={handleCsvExport} disabled={csvLoading}>
-              <Download size={16} />
-              <span>{csvLoading ? 'Downloading...' : 'Download CSV'}</span>
-            </button>
-          </div>
-
-          <form onSubmit={handleCsvImport} className="admin-configuration-inline-form">
-            <span className="admin-configuration-hint">CSV import currently supports users.</span>
-            <select value={csvImportType} onChange={(e) => setCsvImportType(e.target.value)}>
-              <option value="users">Users</option>
-            </select>
-
-            <input
-              type="file"
-              accept="text/csv,.csv"
-              onChange={(e) => setCsvFile(e.target.files?.[0] || null)}
-            />
-
-            <button type="submit" disabled={csvImportLoading}>
-              <Upload size={16} />
-              <span>{csvImportLoading ? 'Uploading...' : 'Import CSV'}</span>
-            </button>
-          </form>
         </div>
       </div>
     </div>

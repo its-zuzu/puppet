@@ -67,6 +67,9 @@ function Notice() {
   return (
     <div className="htb-notice-container">
       <div className="htb-notice-grid-bg" />
+      <div className="htb-notice-orb htb-notice-orb--primary" aria-hidden="true" />
+      <div className="htb-notice-orb htb-notice-orb--secondary" aria-hidden="true" />
+      <div className="htb-notice-orb htb-notice-orb--tertiary" aria-hidden="true" />
 
       <AnimatePresence mode="wait">
         {selectedNotice ? (
@@ -134,7 +137,6 @@ function Notice() {
               transition={{ duration: 0.6 }}
             >
               <div className="htb-header-content">
-                <Bell className="htb-header-icon" size={48} />
                 <h1>Event <span className="htb-highlight">Notices</span></h1>
                 <p>Important information and guidelines for events</p>
               </div>
