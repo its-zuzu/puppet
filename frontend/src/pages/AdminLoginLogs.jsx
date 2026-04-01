@@ -144,6 +144,9 @@ function AdminLoginLogs() {
     return (
       <div className="htb-logs-container">
         <div className="htb-logs-grid-bg"></div>
+        <div className="htb-logs-orb htb-logs-orb--primary" aria-hidden="true" />
+        <div className="htb-logs-orb htb-logs-orb--secondary" aria-hidden="true" />
+        <div className="htb-logs-orb htb-logs-orb--tertiary" aria-hidden="true" />
         <Loading text="LOADING SECURITY LOGS..." />
       </div>
     );
@@ -152,6 +155,9 @@ function AdminLoginLogs() {
   return (
     <div className="htb-logs-container">
       <div className="htb-logs-grid-bg"></div>
+      <div className="htb-logs-orb htb-logs-orb--primary" aria-hidden="true" />
+      <div className="htb-logs-orb htb-logs-orb--secondary" aria-hidden="true" />
+      <div className="htb-logs-orb htb-logs-orb--tertiary" aria-hidden="true" />
 
       <motion.div 
         className="htb-logs-header"

@@ -18,24 +18,55 @@
 .htb-logs-container {
   position: relative;
   min-height: 100vh;
-  padding: 2rem;
-  background: var(--bg-primary);
+  padding: 0.85rem 1.5rem 3rem;
+  background: linear-gradient(180deg, rgba(8, 4, 24, 0.95) 0%, rgba(0, 0, 0, 1) 100%);
   color: var(--text-primary);
   overflow-x: hidden;
 }
 
 .htb-logs-grid-bg {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
+  position: absolute;
+  inset: 0;
   background: 
-    linear-gradient(90deg, rgba(168, 85, 247, 0.03) 1px, transparent 1px),
-    linear-gradient(rgba(168, 85, 247, 0.03) 1px, transparent 1px);
-  background-size: 50px 50px;
+    linear-gradient(180deg, rgba(107, 33, 168, 0.22) 0%, rgba(59, 7, 100, 0.16) 34%, rgba(0, 0, 0, 0.92) 100%),
+    radial-gradient(circle at 15% 18%, rgba(168, 85, 247, 0.18), transparent 24%),
+    radial-gradient(circle at 82% 12%, rgba(88, 28, 135, 0.2), transparent 28%),
+    radial-gradient(circle at 72% 78%, rgba(76, 29, 149, 0.14), transparent 30%);
   pointer-events: none;
   z-index: 0;
+}
+
+.htb-logs-orb {
+  position: absolute;
+  border-radius: 9999px;
+  pointer-events: none;
+  filter: blur(110px);
+  opacity: 0.75;
+  z-index: 0;
+}
+
+.htb-logs-orb--primary {
+  top: 8%;
+  left: 5%;
+  width: 18rem;
+  height: 18rem;
+  background: rgba(168, 85, 247, 0.24);
+}
+
+.htb-logs-orb--secondary {
+  top: 24%;
+  right: 10%;
+  width: 22rem;
+  height: 22rem;
+  background: rgba(88, 28, 135, 0.2);
+}
+
+.htb-logs-orb--tertiary {
+  bottom: 8%;
+  left: 34%;
+  width: 16rem;
+  height: 16rem;
+  background: rgba(59, 7, 100, 0.24);
 }
 
 .htb-logs-header {
@@ -44,9 +75,10 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 2rem;
-  padding-bottom: 1.5rem;
-  border-bottom: 1px solid var(--border);
+  width: min(100%, 1420px);
+  margin: 0 auto 1.25rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid rgba(139, 92, 246, 0.14);
 }
 
 .htb-logs-title-section {
@@ -57,7 +89,7 @@
   display: flex;
   align-items: center;
   gap: 0.75rem;
-  font-size: 2.25rem;
+  font-size: clamp(2rem, 3.8vw, 3rem);
   font-weight: 700;
   letter-spacing: 2px;
   margin-bottom: 0.5rem;
@@ -66,7 +98,7 @@
 }
 
 .htb-text-primary {
-  background: linear-gradient(135deg, var(--primary) 0%, #00ff88 100%);
+  background: linear-gradient(135deg, #d8b4fe 0%, #a855f7 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
@@ -82,19 +114,22 @@
   display: inline-flex;
   align-items: center;
   gap: 0.5rem;
-  padding: 0.75rem 1.5rem;
-  background: var(--bg-secondary);
-  border: 1px solid var(--border);
+  padding: 0.625rem 1rem;
+  background: linear-gradient(150deg, rgba(22, 28, 45, 0.62), rgba(15, 23, 42, 0.34));
+  border: 1px solid rgba(139, 92, 246, 0.2);
   border-radius: 8px;
   color: var(--primary);
-  font-weight: 500;
+  font-weight: 600;
+  font-size: 0.9rem;
   cursor: pointer;
-  transition: all 0.3s ease;
+  transition: all 0.25s ease;
+  backdrop-filter: blur(16px) saturate(130%);
+  -webkit-backdrop-filter: blur(16px) saturate(130%);
 }
 
 .htb-back-btn:hover {
-  border-color: var(--primary);
-  background: var(--bg-tertiary);
+  border-color: rgba(168, 85, 247, 0.5);
+  background: linear-gradient(150deg, rgba(30, 41, 59, 0.66), rgba(17, 24, 39, 0.38));
   transform: translateX(-3px);
 }
 
@@ -128,7 +163,8 @@
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
   gap: 1.25rem;
-  margin-bottom: 2rem;
+  width: min(100%, 1420px);
+  margin: 0 auto 1.25rem;
 }
 
 .htb-stat-card {
@@ -136,10 +172,17 @@
   align-items: center;
   gap: 1rem;
   padding: 1.5rem;
-  background: var(--bg-secondary);
-  border: 1px solid var(--border);
+  background:
+    linear-gradient(165deg, rgba(17, 24, 39, 0.52) 0%, rgba(15, 23, 42, 0.3) 100%),
+    radial-gradient(circle at 12% 0%, rgba(196, 181, 253, 0.12), transparent 42%);
+  border: 1px solid rgba(139, 92, 246, 0.2);
   border-radius: 12px;
   transition: all 0.3s ease;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.06),
+    0 16px 40px rgba(2, 6, 23, 0.28);
+  backdrop-filter: blur(22px) saturate(125%);
+  -webkit-backdrop-filter: blur(22px) saturate(125%);
 }
 
 .htb-stat-card:hover {
@@ -204,7 +247,8 @@
   display: flex;
   justify-content: space-between;
   gap: 1rem;
-  margin-bottom: 2rem;
+  width: min(100%, 1420px);
+  margin: 0 auto 1.1rem;
   flex-wrap: wrap;
 }
 
@@ -220,11 +264,14 @@
   align-items: center;
   gap: 0.75rem;
   flex: 1;
-  padding: 0.75rem 1rem;
-  background: var(--bg-tertiary);
-  border: 1px solid var(--border);
+  min-height: 2.45rem;
+  padding: 0.55rem 0.85rem;
+  background: linear-gradient(150deg, rgba(22, 28, 45, 0.58), rgba(15, 23, 42, 0.36));
+  border: 1px solid rgba(139, 92, 246, 0.18);
   border-radius: 8px;
-  transition: all 0.3s ease;
+  transition: all 0.25s ease;
+  backdrop-filter: blur(15px) saturate(125%);
+  -webkit-backdrop-filter: blur(15px) saturate(125%);
 }
 
 .htb-search-box:focus-within {
@@ -246,15 +293,19 @@
 }
 
 .htb-filter-select {
-  padding: 0.75rem 1rem;
-  background: var(--bg-tertiary);
-  border: 1px solid var(--border);
+  min-height: 2.45rem;
+  padding: 0.5rem 0.9rem;
+  background: linear-gradient(150deg, rgba(22, 28, 45, 0.58), rgba(15, 23, 42, 0.36));
+  border: 1px solid rgba(139, 92, 246, 0.18);
   border-radius: 8px;
-  color: var(--text-primary);
-  font-size: 0.9rem;
+  color: #f4e8ff;
+  font-size: 0.86rem;
+  font-weight: 500;
   cursor: pointer;
-  transition: all 0.3s ease;
+  transition: all 0.25s ease;
   min-width: 150px;
+  backdrop-filter: blur(15px) saturate(125%);
+  -webkit-backdrop-filter: blur(15px) saturate(125%);
 }
 
 .htb-filter-select:hover {
@@ -279,19 +330,23 @@
   display: inline-flex;
   align-items: center;
   gap: 0.5rem;
-  padding: 0.75rem 1.25rem;
+  min-height: 2.45rem;
+  padding: 0.5rem 0.9rem;
   border-radius: 8px;
   font-weight: 600;
-  font-size: 0.9rem;
+  font-size: 0.86rem;
+  line-height: 1;
   cursor: pointer;
   transition: all 0.3s ease;
   border: 1px solid;
 }
 
 .htb-btn-secondary {
-  background: var(--bg-tertiary);
-  border-color: var(--border);
-  color: var(--primary);
+  background: linear-gradient(150deg, rgba(22, 28, 45, 0.62), rgba(15, 23, 42, 0.34));
+  border-color: rgba(139, 92, 246, 0.2);
+  color: #c084fc;
+  backdrop-filter: blur(15px) saturate(125%);
+  -webkit-backdrop-filter: blur(15px) saturate(125%);
 }
 
 .htb-btn-secondary:hover {
@@ -300,9 +355,11 @@
 }
 
 .htb-btn-toggle {
-  background: var(--bg-tertiary);
-  border-color: var(--border);
+  background: linear-gradient(150deg, rgba(22, 28, 45, 0.62), rgba(15, 23, 42, 0.34));
+  border-color: rgba(139, 92, 246, 0.2);
   color: var(--text-muted);
+  backdrop-filter: blur(15px) saturate(125%);
+  -webkit-backdrop-filter: blur(15px) saturate(125%);
 }
 
 .htb-btn-toggle.active {
@@ -317,9 +374,11 @@
 }
 
 .htb-btn-danger {
-  background: rgba(255, 59, 59, 0.15);
-  border-color: rgba(255, 59, 59, 0.3);
-  color: var(--danger);
+  background: rgba(127, 29, 29, 0.2);
+  border-color: rgba(239, 68, 68, 0.35);
+  color: #f87171;
+  backdrop-filter: blur(15px) saturate(125%);
+  -webkit-backdrop-filter: blur(15px) saturate(125%);
 }
 
 .htb-btn-danger:hover {
@@ -330,16 +389,24 @@
 .htb-logs-section {
   position: relative;
   z-index: 1;
-  background: var(--bg-secondary);
-  border: 1px solid var(--border);
+  width: min(100%, 1420px);
+  margin: 0 auto;
+  background:
+    linear-gradient(165deg, rgba(17, 24, 39, 0.52) 0%, rgba(15, 23, 42, 0.3) 100%),
+    radial-gradient(circle at 12% 0%, rgba(196, 181, 253, 0.12), transparent 42%);
+  border: 1px solid rgba(139, 92, 246, 0.2);
   border-radius: 12px;
   overflow: hidden;
-  box-shadow: 0 4px 24px var(--shadow);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.06),
+    0 22px 64px rgba(2, 6, 23, 0.36);
+  backdrop-filter: blur(24px) saturate(130%);
+  -webkit-backdrop-filter: blur(24px) saturate(130%);
 }
 
 .htb-table-container {
   overflow-x: auto;
-  max-height: calc(100vh - 500px);
+  max-height: calc(100vh - 390px);
   overflow-y: auto;
 }
 
@@ -366,7 +433,7 @@
 .htb-logs-table thead {
   position: sticky;
   top: 0;
-  background: var(--bg-tertiary);
+  background: rgba(15, 23, 42, 0.65);
   z-index: 10;
 }
 
@@ -374,7 +441,7 @@
   padding: 1rem;
   text-align: left;
   font-weight: 600;
-  color: var(--primary);
+  color: #a855f7;
   text-transform: uppercase;
   font-size: 0.75rem;
   letter-spacing: 0.5px;
@@ -400,7 +467,7 @@
 }
 
 .htb-log-row:hover {
-  background: var(--bg-tertiary);
+  background: rgba(139, 92, 246, 0.09);
 }
 
 .htb-log-row.success {
@@ -450,18 +517,18 @@
 }
 
 .htb-email {
-  color: var(--text-muted);
+  color: #b8c5d6;
   font-size: 0.85rem;
 }
 
 .htb-ip {
-  color: var(--text-muted);
+  color: #9fb0c8;
   font-family: 'Courier New', monospace;
   font-size: 0.85rem;
 }
 
 .htb-user-agent {
-  color: var(--text-muted);
+  color: #9fb0c8;
   font-family: 'Courier New', monospace;
   font-size: 0.8rem;
   max-width: 150px;
@@ -522,7 +589,7 @@
 
 .htb-empty-state p {
   font-size: 1.1rem;
-  color: var(--text-secondary);
+  color: #d1d9e6;
   margin-bottom: 0.5rem;
   font-weight: 500;
 }
@@ -538,8 +605,8 @@
   align-items: center;
   gap: 1rem;
   padding: 1.5rem;
-  border-top: 1px solid var(--border);
-  background: var(--bg-tertiary);
+  border-top: 1px solid rgba(139, 92, 246, 0.16);
+  background: rgba(17, 24, 39, 0.46);
 }
 
 .htb-pagination-btn {
@@ -547,8 +614,8 @@
   align-items: center;
   gap: 0.5rem;
   padding: 0.625rem 1.25rem;
-  background: var(--bg-secondary);
-  border: 1px solid var(--border);
+  background: linear-gradient(150deg, rgba(22, 28, 45, 0.62), rgba(15, 23, 42, 0.34));
+  border: 1px solid rgba(139, 92, 246, 0.2);
   border-radius: 6px;
   color: var(--text-secondary);
   font-weight: 500;
@@ -587,6 +654,8 @@
   cursor: pointer;
   transition: all 0.2s ease;
   text-transform: uppercase;
+  backdrop-filter: blur(12px) saturate(120%);
+  -webkit-backdrop-filter: blur(12px) saturate(120%);
 }
 
 .htb-view-password-btn:hover {
@@ -847,7 +916,7 @@
 /* Responsive Design */
 @media (max-width: 1200px) {
   .htb-logs-container {
-    padding: 1.5rem;
+    padding: 0.8rem 1rem 2.25rem;
   }
 
   .htb-logs-title {
@@ -857,7 +926,7 @@
 
 @media (max-width: 768px) {
   .htb-logs-container {
-    padding: 1rem;
+    padding: 0.75rem 0.75rem 1.5rem;
   }
 
   .htb-logs-header {
