@@ -65,11 +65,12 @@ function AppShell() {
   const isAdminStatisticsRoute = location.pathname === '/admin/statistics'
   const isAdminSubmissionsRoute = location.pathname === '/admin/submissions'
   const isAdminCategoriesRoute = location.pathname === '/admin/categories'
+  const isAdminLiveMonitorRoute = location.pathname === '/admin/live-monitor'
 
   return (
     <div className="app-container">
       <Navbar />
-      <main className={`main-content${isHomeRoute ? ' main-content--home' : ''}${isChallengesRoute ? ' main-content--challenges' : ''}${isChallengeDetailRoute ? ' main-content--challenge-detail' : ''}${isScoreboardRoute ? ' main-content--scoreboard' : ''}${isContactRoute ? ' main-content--contact' : ''}${isNoticesRoute ? ' main-content--notices' : ''}${isAdminConfigurationRoute ? ' main-content--admin-configuration' : ''}${isAdminDashboardRoute ? ' main-content--admin-dashboard' : ''}${isAdminStatisticsRoute ? ' main-content--admin-statistics' : ''}${isAdminSubmissionsRoute ? ' main-content--admin-submissions' : ''}${isAdminCategoriesRoute ? ' main-content--admin-categories' : ''}`}>
+      <main className={`main-content${isHomeRoute ? ' main-content--home' : ''}${isChallengesRoute ? ' main-content--challenges' : ''}${isChallengeDetailRoute ? ' main-content--challenge-detail' : ''}${isScoreboardRoute ? ' main-content--scoreboard' : ''}${isContactRoute ? ' main-content--contact' : ''}${isNoticesRoute ? ' main-content--notices' : ''}${isAdminConfigurationRoute ? ' main-content--admin-configuration' : ''}${isAdminDashboardRoute ? ' main-content--admin-dashboard' : ''}${isAdminStatisticsRoute ? ' main-content--admin-statistics' : ''}${isAdminSubmissionsRoute ? ' main-content--admin-submissions' : ''}${isAdminCategoriesRoute ? ' main-content--admin-categories' : ''}${isAdminLiveMonitorRoute ? ' main-content--admin-live-monitor' : ''}`}>
         <Suspense fallback={<PageLoader />}>
           <Routes>
             <Route path="/" element={<Home />} />

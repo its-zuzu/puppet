@@ -97,6 +97,9 @@ const AdminLiveMonitor = () => {
   return (
     <div className="htb-monitor-container">
       <div className="htb-monitor-grid-bg"></div>
+      <div className="htb-monitor-orb htb-monitor-orb--primary" aria-hidden="true" />
+      <div className="htb-monitor-orb htb-monitor-orb--secondary" aria-hidden="true" />
+      <div className="htb-monitor-orb htb-monitor-orb--tertiary" aria-hidden="true" />
 
       <motion.div 
         className="htb-monitor-header"
@@ -110,11 +113,7 @@ const AdminLiveMonitor = () => {
           </h1>
           <p className="htb-monitor-subtitle">Real-time flag submission tracking</p>
         </div>
-        <motion.div 
-          className={`htb-status-badge htb-status-${statusConfig.color}`}
-          animate={{ scale: connectionStatus === 'connected' ? [1, 1.05, 1] : 1 }}
-          transition={{ repeat: connectionStatus === 'connected' ? Infinity : 0, duration: 2 }}
-        >
+        <motion.div className={`htb-status-badge htb-status-${statusConfig.color}`}>
           <StatusIcon size={18} />
           {statusConfig.label}
         </motion.div>

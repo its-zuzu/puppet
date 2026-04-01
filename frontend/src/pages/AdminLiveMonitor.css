@@ -18,24 +18,55 @@
 .htb-monitor-container {
   position: relative;
   min-height: 100vh;
-  padding: 2rem;
-  background: var(--bg-primary);
+  padding: 0.85rem 1.5rem 3rem;
+  background: linear-gradient(180deg, rgba(8, 4, 24, 0.95) 0%, rgba(0, 0, 0, 1) 100%);
   color: var(--text-primary);
   overflow-x: hidden;
 }
 
 .htb-monitor-grid-bg {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
+  position: absolute;
+  inset: 0;
   background: 
-    linear-gradient(90deg, rgba(168, 85, 247, 0.03) 1px, transparent 1px),
-    linear-gradient(rgba(168, 85, 247, 0.03) 1px, transparent 1px);
-  background-size: 50px 50px;
+    linear-gradient(180deg, rgba(107, 33, 168, 0.22) 0%, rgba(59, 7, 100, 0.16) 34%, rgba(0, 0, 0, 0.92) 100%),
+    radial-gradient(circle at 15% 18%, rgba(168, 85, 247, 0.18), transparent 24%),
+    radial-gradient(circle at 82% 12%, rgba(88, 28, 135, 0.2), transparent 28%),
+    radial-gradient(circle at 72% 78%, rgba(76, 29, 149, 0.14), transparent 30%);
   pointer-events: none;
   z-index: 0;
+}
+
+.htb-monitor-orb {
+  position: absolute;
+  border-radius: 9999px;
+  pointer-events: none;
+  filter: blur(110px);
+  opacity: 0.75;
+  z-index: 0;
+}
+
+.htb-monitor-orb--primary {
+  top: 8%;
+  left: 5%;
+  width: 18rem;
+  height: 18rem;
+  background: rgba(168, 85, 247, 0.24);
+}
+
+.htb-monitor-orb--secondary {
+  top: 24%;
+  right: 10%;
+  width: 22rem;
+  height: 22rem;
+  background: rgba(88, 28, 135, 0.2);
+}
+
+.htb-monitor-orb--tertiary {
+  bottom: 8%;
+  left: 34%;
+  width: 16rem;
+  height: 16rem;
+  background: rgba(59, 7, 100, 0.24);
 }
 
 .htb-monitor-header {
@@ -44,9 +75,10 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 2rem;
-  padding-bottom: 1.5rem;
-  border-bottom: 1px solid var(--border);
+  width: min(100%, 1420px);
+  margin: 0 auto 1.25rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid rgba(139, 92, 246, 0.14);
 }
 
 .htb-monitor-title-section {
@@ -57,7 +89,7 @@
   display: flex;
   align-items: center;
   gap: 0.75rem;
-  font-size: 2.25rem;
+  font-size: clamp(2rem, 3.8vw, 3rem);
   font-weight: 700;
   letter-spacing: 2px;
   margin-bottom: 0.5rem;
@@ -66,7 +98,7 @@
 }
 
 .htb-text-primary {
-  background: linear-gradient(135deg, var(--primary) 0%, #00ff88 100%);
+  background: linear-gradient(135deg, #d8b4fe 0%, #a855f7 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
@@ -87,28 +119,45 @@
   font-weight: 700;
   font-size: 0.9rem;
   letter-spacing: 1px;
-  border: 2px solid;
+  border: 1px solid;
+  transition: box-shadow 0.25s ease, transform 0.25s ease, border-color 0.25s ease;
 }
 
 .htb-status-success {
-  background: rgba(0, 203, 112, 0.15);
+  background: rgba(0, 203, 112, 0.12);
   border-color: var(--success);
   color: var(--success);
-  box-shadow: 0 0 20px rgba(0, 203, 112, 0.3);
+  box-shadow: none;
 }
 
 .htb-status-warning {
   background: rgba(255, 184, 0, 0.15);
   border-color: var(--warning);
   color: var(--warning);
-  box-shadow: 0 0 20px rgba(255, 184, 0, 0.3);
+  box-shadow: none;
 }
 
 .htb-status-error {
   background: rgba(255, 59, 59, 0.15);
   border-color: var(--danger);
   color: var(--danger);
-  box-shadow: 0 0 20px rgba(255, 59, 59, 0.3);
+  box-shadow: none;
+}
+
+.htb-status-badge:hover {
+  transform: translateY(-1px);
+}
+
+.htb-status-success:hover {
+  box-shadow: 0 0 20px rgba(0, 203, 112, 0.28);
+}
+
+.htb-status-warning:hover {
+  box-shadow: 0 0 20px rgba(255, 184, 0, 0.28);
+}
+
+.htb-status-error:hover {
+  box-shadow: 0 0 20px rgba(255, 59, 59, 0.28);
 }
 
 .htb-monitor-stats {
@@ -117,7 +166,8 @@
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
   gap: 1.25rem;
-  margin-bottom: 2rem;
+  width: min(100%, 1420px);
+  margin: 0 auto 1.25rem;
 }
 
 .htb-stat-card {
@@ -125,10 +175,17 @@
   align-items: center;
   gap: 1rem;
   padding: 1.5rem;
-  background: var(--bg-secondary);
-  border: 1px solid var(--border);
+  background:
+    linear-gradient(165deg, rgba(17, 24, 39, 0.52) 0%, rgba(15, 23, 42, 0.3) 100%),
+    radial-gradient(circle at 12% 0%, rgba(196, 181, 253, 0.12), transparent 42%);
+  border: 1px solid rgba(139, 92, 246, 0.2);
   border-radius: 12px;
   transition: all 0.3s ease;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.06),
+    0 16px 40px rgba(2, 6, 23, 0.28);
+  backdrop-filter: blur(22px) saturate(125%);
+  -webkit-backdrop-filter: blur(22px) saturate(125%);
 }
 
 .htb-stat-card:hover {
@@ -186,6 +243,9 @@
   gap: 0.75rem;
   padding: 1rem 1.5rem;
   margin-bottom: 1.5rem;
+  width: min(100%, 1420px);
+  margin-left: auto;
+  margin-right: auto;
   border-radius: 8px;
   font-weight: 500;
 }
@@ -199,11 +259,19 @@
 .htb-monitor-section {
   position: relative;
   z-index: 1;
-  background: var(--bg-secondary);
-  border: 1px solid var(--border);
+  width: min(100%, 1420px);
+  margin: 0 auto;
+  background:
+    linear-gradient(165deg, rgba(17, 24, 39, 0.52) 0%, rgba(15, 23, 42, 0.3) 100%),
+    radial-gradient(circle at 12% 0%, rgba(196, 181, 253, 0.12), transparent 42%);
+  border: 1px solid rgba(139, 92, 246, 0.2);
   border-radius: 12px;
   overflow: hidden;
-  box-shadow: 0 4px 24px var(--shadow);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.06),
+    0 22px 64px rgba(2, 6, 23, 0.36);
+  backdrop-filter: blur(24px) saturate(130%);
+  -webkit-backdrop-filter: blur(24px) saturate(130%);
 }
 
 .htb-table-container {
@@ -235,7 +303,7 @@
 .htb-monitor-table thead {
   position: sticky;
   top: 0;
-  background: var(--bg-tertiary);
+  background: rgba(15, 23, 42, 0.65);
   z-index: 10;
 }
 
@@ -269,7 +337,7 @@
 }
 
 .htb-submission-row:hover {
-  background: var(--bg-tertiary);
+  background: rgba(139, 92, 246, 0.09);
 }
 
 .htb-submission-row.success {
@@ -402,8 +470,8 @@
   justify-content: space-between;
   align-items: center;
   padding: 1.25rem 1.5rem;
-  background: var(--bg-tertiary);
-  border-top: 1px solid var(--border);
+  background: rgba(15, 23, 42, 0.5);
+  border-top: 1px solid rgba(139, 92, 246, 0.2);
 }
 
 .htb-footer-text {
@@ -418,7 +486,7 @@
 /* Responsive Design */
 @media (max-width: 1200px) {
   .htb-monitor-container {
-    padding: 1.5rem;
+    padding: 0.75rem 1rem 2rem;
   }
 
   .htb-monitor-title {
@@ -432,7 +500,7 @@
 
 @media (max-width: 768px) {
   .htb-monitor-container {
-    padding: 1rem;
+    padding: 0.75rem 1rem 1.8rem;
   }
 
   .htb-monitor-header {
@@ -476,6 +544,10 @@
 }
 
 @media (max-width: 480px) {
+  .htb-monitor-container {
+    padding: 0.8rem 0.85rem 1.6rem;
+  }
+
   .htb-monitor-title {
     font-size: 1.25rem;
   }
