@@ -61,6 +61,13 @@
   padding-left: 0;
 }
 
+.main-content.main-content--contact {
+  padding-top: 0;
+  padding-right: 0;
+  padding-bottom: 0;
+  padding-left: 0;
+}
+
 /* Footer Styles */
 .footer {
   background: rgba(6, 0, 16, 0.92);

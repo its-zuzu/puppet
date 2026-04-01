@@ -50,6 +50,9 @@ function ContactUs() {
   return (
     <div className="htb-contact-container">
       <div className="htb-contact-grid-bg" />
+      <div className="htb-contact-orb htb-contact-orb--primary" aria-hidden="true" />
+      <div className="htb-contact-orb htb-contact-orb--secondary" aria-hidden="true" />
+      <div className="htb-contact-orb htb-contact-orb--tertiary" aria-hidden="true" />
       
       <motion.div 
         className="htb-contact-header"

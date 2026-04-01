@@ -58,11 +58,12 @@ function AppShell() {
   const isChallengesRoute = location.pathname === '/challenges'
   const isChallengeDetailRoute = location.pathname.startsWith('/challenges/')
   const isScoreboardRoute = location.pathname === '/scoreboard'
+  const isContactRoute = location.pathname === '/contact'
 
   return (
     <div className="app-container">
       <Navbar />
-      <main className={`main-content${isHomeRoute ? ' main-content--home' : ''}${isChallengesRoute ? ' main-content--challenges' : ''}${isChallengeDetailRoute ? ' main-content--challenge-detail' : ''}${isScoreboardRoute ? ' main-content--scoreboard' : ''}`}>
+      <main className={`main-content${isHomeRoute ? ' main-content--home' : ''}${isChallengesRoute ? ' main-content--challenges' : ''}${isChallengeDetailRoute ? ' main-content--challenge-detail' : ''}${isScoreboardRoute ? ' main-content--scoreboard' : ''}${isContactRoute ? ' main-content--contact' : ''}`}>
         <Suspense fallback={<PageLoader />}>
           <Routes>
             <Route path="/" element={<Home />} />

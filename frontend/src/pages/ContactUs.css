@@ -2,44 +2,51 @@
 .htb-contact-container {
   position: relative;
   min-height: 100vh;
-  background: linear-gradient(180deg, rgba(8, 4, 24, 0.98) 0%, rgba(4, 2, 16, 1) 100%);
+  background: linear-gradient(180deg, rgba(8, 4, 24, 0.95) 0%, rgba(0, 0, 0, 1) 100%);
   overflow: hidden;
 }
 
-.htb-contact-container::before,
-.htb-contact-container::after {
-  content: '';
+.htb-contact-orb {
   position: absolute;
   border-radius: 9999px;
   filter: blur(120px);
   pointer-events: none;
   z-index: 0;
+  opacity: 0.75;
 }
 
-.htb-contact-container::before {
-  top: 14%;
-  left: 7%;
+.htb-contact-orb--primary {
+  top: 8%;
+  left: 5%;
   width: 18rem;
   height: 18rem;
-  background: rgba(168, 85, 247, 0.18);
+  background: rgba(168, 85, 247, 0.24);
 }
 
-.htb-contact-container::after {
-  right: 8%;
-  bottom: 10%;
-  width: 20rem;
-  height: 20rem;
-  background: rgba(91, 33, 182, 0.18);
+.htb-contact-orb--secondary {
+  top: 24%;
+  right: 10%;
+  width: 22rem;
+  height: 22rem;
+  background: rgba(88, 28, 135, 0.2);
+}
+
+.htb-contact-orb--tertiary {
+  bottom: 8%;
+  left: 34%;
+  width: 16rem;
+  height: 16rem;
+  background: rgba(59, 7, 100, 0.24);
 }
 
 .htb-contact-grid-bg {
   position: absolute;
   inset: 0;
   background:
-    linear-gradient(180deg, rgba(107, 33, 168, 0.12) 0%, rgba(59, 7, 100, 0.08) 34%, rgba(0, 0, 0, 0.88) 100%),
-    radial-gradient(circle at 20% 18%, rgba(192, 132, 252, 0.12), transparent 24%),
-    radial-gradient(circle at 80% 22%, rgba(126, 34, 206, 0.16), transparent 30%),
-    radial-gradient(circle at 65% 78%, rgba(76, 29, 149, 0.12), transparent 28%);
+    linear-gradient(180deg, rgba(107, 33, 168, 0.22) 0%, rgba(59, 7, 100, 0.16) 34%, rgba(0, 0, 0, 0.92) 100%),
+    radial-gradient(circle at 15% 18%, rgba(168, 85, 247, 0.18), transparent 24%),
+    radial-gradient(circle at 82% 12%, rgba(88, 28, 135, 0.2), transparent 28%),
+    radial-gradient(circle at 72% 78%, rgba(76, 29, 149, 0.14), transparent 30%);
   z-index: 0;
   pointer-events: none;
 }
@@ -54,10 +61,12 @@
   justify-content: center;
   gap: 0.45rem;
   text-align: center;
-  padding: 28px 24px 24px;
-  border-bottom: 1px solid var(--border-primary);
-  background: rgba(10, 14, 26, 0.68);
-  backdrop-filter: blur(12px);
+  width: min(100%, 1320px);
+  margin: 0 auto;
+  padding: 0.75rem 1.5rem 1rem;
+  border-bottom: none;
+  background: transparent;
+  backdrop-filter: none;
 }
 
 .htb-contact-header h1 {
@@ -87,15 +96,15 @@
 .htb-contact-main {
   position: relative;
   z-index: 1;
-  max-width: 1400px;
+  width: min(100%, 1320px);
   margin: 0 auto;
-  padding: 36px 32px 80px;
+  padding: 0 1.5rem 4rem;
 }
 
 .htb-contact-grid {
   display: grid;
-  grid-template-columns: 400px 1fr;
-  gap: 48px;
+  grid-template-columns: minmax(280px, 380px) 1fr;
+  gap: 2rem;
   align-items: start;
 }
 
@@ -118,14 +127,18 @@
   position: relative;
   z-index: 1;
   padding: 28px;
-  background: linear-gradient(180deg, rgba(11, 16, 32, 0.76) 0%, rgba(8, 13, 28, 0.52) 100%);
-  border: 1px solid rgba(139, 92, 246, 0.16);
+  background:
+    linear-gradient(165deg, rgba(17, 24, 39, 0.52) 0%, rgba(15, 23, 42, 0.3) 100%),
+    radial-gradient(circle at 12% 0%, rgba(196, 181, 253, 0.12), transparent 42%);
+  border: 1px solid rgba(139, 92, 246, 0.2);
   border-radius: 1.5rem;
   transition: all 0.3s ease;
   overflow: hidden;
-  box-shadow: 0 18px 48px rgba(2, 6, 23, 0.34);
-  backdrop-filter: blur(22px);
-  -webkit-backdrop-filter: blur(22px);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.06),
+    0 18px 48px rgba(2, 6, 23, 0.34);
+  backdrop-filter: blur(24px) saturate(130%);
+  -webkit-backdrop-filter: blur(24px) saturate(130%);
 }
 
 .htb-info-card::before {
@@ -186,12 +199,16 @@
   position: relative;
   z-index: 1;
   padding: 40px;
-  background: linear-gradient(180deg, rgba(11, 16, 32, 0.82) 0%, rgba(8, 13, 28, 0.56) 100%);
-  border: 1px solid rgba(139, 92, 246, 0.16);
+  background:
+    linear-gradient(165deg, rgba(17, 24, 39, 0.52) 0%, rgba(15, 23, 42, 0.3) 100%),
+    radial-gradient(circle at 12% 0%, rgba(196, 181, 253, 0.12), transparent 42%);
+  border: 1px solid rgba(139, 92, 246, 0.2);
   border-radius: 1.55rem;
-  box-shadow: 0 22px 64px rgba(2, 6, 23, 0.36);
-  backdrop-filter: blur(24px);
-  -webkit-backdrop-filter: blur(24px);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.06),
+    0 22px 64px rgba(2, 6, 23, 0.36);
+  backdrop-filter: blur(24px) saturate(130%);
+  -webkit-backdrop-filter: blur(24px) saturate(130%);
 }
 
 .htb-form-header {
@@ -381,7 +398,7 @@
 @media (max-width: 768px) {
   .htb-contact-header {
     gap: 0.4rem;
-    padding: 24px 20px 20px;
+    padding: 0.7rem 1rem 0.9rem;
   }
 
   .htb-contact-header h1 {
@@ -394,7 +411,7 @@
   }
 
   .htb-contact-main {
-    padding: 30px 20px 60px;
+    padding: 0 1rem 2.8rem;
   }
 
   .htb-info-cards {
@@ -413,7 +430,7 @@
 @media (max-width: 480px) {
   .htb-contact-header {
     gap: 0.35rem;
-    padding: 20px 16px 18px;
+    padding: 0.8rem 0.85rem 0.9rem;
   }
 
   .htb-contact-header h1 {
