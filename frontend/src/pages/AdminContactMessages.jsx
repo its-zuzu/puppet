@@ -127,6 +127,9 @@ function AdminContactMessages() {
     return (
       <div className="htb-messages-container">
         <div className="htb-messages-grid-bg"></div>
+        <div className="htb-messages-orb htb-messages-orb--primary" aria-hidden="true" />
+        <div className="htb-messages-orb htb-messages-orb--secondary" aria-hidden="true" />
+        <div className="htb-messages-orb htb-messages-orb--tertiary" aria-hidden="true" />
         <Loading text="LOADING MESSAGES..." />
       </div>
     );
@@ -135,6 +138,9 @@ function AdminContactMessages() {
   return (
     <div className="htb-messages-container">
       <div className="htb-messages-grid-bg"></div>
+      <div className="htb-messages-orb htb-messages-orb--primary" aria-hidden="true" />
+      <div className="htb-messages-orb htb-messages-orb--secondary" aria-hidden="true" />
+      <div className="htb-messages-orb htb-messages-orb--tertiary" aria-hidden="true" />
 
       <motion.div 
         className="htb-messages-header"
