@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Plus, Trash2, Edit2, Save, X, Tag, AlertCircle, CheckCircle } from 'lucide-react';
+import { Plus, Trash2, Edit2, Save, X, AlertCircle, CheckCircle } from 'lucide-react';
 import axios from 'axios';
 import './AdminCategories.css';
 
@@ -107,6 +107,9 @@ function AdminCategories() {
   return (
     <div className="htb-admin-categories-container">
       <div className="htb-admin-categories-grid-bg" />
+      <div className="htb-admin-categories-orb htb-admin-categories-orb--primary" aria-hidden="true" />
+      <div className="htb-admin-categories-orb htb-admin-categories-orb--secondary" aria-hidden="true" />
+      <div className="htb-admin-categories-orb htb-admin-categories-orb--tertiary" aria-hidden="true" />
 
       <motion.div 
         className="htb-admin-categories-header"
@@ -115,7 +118,6 @@ function AdminCategories() {
         transition={{ duration: 0.6 }}
       >
         <div className="htb-header-content">
-          <Tag className="htb-header-icon" size={48} />
           <h1>Challenge <span className="htb-highlight">Categories</span></h1>
           <p>Manage challenge categories for your CTF platform</p>
         </div>
@@ -145,7 +147,6 @@ function AdminCategories() {
         <div className="htb-category-section">
           <div className="htb-section-header">
             <h2>Add New Category</h2>
-            <div className="htb-title-line" />
           </div>
 
           <div className="htb-add-category-form">
@@ -190,7 +191,6 @@ function AdminCategories() {
         <div className="htb-category-section">
           <div className="htb-section-header">
             <h2>Existing Categories ({categories.length})</h2>
-            <div className="htb-title-line" />
           </div>
 
           <div className="htb-categories-grid">
@@ -275,20 +275,6 @@ function AdminCategories() {
           </div>
         </div>
 
-        {/* Info Box */}
-        <motion.div 
-          className="htb-info-box"
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: 0.4 }}
-        >
-          <AlertCircle size={20} />
-          <div>
-            <strong>Note:</strong> Changes made here are stored locally in this session. 
-            To persist categories across the platform, you need to update the Challenges.jsx component 
-            or implement a backend API endpoint for category management.
-          </div>
-        </motion.div>
       </motion.div>
     </div>
   );
