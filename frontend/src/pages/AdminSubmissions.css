@@ -23,24 +23,56 @@
 .htb-submissions-container {
   position: relative;
   min-height: 100vh;
-  background: linear-gradient(135deg, var(--htb-bg-primary) 0%, #0d1117 100%);
+  background: linear-gradient(180deg, rgba(8, 4, 24, 0.95) 0%, rgba(0, 0, 0, 1) 100%);
   color: var(--htb-text-primary);
-  padding: 3rem 2rem;
+  width: 100%;
+  padding: 0.85rem 1.5rem 3rem;
   overflow-x: hidden;
 }
 
 .htb-submissions-grid-bg {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background-image: 
-    linear-gradient(rgba(168, 85, 247, 0.05) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(168, 85, 247, 0.05) 1px, transparent 1px);
-  background-size: 50px 50px;
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(180deg, rgba(107, 33, 168, 0.22) 0%, rgba(59, 7, 100, 0.16) 34%, rgba(0, 0, 0, 0.92) 100%),
+    radial-gradient(circle at 15% 18%, rgba(168, 85, 247, 0.18), transparent 24%),
+    radial-gradient(circle at 82% 12%, rgba(88, 28, 135, 0.2), transparent 28%),
+    radial-gradient(circle at 72% 78%, rgba(76, 29, 149, 0.14), transparent 30%);
   pointer-events: none;
   z-index: 0;
+}
+
+.htb-submissions-orb {
+  position: absolute;
+  border-radius: 9999px;
+  pointer-events: none;
+  filter: blur(110px);
+  opacity: 0.75;
+  z-index: 0;
+}
+
+.htb-submissions-orb--primary {
+  top: 8%;
+  left: 5%;
+  width: 18rem;
+  height: 18rem;
+  background: rgba(168, 85, 247, 0.24);
+}
+
+.htb-submissions-orb--secondary {
+  top: 24%;
+  right: 10%;
+  width: 22rem;
+  height: 22rem;
+  background: rgba(88, 28, 135, 0.2);
+}
+
+.htb-submissions-orb--tertiary {
+  bottom: 8%;
+  left: 34%;
+  width: 16rem;
+  height: 16rem;
+  background: rgba(59, 7, 100, 0.24);
 }
 
 /* Header */
@@ -50,9 +82,10 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 3rem;
-  padding-bottom: 2rem;
-  border-bottom: 1px solid var(--htb-border);
+  width: min(100%, 1420px);
+  margin: 0 auto 1.3rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid rgba(139, 92, 246, 0.14);
 }
 
 .htb-submissions-title-section {
@@ -63,7 +96,7 @@
   display: flex;
   align-items: center;
   gap: 1rem;
-  font-size: 2.8rem;
+  font-size: clamp(2rem, 3.8vw, 3rem);
   font-weight: 800;
   margin: 0;
   color: var(--htb-text-primary);
@@ -92,10 +125,10 @@
   align-items: center;
   gap: 0.5rem;
   padding: 0.75rem 1.75rem;
-  background: transparent;
-  border: 1.5px solid var(--htb-primary);
-  border-radius: 6px;
-  color: var(--htb-primary);
+  background: linear-gradient(180deg, rgba(11, 16, 32, 0.82) 0%, rgba(8, 13, 28, 0.64) 100%);
+  border: 1px solid rgba(192, 132, 252, 0.24);
+  border-radius: 10px;
+  color: #f5f3ff;
   font-size: 0.95rem;
   font-weight: 600;
   cursor: pointer;
@@ -103,10 +136,9 @@
 }
 
 .htb-back-btn:hover {
-  background: var(--htb-primary);
-  color: var(--htb-bg-primary);
-  transform: translateX(-3px);
-  box-shadow: 0 4px 12px rgba(168, 85, 247, 0.3);
+  border-color: rgba(216, 180, 254, 0.52);
+  background: linear-gradient(180deg, rgba(29, 22, 58, 0.9) 0%, rgba(15, 12, 32, 0.78) 100%);
+  box-shadow: 0 20px 42px rgba(2, 6, 23, 0.38);
 }
 
 /* Alert */
@@ -132,7 +164,8 @@
 .htb-search-section {
   position: relative;
   z-index: 1;
-  margin-bottom: 3rem;
+  width: min(100%, 1420px);
+  margin: 0 auto 1.6rem;
 }
 
 .htb-search-box {
@@ -140,8 +173,8 @@
   align-items: center;
   gap: 1rem;
   padding: 1.1rem 1.75rem;
-  background: var(--htb-bg-secondary);
-  border: 1.5px solid var(--htb-border);
+  background: rgba(10, 14, 26, 0.62);
+  border: 1px solid rgba(139, 92, 246, 0.2);
   border-radius: 8px;
   transition: all 0.3s ease;
   box-shadow: var(--htb-shadow-sm);
@@ -171,17 +204,25 @@
 .htb-challenges-grid {
   position: relative;
   z-index: 1;
+  width: min(100%, 1420px);
+  margin: 0 auto 2.2rem;
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(420px, 1fr));
-  gap: 2rem;
-  margin-bottom: 3rem;
+  grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+  gap: 1.35rem;
+}
+
+.htb-challenge-card-shell {
+  position: relative;
+  border-radius: 10px;
 }
 
 .htb-challenge-card {
-  background: var(--htb-bg-secondary);
-  border: 1px solid var(--htb-border);
+  background:
+    linear-gradient(165deg, rgba(17, 24, 39, 0.52) 0%, rgba(15, 23, 42, 0.3) 100%),
+    radial-gradient(circle at 12% 0%, rgba(196, 181, 253, 0.12), transparent 42%);
+  border: 1px solid rgba(139, 92, 246, 0.2);
   border-radius: 10px;
-  padding: 2rem;
+  padding: 1.35rem;
   cursor: pointer;
   transition: all 0.3s ease;
   display: flex;
@@ -189,6 +230,8 @@
   gap: 1.5rem;
   position: relative;
   overflow: hidden;
+  backdrop-filter: blur(24px) saturate(130%);
+  -webkit-backdrop-filter: blur(24px) saturate(130%);
 }
 
 .htb-challenge-card::before {
@@ -199,18 +242,7 @@
   right: 0;
   height: 3px;
   background: linear-gradient(90deg, var(--htb-primary), var(--htb-primary-light));
-  opacity: 0;
-  transition: opacity 0.3s ease;
-}
-
-.htb-challenge-card:hover {
-  border-color: var(--htb-primary);
-  box-shadow: var(--htb-shadow);
-  transform: translateY(-2px);
-}
-
-.htb-challenge-card:hover::before {
-  opacity: 1;
+  opacity: 0.42;
 }
 
 .htb-challenge-card-header h3 {
@@ -277,8 +309,8 @@
 /* Submission Stats */
 .htb-submission-stats {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
-  gap: 1rem;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.75rem;
   width: 100%;
 }
 
@@ -287,37 +319,29 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 0.75rem;
-  padding: 1.25rem;
-  background: rgba(168, 85, 247, 0.05);
-  border: 1px solid var(--htb-border);
+  gap: 0.45rem;
+  padding: 0.7rem 0.55rem;
+  background:
+    linear-gradient(165deg, rgba(30, 41, 59, 0.36) 0%, rgba(15, 23, 42, 0.5) 100%),
+    radial-gradient(circle at 8% 0%, rgba(196, 181, 253, 0.08), transparent 44%);
+  border: 1px solid rgba(139, 92, 246, 0.2);
   border-radius: 8px;
   text-align: center;
-  min-width: 100px;
+  min-width: 0;
   transition: all 0.3s ease;
-}
-
-.htb-stat-item:hover {
-  background: rgba(168, 85, 247, 0.1);
-  border-color: var(--htb-primary);
-  transform: scale(1.05);
+  backdrop-filter: blur(16px) saturate(125%);
+  -webkit-backdrop-filter: blur(16px) saturate(125%);
 }
 
 .htb-stat-item.success {
   border-color: var(--htb-success);
 }
 
-.htb-stat-item.success:hover {
-  background: rgba(0, 203, 112, 0.1);
-}
 
 .htb-stat-item.failed {
   border-color: var(--htb-danger);
 }
 
-.htb-stat-item.failed:hover {
-  background: rgba(255, 59, 59, 0.1);
-}
 
 .htb-stat-item.rate {
   border-color: var(--htb-primary);
@@ -332,17 +356,17 @@
 }
 
 .htb-stat-value {
-  font-size: 1.9rem;
+  font-size: 1.05rem;
   font-weight: 800;
   color: var(--htb-text-primary);
   line-height: 1;
 }
 
 .htb-stat-label {
-  font-size: 0.8rem;
+  font-size: 0.72rem;
   color: var(--htb-text-muted);
   text-transform: uppercase;
-  letter-spacing: 0.8px;
+  letter-spacing: 0.7px;
   font-weight: 700;
   white-space: nowrap;
 }
@@ -351,15 +375,17 @@
 .htb-submission-details {
   position: relative;
   z-index: 1;
+  width: min(100%, 1420px);
+  margin: 0 auto;
 }
 
 .htb-details-header {
   display: flex;
   align-items: center;
   gap: 2rem;
-  margin-bottom: 3rem;
-  padding-bottom: 2rem;
-  border-bottom: 1px solid var(--htb-border);
+  margin-bottom: 1.8rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid rgba(139, 92, 246, 0.14);
 }
 
 .htb-challenge-title {
@@ -378,17 +404,19 @@
 .htb-summary-stats {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
-  gap: 1.75rem;
-  margin-bottom: 3rem;
+  gap: 1rem;
+  margin-bottom: 1.8rem;
 }
 
 .htb-stat-card {
   display: flex;
   align-items: center;
   gap: 1.25rem;
-  padding: 1.75rem;
-  background: var(--htb-bg-secondary);
-  border: 1px solid var(--htb-border);
+  padding: 1.25rem;
+  background:
+    linear-gradient(165deg, rgba(17, 24, 39, 0.52) 0%, rgba(15, 23, 42, 0.3) 100%),
+    radial-gradient(circle at 12% 0%, rgba(196, 181, 253, 0.12), transparent 42%);
+  border: 1px solid rgba(139, 92, 246, 0.2);
   border-radius: 10px;
   transition: all 0.3s ease;
   position: relative;
@@ -468,10 +496,12 @@
 }
 
 .htb-submissions-section {
-  background: var(--htb-bg-secondary);
-  border: 1.5px solid var(--htb-border);
+  background:
+    linear-gradient(165deg, rgba(17, 24, 39, 0.52) 0%, rgba(15, 23, 42, 0.3) 100%),
+    radial-gradient(circle at 12% 0%, rgba(196, 181, 253, 0.12), transparent 42%);
+  border: 1px solid rgba(139, 92, 246, 0.2);
   border-radius: 10px;
-  padding: 2rem;
+  padding: 1.2rem;
   transition: all 0.3s ease;
 }
 
@@ -533,7 +563,7 @@
 .htb-submissions-table thead {
   position: sticky;
   top: 0;
-  background: var(--htb-bg-tertiary);
+  background: rgba(15, 23, 42, 0.65);
   z-index: 10;
 }
 
@@ -598,10 +628,12 @@
 .htb-empty-state {
   position: relative;
   z-index: 1;
+  width: min(100%, 1420px);
+  margin: 0 auto;
   text-align: center;
   padding: 5rem 2rem;
   background: var(--htb-bg-secondary);
-  border: 2px dashed var(--htb-border);
+  border: 1px dashed rgba(139, 92, 246, 0.34);
   border-radius: 10px;
   transition: all 0.3s ease;
 }
@@ -645,7 +677,7 @@
 
 @media (max-width: 768px) {
   .htb-submissions-container {
-    padding: 1rem;
+    padding: 0.75rem 1rem 2rem;
   }
 
   .htb-submissions-title {
@@ -677,5 +709,11 @@
 
   .htb-table-container {
     max-height: 400px;
+  }
+}
+
+@media (max-width: 480px) {
+  .htb-submissions-container {
+    padding: 0.8rem 0.85rem 1.8rem;
   }
 }

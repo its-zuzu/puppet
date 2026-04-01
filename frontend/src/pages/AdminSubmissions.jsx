@@ -8,6 +8,7 @@ import {
 import axios from 'axios';
 import AuthContext from '../context/AuthContext';
 import { Loading } from '../components/ui';
+import { GlowingEffect } from '@/components/ui/glowing-effect';
 import './AdminSubmissions.css';
 
 function AdminSubmissions() {
@@ -80,6 +81,9 @@ function AdminSubmissions() {
     return (
       <div className="htb-submissions-container">
         <div className="htb-submissions-grid-bg"></div>
+        <div className="htb-submissions-orb htb-submissions-orb--primary" aria-hidden="true" />
+        <div className="htb-submissions-orb htb-submissions-orb--secondary" aria-hidden="true" />
+        <div className="htb-submissions-orb htb-submissions-orb--tertiary" aria-hidden="true" />
         <Loading text="LOADING SUBMISSIONS..." />
       </div>
     );
@@ -88,6 +92,9 @@ function AdminSubmissions() {
   return (
     <div className="htb-submissions-container">
       <div className="htb-submissions-grid-bg"></div>
+      <div className="htb-submissions-orb htb-submissions-orb--primary" aria-hidden="true" />
+      <div className="htb-submissions-orb htb-submissions-orb--secondary" aria-hidden="true" />
+      <div className="htb-submissions-orb htb-submissions-orb--tertiary" aria-hidden="true" />
 
       {!selectedChallenge && (
         <motion.div 
@@ -150,60 +157,68 @@ function AdminSubmissions() {
             transition={{ delay: 0.2 }}
           >
             {filteredChallenges.map((challenge, idx) => (
-              <motion.div
-                key={challenge._id}
-                className="htb-challenge-card"
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: idx * 0.05 }}
-                onClick={() => fetchSubmissionDetails(challenge._id)}
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.98 }}
-              >
-                <div className="htb-challenge-card-header">
-                  <h3>{challenge.title}</h3>
-                  <div className="htb-challenge-badges">
-                    <span className={`htb-difficulty-badge ${challenge.difficulty.toLowerCase()}`}>
-                      {challenge.difficulty}
-                    </span>
-                    <span className="htb-category-badge">{challenge.category}</span>
-                    <span className="htb-points-badge">
-                      <Award size={14} /> {challenge.points}
-                    </span>
-                  </div>
-                </div>
+              <div key={challenge._id} className="htb-challenge-card-shell">
+                <GlowingEffect
+                  spread={34}
+                  glow={true}
+                  disabled={false}
+                  proximity={86}
+                  inactiveZone={0.16}
+                  borderWidth={2}
+                />
 
-                <div className="htb-submission-stats">
-                  <div className="htb-stat-item">
-                    <Flag size={16} />
-                    <div className="htb-stat-content">
-                      <span className="htb-stat-value">{challenge.totalSubmissions}</span>
-                      <span className="htb-stat-label">Total</span>
+                <motion.div
+                  className="htb-challenge-card"
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: idx * 0.05 }}
+                  onClick={() => fetchSubmissionDetails(challenge._id)}
+                >
+                  <div className="htb-challenge-card-header">
+                    <h3>{challenge.title}</h3>
+                    <div className="htb-challenge-badges">
+                      <span className={`htb-difficulty-badge ${challenge.difficulty.toLowerCase()}`}>
+                        {challenge.difficulty}
+                      </span>
+                      <span className="htb-category-badge">{challenge.category}</span>
+                      <span className="htb-points-badge">
+                        <Award size={14} /> {challenge.points}
+                      </span>
                     </div>
                   </div>
-                  <div className="htb-stat-item success">
-                    <CheckCircle size={16} />
-                    <div className="htb-stat-content">
-                      <span className="htb-stat-value">{challenge.successfulSubmissions}</span>
-                      <span className="htb-stat-label">Success</span>
+
+                  <div className="htb-submission-stats">
+                    <div className="htb-stat-item">
+                      <Flag size={16} />
+                      <div className="htb-stat-content">
+                        <span className="htb-stat-value">{challenge.totalSubmissions}</span>
+                        <span className="htb-stat-label">Total</span>
+                      </div>
+                    </div>
+                    <div className="htb-stat-item success">
+                      <CheckCircle size={16} />
+                      <div className="htb-stat-content">
+                        <span className="htb-stat-value">{challenge.successfulSubmissions}</span>
+                        <span className="htb-stat-label">Success</span>
+                      </div>
+                    </div>
+                    <div className="htb-stat-item failed">
+                      <XCircle size={16} />
+                      <div className="htb-stat-content">
+                        <span className="htb-stat-value">{challenge.failedSubmissions}</span>
+                        <span className="htb-stat-label">Failed</span>
+                      </div>
+                    </div>
+                    <div className="htb-stat-item rate">
+                      <TrendingUp size={16} />
+                      <div className="htb-stat-content">
+                        <span className="htb-stat-value">{challenge.successRate}%</span>
+                        <span className="htb-stat-label">Rate</span>
+                      </div>
                     </div>
                   </div>
-                  <div className="htb-stat-item failed">
-                    <XCircle size={16} />
-                    <div className="htb-stat-content">
-                      <span className="htb-stat-value">{challenge.failedSubmissions}</span>
-                      <span className="htb-stat-label">Failed</span>
-                    </div>
-                  </div>
-                  <div className="htb-stat-item rate">
-                    <TrendingUp size={16} />
-                    <div className="htb-stat-content">
-                      <span className="htb-stat-value">{challenge.successRate}%</span>
-                      <span className="htb-stat-label">Rate</span>
-                    </div>
-                  </div>
-                </div>
-              </motion.div>
+                </motion.div>
+              </div>
             ))}
           </motion.div>
 
