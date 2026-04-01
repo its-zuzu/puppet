@@ -1,29 +1,36 @@
 .admin-create-user {
   min-height: 100vh;
-  padding: 2rem;
-  background: linear-gradient(135deg, rgba(10, 15, 25, 0.98), rgba(20, 30, 50, 0.98));
+  padding: 0.9rem 1.5rem 2.5rem;
+  background:
+    linear-gradient(180deg, rgba(107, 33, 168, 0.22) 0%, rgba(59, 7, 100, 0.16) 34%, rgba(0, 0, 0, 0.92) 100%),
+    radial-gradient(circle at 15% 18%, rgba(168, 85, 247, 0.18), transparent 24%),
+    radial-gradient(circle at 82% 12%, rgba(88, 28, 135, 0.2), transparent 28%),
+    radial-gradient(circle at 72% 78%, rgba(76, 29, 149, 0.14), transparent 30%),
+    linear-gradient(180deg, rgba(8, 4, 24, 0.95) 0%, rgba(0, 0, 0, 1) 100%);
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: center;
 }
 
 .create-user-container {
   max-width: 600px;
   width: 100%;
-  background: linear-gradient(135deg, rgba(26, 46, 70, 0.95), rgba(15, 25, 35, 0.95));
-  padding: 3rem;
+  background: linear-gradient(180deg, rgba(17, 24, 39, 0.42) 0%, rgba(15, 23, 42, 0.2) 100%);
+  padding: 2.1rem;
   border-radius: 16px;
   border: 1px solid rgba(168, 85, 247, 0.2);
-  box-shadow: 0 10px 40px rgba(168, 85, 247, 0.1);
+  box-shadow: 0 18px 40px rgba(2, 6, 23, 0.28);
+  backdrop-filter: blur(22px);
+  -webkit-backdrop-filter: blur(22px);
 }
 
 .create-user-header {
-  margin-bottom: 2.5rem;
+  margin-bottom: 1.6rem;
   text-align: center;
 }
 
 .create-user-header h1 {
-  font-size: 2rem;
+  font-size: 2.15rem;
   color: #ffffff;
   margin: 0 0 0.5rem 0;
   text-transform: uppercase;
@@ -37,77 +44,110 @@
 }
 
 .create-user-header p {
-  color: #a0a0a0;
-  font-size: 1rem;
+  color: #90a5c2;
+  font-size: 0.97rem;
   margin: 0;
 }
 
 .create-user-form {
   display: flex;
   flex-direction: column;
-  gap: 1.5rem;
+  gap: 1rem;
 }
 
-.form-group {
+.admin-create-user .form-group {
   display: flex;
   flex-direction: column;
 }
 
-.form-group label {
+.admin-create-user .form-group label {
   display: block;
-  color: #e0e0e0;
-  margin-bottom: 0.75rem;
+  color: #dae4f2;
+  margin-bottom: 0.55rem;
   font-weight: 600;
-  font-size: 0.95rem;
+  font-size: 0.9rem;
   text-transform: uppercase;
   letter-spacing: 1px;
 }
 
-.form-group input {
+.admin-create-user .form-group input,
+.admin-create-user .form-group select {
   width: 100%;
-  padding: 1rem;
-  background: rgba(15, 25, 35, 0.9);
-  border: 2px solid rgba(168, 85, 247, 0.3);
+  padding: 0.8rem 0.9rem;
+  background: rgba(10, 14, 26, 0.62);
+  border: 1px solid rgba(139, 92, 246, 0.2);
   border-radius: 8px;
   color: #e0e0e0;
-  font-size: 1rem;
-  transition: all 0.3s ease;
+  font-size: 0.98rem;
+  transition: all 0.25s ease;
 }
 
-.form-group input::placeholder {
+.admin-create-user .form-group input::placeholder {
   color: #606080;
 }
 
-.form-group input:focus {
+.admin-create-user .form-group input:focus,
+.admin-create-user .form-group select:focus {
   outline: none;
   border-color: #A855F7;
-  box-shadow: 0 0 20px rgba(168, 85, 247, 0.3);
-  background: rgba(15, 25, 35, 0.95);
-  transform: translateY(-1px);
+  box-shadow: 0 0 0 3px rgba(168, 85, 247, 0.14);
+  background: rgba(10, 14, 26, 0.72);
 }
 
 .form-row {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 1.5rem;
+  gap: 0.9rem;
+}
+
+.type-row {
+  grid-template-columns: 210px;
+}
+
+.type-group select {
+  min-height: 2.9rem;
+}
+
+.checkbox-row {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  align-items: center;
+}
+
+.checkbox-row .form-group {
+  margin: 0;
+}
+
+.checkbox-row .form-group label {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 0;
+  min-height: 2.1rem;
+}
+
+.checkbox-row .form-group input[type="checkbox"] {
+  width: 1rem;
+  height: 1rem;
+  margin: 0;
+  accent-color: #a855f7;
 }
 
 .form-actions {
   display: flex;
   gap: 1rem;
   justify-content: flex-end;
-  margin-top: 1rem;
-  padding-top: 1.5rem;
-  border-top: 2px solid rgba(168, 85, 247, 0.2);
+  margin-top: 0.3rem;
+  padding-top: 1rem;
+  border-top: 1px solid rgba(168, 85, 247, 0.2);
 }
 
 .btn-primary,
 .btn-secondary {
-  padding: 1rem 2rem;
-  border: 2px solid;
+  padding: 0.75rem 1.35rem;
+  border: 1px solid;
   border-radius: 8px;
   cursor: pointer;
-  font-size: 1rem;
+  font-size: 0.9rem;
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 1px;
@@ -122,16 +162,15 @@
 }
 
 .btn-primary {
-  background: linear-gradient(135deg, #A855F7, #7E22CE);
-  color: #000000;
-  border-color: #A855F7;
-  box-shadow: 0 4px 15px rgba(168, 85, 247, 0.3);
+  background: rgba(49, 18, 87, 0.24);
+  color: rgba(226, 232, 240, 0.82);
+  border-color: rgba(139, 92, 246, 0.18);
+  box-shadow: none;
 }
 
 .btn-primary:hover:not(:disabled) {
-  background: linear-gradient(135deg, #7E22CE, #6D28D9);
-  transform: translateY(-3px);
-  box-shadow: 0 8px 25px rgba(168, 85, 247, 0.4);
+  border-color: rgba(168, 85, 247, 0.5);
+  color: #d8b4fe;
 }
 
 .btn-primary:disabled {
@@ -140,15 +179,13 @@
 }
 
 .btn-secondary {
-  background: rgba(255, 100, 100, 0.1);
+  background: rgba(127, 29, 29, 0.22);
   color: #ff6464;
-  border-color: rgba(255, 100, 100, 0.3);
+  border-color: rgba(239, 68, 68, 0.35);
 }
 
 .btn-secondary:hover {
-  background: rgba(255, 100, 100, 0.2);
-  transform: translateY(-3px);
-  box-shadow: 0 8px 25px rgba(255, 100, 100, 0.3);
+  background: rgba(127, 29, 29, 0.32);
 }
 
 .error-message {
@@ -156,7 +193,7 @@
   color: #ff6666;
   padding: 1rem 1.5rem;
   border-radius: 8px;
-  border-left: 4px solid #ff4444;
+  border-left: 3px solid #ff4444;
   font-weight: 500;
   animation: slideIn 0.3s ease;
 }
@@ -166,7 +203,7 @@
   color: #A855F7;
   padding: 1rem 1.5rem;
   border-radius: 8px;
-  border-left: 4px solid #A855F7;
+  border-left: 3px solid #A855F7;
   font-weight: 500;
   animation: slideIn 0.3s ease;
 }
@@ -184,7 +221,7 @@
 
 @media (max-width: 768px) {
   .admin-create-user {
-    padding: 1rem;
+    padding: 0.8rem 0.75rem 1.5rem;
   }
 
   .create-user-container {
@@ -198,6 +235,11 @@
   .form-row {
     grid-template-columns: 1fr;
     gap: 1rem;
+  }
+
+  .type-row,
+  .checkbox-row {
+    grid-template-columns: 1fr;
   }
 
   .form-actions {

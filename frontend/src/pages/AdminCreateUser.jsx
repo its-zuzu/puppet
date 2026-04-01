@@ -191,8 +191,8 @@ function AdminCreateUser() {
             </div>
           </div>
 
-          <div className="form-row">
-            <div className="form-group">
+          <div className="form-row type-row">
+            <div className="form-group type-group">
               <label htmlFor="type">Type</label>
               <select id="type" name="type" value={formData.type} onChange={handleChange}>
                 <option value="user">User</option>
@@ -201,7 +201,7 @@ function AdminCreateUser() {
             </div>
           </div>
 
-          <div className="form-row">
+          <div className="form-row checkbox-row">
             <div className="form-group">
               <label>
                 <input type="checkbox" name="verified" checked={formData.verified} onChange={handleCheckboxChange} /> Verified
