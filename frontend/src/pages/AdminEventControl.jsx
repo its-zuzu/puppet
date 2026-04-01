@@ -102,9 +102,9 @@ function AdminEventControl() {
 
   return (
     <div className="admin-event-control-page">
-      <h1>Event Control (CTFd-style)</h1>
+      <h1>Event Control</h1>
       <p className="subtitle">
-        Configure Start, End, Freeze, and Pause behavior. These settings are now CTFd-compatible.
+        Configure start, end, freeze, and pause behavior.
       </p>
 
       {success && <div className="alert success">{success}</div>}
@@ -125,7 +125,7 @@ function AdminEventControl() {
 
       <form className="times-form" onSubmit={saveTimes}>
         <h2>Competition Times</h2>
-        <p className="hint">Set planned times like CTFd: Start Time, End Time, Freeze Time.</p>
+        <p className="hint">Set planned times for start, end, and freeze.</p>
 
         <label>
           Start Time
@@ -162,7 +162,6 @@ function AdminEventControl() {
       <div className="actions-grid">
         <div className="action-card">
           <h3>Start CTF</h3>
-          <p>Starts the CTF immediately. Submissions become available (unless paused).</p>
           <button onClick={() => runAction('Start CTF', '/api/event-control/start')} disabled={!!working}>
             {working === 'Start CTF' ? 'Working...' : 'Start Now'}
           </button>
@@ -170,7 +169,6 @@ function AdminEventControl() {
 
         <div className="action-card">
           <h3>End CTF</h3>
-          <p>Ends the CTF immediately. Submissions are blocked for all users.</p>
           <button className="danger" onClick={() => runAction('End CTF', '/api/event-control/end')} disabled={!!working}>
             {working === 'End CTF' ? 'Working...' : 'End Now'}
           </button>
@@ -178,7 +176,6 @@ function AdminEventControl() {
 
         <div className="action-card">
           <h3>Freeze Scoreboard</h3>
-          <p>Freezes visible scoreboard updates for participants from this moment onward.</p>
           <button onClick={() => runAction('Freeze Scoreboard', '/api/event-control/freeze')} disabled={!!working}>
             {working === 'Freeze Scoreboard' ? 'Working...' : 'Freeze Now'}
           </button>
@@ -186,7 +183,6 @@ function AdminEventControl() {
 
         <div className="action-card">
           <h3>Pause CTF</h3>
-          <p>Temporarily disables submissions without ending the event.</p>
           <button onClick={() => runAction('Pause CTF', '/api/event-control/pause')} disabled={!!working}>
             {working === 'Pause CTF' ? 'Working...' : 'Pause'}
           </button>
@@ -194,7 +190,6 @@ function AdminEventControl() {
 
         <div className="action-card">
           <h3>Resume CTF</h3>
-          <p>Re-enables submissions after pause.</p>
           <button onClick={() => runAction('Resume CTF', '/api/event-control/resume')} disabled={!!working}>
             {working === 'Resume CTF' ? 'Working...' : 'Resume'}
           </button>

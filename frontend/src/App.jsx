@@ -68,11 +68,12 @@ function AppShell() {
   const isAdminLiveMonitorRoute = location.pathname === '/admin/live-monitor'
   const isAdminLoginLogsRoute = location.pathname === '/admin/login-logs'
   const isAdminMessagesRoute = location.pathname === '/admin/messages'
+  const isAdminEventControlRoute = location.pathname === '/admin/event-control'
 
   return (
     <div className="app-container">
       <Navbar />
-      <main className={`main-content${isHomeRoute ? ' main-content--home' : ''}${isChallengesRoute ? ' main-content--challenges' : ''}${isChallengeDetailRoute ? ' main-content--challenge-detail' : ''}${isScoreboardRoute ? ' main-content--scoreboard' : ''}${isContactRoute ? ' main-content--contact' : ''}${isNoticesRoute ? ' main-content--notices' : ''}${isAdminConfigurationRoute ? ' main-content--admin-configuration' : ''}${isAdminDashboardRoute ? ' main-content--admin-dashboard' : ''}${isAdminStatisticsRoute ? ' main-content--admin-statistics' : ''}${isAdminSubmissionsRoute ? ' main-content--admin-submissions' : ''}${isAdminCategoriesRoute ? ' main-content--admin-categories' : ''}${isAdminLiveMonitorRoute ? ' main-content--admin-live-monitor' : ''}${isAdminLoginLogsRoute ? ' main-content--admin-login-logs' : ''}${isAdminMessagesRoute ? ' main-content--admin-messages' : ''}`}>
+      <main className={`main-content${isHomeRoute ? ' main-content--home' : ''}${isChallengesRoute ? ' main-content--challenges' : ''}${isChallengeDetailRoute ? ' main-content--challenge-detail' : ''}${isScoreboardRoute ? ' main-content--scoreboard' : ''}${isContactRoute ? ' main-content--contact' : ''}${isNoticesRoute ? ' main-content--notices' : ''}${isAdminConfigurationRoute ? ' main-content--admin-configuration' : ''}${isAdminDashboardRoute ? ' main-content--admin-dashboard' : ''}${isAdminStatisticsRoute ? ' main-content--admin-statistics' : ''}${isAdminSubmissionsRoute ? ' main-content--admin-submissions' : ''}${isAdminCategoriesRoute ? ' main-content--admin-categories' : ''}${isAdminLiveMonitorRoute ? ' main-content--admin-live-monitor' : ''}${isAdminLoginLogsRoute ? ' main-content--admin-login-logs' : ''}${isAdminMessagesRoute ? ' main-content--admin-messages' : ''}${isAdminEventControlRoute ? ' main-content--admin-event-control' : ''}`}>
         <Suspense fallback={<PageLoader />}>
           <Routes>
             <Route path="/" element={<Home />} />
