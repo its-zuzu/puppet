@@ -18,42 +18,71 @@
 .htb-admin-container {
   position: relative;
   min-height: 100vh;
-  padding: 2rem;
-  background: var(--bg-primary);
+  padding: 0.8rem 1.5rem 3rem;
+  background: linear-gradient(180deg, rgba(8, 4, 24, 0.95) 0%, rgba(0, 0, 0, 1) 100%);
   color: var(--text-primary);
   overflow: hidden;
 }
 
 .htb-admin-grid-bg {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
+  position: absolute;
+  inset: 0;
   background: 
-    linear-gradient(90deg, rgba(168, 85, 247, 0.03) 1px, transparent 1px),
-    linear-gradient(rgba(168, 85, 247, 0.03) 1px, transparent 1px);
-  background-size: 50px 50px;
-  pointer-events: none;
+    linear-gradient(180deg, rgba(107, 33, 168, 0.22) 0%, rgba(59, 7, 100, 0.16) 34%, rgba(0, 0, 0, 0.92) 100%),
+    radial-gradient(circle at 15% 18%, rgba(168, 85, 247, 0.18), transparent 24%),
+    radial-gradient(circle at 82% 12%, rgba(88, 28, 135, 0.2), transparent 28%),
+    radial-gradient(circle at 72% 78%, rgba(76, 29, 149, 0.14), transparent 30%);
   z-index: 0;
+  pointer-events: none;
+}
+
+.htb-admin-orb {
+  position: absolute;
+  border-radius: 9999px;
+  pointer-events: none;
+  filter: blur(110px);
+  opacity: 0.75;
+  z-index: 0;
+}
+
+.htb-admin-orb--primary {
+  top: 8%;
+  left: 5%;
+  width: 18rem;
+  height: 18rem;
+  background: rgba(168, 85, 247, 0.24);
+}
+
+.htb-admin-orb--secondary {
+  top: 24%;
+  right: 10%;
+  width: 22rem;
+  height: 22rem;
+  background: rgba(88, 28, 135, 0.2);
+}
+
+.htb-admin-orb--tertiary {
+  bottom: 8%;
+  left: 34%;
+  width: 16rem;
+  height: 16rem;
+  background: rgba(59, 7, 100, 0.24);
 }
 
 .htb-admin-header {
   position: relative;
   z-index: 1;
-  margin-bottom: 2rem;
+  width: min(100%, 1420px);
+  margin: 0 auto 1.25rem;
 }
 
 .htb-admin-title {
-  font-size: 2.5rem;
+  font-size: clamp(2rem, 4vw, 3.1rem);
   font-weight: 700;
-  letter-spacing: 2px;
+  letter-spacing: 0.5px;
   margin-bottom: 0.5rem;
   text-transform: uppercase;
-  background: linear-gradient(135deg, var(--primary) 0%, #00ff88 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
+  color: #f8fafc;
 }
 
 .htb-admin-subtitle {
@@ -102,7 +131,8 @@
   z-index: 1;
   display: flex;
   gap: 1rem;
-  margin-bottom: 2rem;
+  width: min(100%, 1420px);
+  margin: 0 auto 1.25rem;
   flex-wrap: wrap;
 }
 
@@ -111,9 +141,9 @@
   align-items: center;
   gap: 0.5rem;
   padding: 0.875rem 1.5rem;
-  background: var(--bg-secondary);
-  border: 1px solid var(--border);
-  border-radius: 8px;
+  background: linear-gradient(160deg, rgba(17, 24, 39, 0.52) 0%, rgba(15, 23, 42, 0.3) 100%);
+  border: 1px solid rgba(139, 92, 246, 0.2);
+  border-radius: 0.85rem;
   color: var(--text-secondary);
   font-weight: 500;
   font-size: 0.95rem;
@@ -122,15 +152,15 @@
 }
 
 .htb-tab:hover {
-  border-color: var(--primary);
-  background: var(--bg-tertiary);
+  border-color: rgba(192, 132, 252, 0.34);
+  background: rgba(139, 92, 246, 0.1);
 }
 
 .htb-tab.active {
-  background: linear-gradient(135deg, rgba(168, 85, 247, 0.15) 0%, rgba(168, 85, 247, 0.05) 100%);
-  border-color: var(--primary);
-  color: var(--primary);
-  box-shadow: 0 0 20px rgba(168, 85, 247, 0.2);
+  background: linear-gradient(135deg, rgba(216, 180, 254, 0.82) 0%, rgba(192, 132, 252, 0.84) 100%);
+  border-color: rgba(216, 180, 254, 0.6);
+  color: #1f1144;
+  box-shadow: 0 12px 28px rgba(168, 85, 247, 0.36);
 }
 
 .htb-tab-count {
@@ -152,7 +182,8 @@
   z-index: 1;
   display: flex;
   gap: 0.75rem;
-  margin-bottom: 2rem;
+  width: min(100%, 1420px);
+  margin: 0 auto 1.25rem;
   flex-wrap: wrap;
 }
 
@@ -161,8 +192,8 @@
   align-items: center;
   gap: 0.5rem;
   padding: 0.625rem 1rem;
-  background: var(--bg-secondary);
-  border: 1px solid var(--border);
+  background: linear-gradient(160deg, rgba(17, 24, 39, 0.46) 0%, rgba(15, 23, 42, 0.26) 100%);
+  border: 1px solid rgba(139, 92, 246, 0.2);
   border-radius: 6px;
   color: var(--text-secondary);
   font-size: 0.875rem;
@@ -190,14 +221,22 @@
 .htb-admin-content {
   position: relative;
   z-index: 1;
+  width: min(100%, 1420px);
+  margin: 0 auto;
 }
 
 .htb-section {
-  background: var(--bg-secondary);
-  border: 1px solid var(--border);
-  border-radius: 12px;
+  background:
+    linear-gradient(165deg, rgba(17, 24, 39, 0.52) 0%, rgba(15, 23, 42, 0.3) 100%),
+    radial-gradient(circle at 12% 0%, rgba(196, 181, 253, 0.12), transparent 42%);
+  border: 1px solid rgba(139, 92, 246, 0.2);
+  border-radius: 1.2rem;
   padding: 2rem;
-  box-shadow: 0 4px 24px var(--shadow);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.06),
+    0 22px 64px rgba(2, 6, 23, 0.36);
+  backdrop-filter: blur(24px) saturate(130%);
+  -webkit-backdrop-filter: blur(24px) saturate(130%);
 }
 
 .htb-section-header {
@@ -312,8 +351,8 @@
   flex: 1;
   min-width: 250px;
   padding: 0.75rem 1rem;
-  background: var(--bg-tertiary);
-  border: 1px solid var(--border);
+  background: rgba(10, 14, 26, 0.62);
+  border: 1px solid rgba(139, 92, 246, 0.2);
   border-radius: 8px;
   transition: all 0.3s ease;
 }
@@ -338,8 +377,8 @@
 
 .htb-filters select {
   padding: 0.75rem 1rem;
-  background: var(--bg-tertiary);
-  border: 1px solid var(--border);
+  background: rgba(10, 14, 26, 0.62);
+  border: 1px solid rgba(139, 92, 246, 0.2);
   border-radius: 8px;
   color: var(--text-primary);
   font-size: 0.9rem;
@@ -360,18 +399,19 @@
 /* Table */
 .htb-table-container {
   overflow-x: auto;
-  border-radius: 8px;
-  border: 1px solid var(--border);
+  border-radius: 0.9rem;
+  border: 1px solid rgba(139, 92, 246, 0.2);
 }
 
 .htb-table {
   width: 100%;
   border-collapse: collapse;
   font-size: 0.9rem;
+  background: rgba(10, 14, 26, 0.28);
 }
 
 .htb-table thead {
-  background: var(--bg-tertiary);
+  background: rgba(15, 23, 42, 0.44);
 }
 
 .htb-table th {
@@ -387,7 +427,7 @@
 
 .htb-table td {
   padding: 1rem;
-  border-bottom: 1px solid var(--border);
+  border-bottom: 1px solid rgba(139, 92, 246, 0.14);
   color: var(--text-secondary);
 }
 
@@ -396,7 +436,7 @@
 }
 
 .htb-table tbody tr:hover {
-  background: var(--bg-tertiary);
+  background: rgba(139, 92, 246, 0.09);
 }
 
 .htb-table tbody tr:last-child td {
@@ -508,8 +548,8 @@
   align-items: center;
   gap: 0.5rem;
   padding: 0.625rem 1.25rem;
-  background: var(--bg-tertiary);
-  border: 1px solid var(--border);
+  background: rgba(10, 14, 26, 0.62);
+  border: 1px solid rgba(139, 92, 246, 0.2);
   border-radius: 6px;
   color: var(--text-secondary);
   font-weight: 500;
@@ -535,8 +575,8 @@
 
 /* Form */
 .htb-form {
-  background: var(--bg-tertiary);
-  border: 1px solid var(--border);
+  background: rgba(10, 14, 26, 0.5);
+  border: 1px solid rgba(139, 92, 246, 0.2);
   border-radius: 8px;
   padding: 1.5rem;
   margin-bottom: 1.5rem;
@@ -558,8 +598,8 @@
 .htb-form-group textarea {
   width: 100%;
   padding: 0.875rem;
-  background: var(--bg-secondary);
-  border: 1px solid var(--border);
+  background: rgba(10, 14, 26, 0.62);
+  border: 1px solid rgba(139, 92, 246, 0.2);
   border-radius: 6px;
   color: var(--text-primary);
   font-size: 0.95rem;
@@ -608,7 +648,7 @@
 /* Responsive */
 @media (max-width: 1200px) {
   .htb-admin-container {
-    padding: 1.5rem;
+    padding: 0.75rem 1rem 2rem;
   }
 
   .htb-admin-title {
@@ -618,7 +658,7 @@
 
 @media (max-width: 768px) {
   .htb-admin-container {
-    padding: 1rem;
+    padding: 0.75rem 1rem 1.8rem;
   }
 
   .htb-admin-title {
@@ -667,6 +707,10 @@
 }
 
 @media (max-width: 480px) {
+  .htb-admin-container {
+    padding: 0.8rem 0.85rem 1.6rem;
+  }
+
   .htb-admin-title {
     font-size: 1.25rem;
   }

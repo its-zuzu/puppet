@@ -317,6 +317,9 @@ function AdminDashboard() {
     return (
       <div className="htb-admin-container">
         <div className="htb-admin-grid-bg"></div>
+        <div className="htb-admin-orb htb-admin-orb--primary" aria-hidden="true" />
+        <div className="htb-admin-orb htb-admin-orb--secondary" aria-hidden="true" />
+        <div className="htb-admin-orb htb-admin-orb--tertiary" aria-hidden="true" />
         <Loading text="LOADING DASHBOARD..." />
       </div>
     );
@@ -345,6 +348,9 @@ function AdminDashboard() {
   return (
     <div className="htb-admin-container">
       <div className="htb-admin-grid-bg"></div>
+      <div className="htb-admin-orb htb-admin-orb--primary" aria-hidden="true" />
+      <div className="htb-admin-orb htb-admin-orb--secondary" aria-hidden="true" />
+      <div className="htb-admin-orb htb-admin-orb--tertiary" aria-hidden="true" />
 
       <motion.div 
         className="htb-admin-header"
