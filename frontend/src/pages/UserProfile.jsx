@@ -2,6 +2,7 @@ import { useState, useEffect, useContext } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { ChevronLeft, Award, Trophy, Lock, Users, Flag, Medal } from 'lucide-react';
+import { RadarChart } from '@mui/x-charts/RadarChart';
 import axios from 'axios';
 import AuthContext from '../context/AuthContext';
 import { Loading } from '../components/ui';
@@ -90,6 +91,14 @@ function UserProfile() {
   }
 
   const solvedChallenges = getSolvedChallenges();
+  const categoryCounts = solvedChallenges.reduce((acc, challenge) => {
+    const categoryName = (challenge?.category || 'Uncategorized').toString().trim() || 'Uncategorized';
+    acc[categoryName] = (acc[categoryName] || 0) + 1;
+    return acc;
+  }, {});
+  const radarMetrics = Object.keys(categoryCounts);
+  const radarData = radarMetrics.map((metric) => categoryCounts[metric]);
+  const radarMax = Math.max(1, ...radarData);
 
   return (
     <div className="htb-user-container">
@@ -224,6 +233,48 @@ function UserProfile() {
               <p>No challenges solved yet</p>
             </div>
           )}
+        </motion.div>
+
+        <motion.div
+          className="htb-user-section htb-radar-section"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.45 }}
+        >
+          <h2 className="htb-section-title">
+            <span className="htb-title-line"></span>
+            Category Radar
+          </h2>
+          <div className="htb-radar-card">
+            <div className="htb-radar-legend-custom">
+              <span className="htb-radar-legend-dot" aria-hidden="true" />
+              <span className="htb-radar-legend-name">{user.username || 'User'}</span>
+            </div>
+            {radarMetrics.length > 0 ? (
+              <RadarChart
+                height={300}
+                series={[{ label: user.username || 'User', data: radarData, color: '#4f7cff' }]}
+                radar={{
+                  max: radarMax,
+                  metrics: radarMetrics,
+                }}
+                sx={{
+                  '& text': { fill: '#ffffff !important' },
+                  '& .MuiChartsAxis-tickLabel': { fill: '#ffffff !important' },
+                  '& .MuiChartsPolarAxis-tickLabel': { fill: '#ffffff !important' },
+                  '& [class*="MuiRadarGrid"] line': { stroke: 'rgba(255, 255, 255, 0.45) !important' },
+                  '& [class*="MuiRadarGrid"] path': { stroke: 'rgba(255, 255, 255, 0.45) !important' },
+                  '& [class*="MuiRadarSeries"] path': { stroke: '#4f7cff !important' },
+                  '& [class*="MuiRadarSeries"] circle': {
+                    fill: '#4f7cff !important',
+                    stroke: '#4f7cff !important',
+                  },
+                }}
+              />
+            ) : (
+              <div className="htb-radar-empty">No solved category data available yet</div>
+            )}
+          </div>
         </motion.div>
 
         {user.unlockedHints && user.unlockedHints.length > 0 && (
