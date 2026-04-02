@@ -61,6 +61,27 @@
   padding-left: 0;
 }
 
+.main-content.main-content--profile {
+  padding-top: 0;
+  padding-right: 0;
+  padding-bottom: 0;
+  padding-left: 0;
+}
+
+.main-content.main-content--team-details {
+  padding-top: 0;
+  padding-right: 0;
+  padding-bottom: 0;
+  padding-left: 0;
+}
+
+.main-content.main-content--user-profile {
+  padding-top: 0;
+  padding-right: 0;
+  padding-bottom: 0;
+  padding-left: 0;
+}
+
 .main-content.main-content--contact {
   padding-top: 0;
   padding-right: 0;

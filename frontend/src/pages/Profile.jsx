@@ -61,7 +61,7 @@ function Profile() {
 
   if (authLoading || loading) {
     return (
-      <div className="htb-user-container">
+      <div className="htb-user-container htb-user-container--profile">
         <div className="htb-user-grid-bg"></div>
         <Loading text="LOADING PROFILE..." />
       </div>
@@ -70,7 +70,7 @@ function Profile() {
 
   if (error || !user) {
     return (
-      <div className="htb-user-container">
+      <div className="htb-user-container htb-user-container--profile">
         <div className="htb-user-grid-bg"></div>
         <motion.div 
           className="htb-error-state"
@@ -86,7 +86,7 @@ function Profile() {
   const solvedChallenges = getSolvedChallenges();
 
   return (
-    <div className="htb-user-container">
+    <div className="htb-user-container htb-user-container--profile">
       <div className="htb-user-grid-bg"></div>
       
       <motion.div 
@@ -112,7 +112,6 @@ function Profile() {
         >
           <motion.div 
             className="htb-stat-card"
-            whileHover={{ scale: 1.02, y: -4 }}
           >
             <div className="htb-stat-icon">
               <Trophy size={24} />
@@ -125,7 +124,6 @@ function Profile() {
 
           <motion.div 
             className="htb-stat-card"
-            whileHover={{ scale: 1.02, y: -4 }}
           >
             <div className="htb-stat-icon">
               <Flag size={24} />
@@ -138,7 +136,6 @@ function Profile() {
 
           <motion.div 
             className="htb-stat-card"
-            whileHover={{ scale: 1.02, y: -4 }}
           >
             <div className="htb-stat-icon">
               <Medal size={24} />
@@ -151,7 +148,6 @@ function Profile() {
 
           <motion.div 
             className="htb-stat-card"
-            whileHover={{ scale: 1.02, y: -4 }}
           >
             <div className="htb-stat-icon">
               <Lock size={24} />
@@ -164,7 +160,6 @@ function Profile() {
 
           <motion.div 
             className="htb-stat-card"
-            whileHover={{ scale: 1.02, y: -4 }}
           >
             <div className="htb-stat-icon">
               <Users size={24} />
@@ -197,7 +192,6 @@ function Profile() {
                   initial={{ opacity: 0, scale: 0.9 }}
                   animate={{ opacity: 1, scale: 1 }}
                   transition={{ delay: 0.4 + index * 0.05 }}
-                  whileHover={{ scale: 1.02, y: -4 }}
                 >
                   <h3 className="htb-challenge-title">{challenge.title}</h3>
                   <div className="htb-challenge-meta">
@@ -237,7 +231,6 @@ function Profile() {
                   initial={{ opacity: 0, scale: 0.9 }}
                   animate={{ opacity: 1, scale: 1 }}
                   transition={{ delay: 0.6 + idx * 0.05 }}
-                  whileHover={{ scale: 1.02 }}
                 >
                   <div className="htb-hint-header">
                     <Lock size={18} />

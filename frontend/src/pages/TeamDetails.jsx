@@ -212,7 +212,6 @@ function TeamDetails() {
               initial={{ opacity: 0, x: -20 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ delay: 0.4 }}
-              whileHover={{ scale: 1.01 }}
             >
               <div className="htb-captain-badge">
                 <Crown size={16} />
@@ -250,7 +249,6 @@ function TeamDetails() {
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.5 + index * 0.05 }}
-                whileHover={{ scale: 1.01 }}
               >
                 <div className="htb-member-rank">
                   <Shield size={18} />

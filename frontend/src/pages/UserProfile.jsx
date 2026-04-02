@@ -206,7 +206,6 @@ function UserProfile() {
                   initial={{ opacity: 0, scale: 0.9 }}
                   animate={{ opacity: 1, scale: 1 }}
                   transition={{ delay: 0.4 + index * 0.05 }}
-                  whileHover={{ scale: 1.02, y: -4 }}
                 >
                   <h3 className="htb-challenge-title">{challenge.title}</h3>
                   <div className="htb-challenge-meta">
