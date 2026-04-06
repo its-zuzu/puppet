@@ -114,7 +114,7 @@ function ContactUs() {
               >
                 <div className="htb-info-content">
                   <h3><Mail size={18} /> Email</h3>
-                  <p>ctfquest@gmail.com</p>
+                  <p>ciphera@gmail.com</p>
                   <p className="htb-info-note">We'll respond within 24 hours</p>
                 </div>
               </motion.div>
