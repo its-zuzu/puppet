@@ -1,6 +1,6 @@
 .cyber-navbar {
-  --nav-bg: rgba(6, 0, 16, 0.88);
-  --nav-bg-strong: rgba(8, 4, 20, 0.95);
+  --nav-bg: rgba(6, 0, 16, 0.92);
+  --nav-bg-strong: rgba(8, 4, 20, 0.98);
   --nav-surface: rgba(20, 10, 34, 0.86);
   --nav-surface-solid: rgba(22, 10, 38, 0.96);
   --nav-surface-hover: rgba(39, 15, 68, 0.94);
@@ -12,7 +12,10 @@
   --nav-danger: #f87171;
   position: sticky;
   top: 0;
-  z-index: 1000;
+  left: 0;
+  right: 0;
+  width: 100%;
+  z-index: 1100;
   background: var(--nav-bg);
   border-bottom: 1px solid var(--nav-border);
   box-shadow: 0 12px 30px rgba(4, 0, 10, 0.18);

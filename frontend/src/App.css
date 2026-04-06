@@ -40,6 +40,13 @@
   padding: 0;
 }
 
+.main-content.main-content--login {
+  padding-top: 0.75rem;
+  padding-right: clamp(1rem, 2vw, 2rem);
+  padding-bottom: 2rem;
+  padding-left: clamp(1rem, 2vw, 2rem);
+}
+
 .main-content.main-content--challenges {
   padding-top: 0;
   padding-right: 0;

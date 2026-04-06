@@ -129,10 +129,10 @@ export default function Home() {
             initial={{ opacity: 0, y: 36 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.72, delay: 0.08, ease: [0.16, 1, 0.3, 1] }}
-            className="relative flex items-start lg:translate-x-16"
+            className="relative flex items-start justify-center lg:translate-x-12 lg:max-w-[450px]"
           >
             <div className="absolute inset-x-8 top-1/2 h-64 w-full -translate-y-12 rounded-full bg-[#A855F7]/30 blur-3xl" />
-            <div className="relative aspect-[4/5] w-full overflow-hidden rounded-[50px] border border-[#2E1065] bg-[linear-gradient(180deg,rgba(17,3,35,0.72)_0%,rgba(8,1,20,0.38)_100%)] p-3 shadow-[0_24px_80px_rgba(46,16,101,0.6)] backdrop-blur-xl lg:h-[85%] lg:aspect-auto">
+            <div className="relative aspect-[4/5] w-full max-w-[480px] overflow-hidden rounded-[50px] border border-[#2E1065] bg-[linear-gradient(180deg,rgba(17,3,35,0.72)_0%,rgba(8,1,20,0.38)_100%)] p-3 shadow-[0_24px_80px_rgba(46,16,101,0.6)] backdrop-blur-xl lg:h-auto lg:aspect-auto">
               <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(168,85,247,0.08)_0%,rgba(0,0,0,0)_55%)]" />
               <img
                 src={heroImage}
