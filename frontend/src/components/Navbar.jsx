@@ -12,6 +12,7 @@ import './Navbar.css';
 const navLinks = [
   { path: '/', label: 'Home', auth: false },
   { path: '/challenges', label: 'Challenges', auth: true },
+  
   { path: '/scoreboard', label: 'Leaderboard', auth: true },
   { path: '/event-status', label: 'Event Status', auth: false },
   { path: '/my-team', label: 'Team', auth: true },
@@ -94,7 +95,7 @@ function Navbar() {
   const isAdmin = user?.role === 'admin' || user?.role === 'superadmin';
   const platformLogo = logoUrl || '/logo.jpeg';
   const brandAccent = useMemo(() => {
-    const currentName = eventName || 'CTFQuest';
+    const currentName = eventName || 'Ciphera';
     const lowered = currentName.toLowerCase();
 
     if (lowered.endsWith('quest')) {
@@ -199,7 +200,7 @@ function Navbar() {
       <div className="cyber-navbar-container">
         <PillNav
           logo={platformLogo}
-          logoAlt={`${eventName || 'CTFQuest'} logo`}
+          logoAlt={`${eventName || 'Ciphera'} logo`}
           items={primaryNavItems}
           activeHref={location.pathname}
           className="cyber-navbar-pill"
@@ -209,7 +210,7 @@ function Navbar() {
           hoveredPillTextColor="#ffffff"
           pillTextColor="#000000"
           theme="light"
-          brandName={eventName || 'CTFQuest'}
+          brandName={eventName || 'Ciphera'}
           brandAccent={brandAccent}
           initialLoadAnimation={false}
           mobileExtraContent={renderMobileMenuExtras}
