@@ -103,9 +103,9 @@ function Register() {
             </div>
 
             <div className="htb-register-contact">
-              <a href="mailto:ctfquest@gmail.com" className="htb-register-email-button">
+              <a href="mailto:ciphera@gmail.com" className="htb-register-email-button">
                 <Mail size={20} />
-                <span>ctfquest@gmail.com</span>
+                <span>ciphera@gmail.com</span>
               </a>
             </div>
           </div>
