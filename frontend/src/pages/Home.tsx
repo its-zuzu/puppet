@@ -21,7 +21,7 @@ export default function Home() {
     AuthContext as React.Context<{ isAuthenticated: boolean }>
   );
   const { eventName } = useSiteConfig();
-  const platformName = eventName || 'CTFQuest';
+  const platformName = eventName || 'Ciphera';
   const heroImage = '/assests/ciphera.jpeg';
 
   const handleStart = () => {
